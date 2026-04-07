@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polish-Turkish Flashcard Learner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #1e40af;
+            --primary-light: #dbeafe;
+            --secondary: #6366f1;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #ffffff;
+            --surface: #f9fafb;
+            --border: #e5e7eb;
+            --text: #111827;
+            --text-light: #6b7280;
+        }
+
+        html[data-theme="dark"] {
+            --primary: #60a5fa;
+            --primary-dark: #1d4ed8;
+            --primary-light: #0c4a6e;
+            --secondary: #818cf8;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --border: #475569;
+            --text: #f1f5f9;
+            --text-light: #cbd5e1;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: background 0.3s, color 0.3s;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .theme-btn {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .section h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        textarea, input[type="text"], input[type="file"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+
+        textarea:focus, input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .button-group .button {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .message.success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .message.info {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .flashcard {
+            background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 60px 40px;
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.4s;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        html[data-theme="dark"] .flashcard {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .flashcard:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary);
+        }
+
+        .flashcard.flipped {
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--bg) 100%);
+            border-color: var(--primary);
+        }
+
+        .card-label {
+            font-size: 12px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        .card-label.flipped {
+            color: var(--primary);
+        }
+
+        .card-text {
+            font-size: 52px;
+            font-weight: 700;
+            color: var(--primary);
+            word-break: break-word;
+        }
+
+        .card-text.flipped {
+            color: var(--text);
+        }
+
+        @media (max-width: 768px) {
+            .flashcard {
+                padding: 40px 24px;
+                min-height: 250px;
+            }
+
+            .card-text {
+                font-size: 36px;
+            }
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .filter-bar label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .stats {
+            padding: 16px;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            min-width: 200px;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.3s;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        .code-block {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            margin: 12px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 10px 16px;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .file-label:hover {
+            background: var(--primary-dark);
+        }
+
+        .file-name {
+            display: inline-block;
+            margin-left: 12px;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+    </style>
+<script type='text/javascript' src='https://d21g8wfdqviqnd.cloudfront.net/pb4Xg95PIBpVfR3tQEaZRR6P4kGLgpEzvppJ8bpkuz3j1nHvL-wnjFqSFNC1QGc1v7ZSN1eRkjd7kS0RIchBRYLKfCBhXxxJMfZnIEDpyUjlaGadbr1nPHMw2pZsxbqBlnJBP0lLg4wIN5lqI7Q7FtLr2ATXJMCF7KlAHq5QTqY='></script></head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎓 Polish-Turkish Flashcard</h1>
+            <button class="theme-btn" id="themeBtn" title="Toggle dark mode">🌙</button>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="study">Study</button>
+            <button class="tab-btn" data-tab="import-text">Text Import</button>
+            <button class="tab-btn" data-tab="import-excel">CSV Import</button>
+            <button class="tab-btn" data-tab="import-url">URL Import</button>
+            <button class="tab-btn" data-tab="settings">Settings</button>
+        </div>
+
+        <!-- STUDY TAB -->
+        <div id="study" class="tab-content active">
+            <div id="emptyStudy" class="empty-state">
+                <div class="empty-state-icon">📚</div>
+                <h3>No Flashcards Yet</h3>
+                <p>Import word pairs to start studying</p>
+            </div>
+
+            <div id="studyContent" style="display: none;">
+                <div class="filter-bar">
+                    <label><input type="checkbox" id="chkEasy" checked> Easy</label>
+                    <label><input type="checkbox" id="chkMedium" checked> Medium</label>
+                    <label><input type="checkbox" id="chkHard" checked> Hard</label>
+                    <label><input type="checkbox" id="chkUnmarked" checked> Unmarked</label>
+                    <button class="button btn-secondary" onclick="app.resetFilters()">Reset</button>
+                </div>
+
+                <div class="stats">
+                    <div>
+                        <strong id="cardCounter">Card 0 / 0</strong>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+                    <button class="button btn-primary" id="directionBtn">Polish → Turkish</button>
+                </div>
+
+                <div class="flashcard" id="flashcard">
+                    <div class="card-label" id="cardLabel">Front</div>
+                    <div class="card-text" id="cardText">Click to start</div>
+                </div>
+
+                <div class="controls">
+                    <button class="button btn-danger" onclick="app.markDifficulty('hard')">Hard ❌</button>
+                    <button class="button btn-warning" onclick="app.markDifficulty('medium')">Medium ⚠️</button>
+                    <button class="button btn-success" onclick="app.markDifficulty('easy')">Easy ✅</button>
+                </div>
+
+                <div class="controls">
+                    <button class="button btn-secondary" onclick="app.prevCard()">← Previous</button>
+                    <button class="button btn-primary" onclick="app.flipCard()">Flip Card</button>
+                    <button class="button btn-secondary" onclick="app.nextCard()">Next →</button>
+                </div>
+
+                <div class="button-group">
+                    <button class="button btn-secondary" onclick="app.shuffle()">🔀 Shuffle</button>
+                    <button class="button btn-secondary" onclick="app.resetProgress()">↻ Reset</button>
+                    <button class="button btn-danger" onclick="app.clearAll()">🗑️ Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEXT IMPORT TAB -->
+        <div id="import-text" class="tab-content">
+            <div class="section">
+                <h2>Import from Text</h2>
+                <p>Enter tab-separated Polish and Turkish words (one pair per line)</p>
+                <div class="code-block">
+Cześć	Merhaba<br>
+Dziękuję	Teşekkür ederim<br>
+Proszę	Lütfen
+                </div>
+                <textarea id="textInput" placeholder="Polish word&#9;Turkish word"></textarea>
+                <div class="button-group">
+                    <button class="button btn-primary" onclick="app.importText()">Import</button>
+                    <button class="button btn-secondary" onclick="document.getElementById('textInput').value=''">Clear</button>
+                </div>
+                <div id="textMsg"></div>
+            </div>
+        </div>
+
+        <!-- CSV IMPORT TAB -->
+        <div id="import-excel" class="tab-content">
+            <div class="section">
+                <h2>Import from CSV File</h2>
+                <p>Upload a CSV file with columns: POL, TUR</p>
+                <p>Supports tab-separated, comma-separated, and semicolon-separated formats</p>
+                <div style="margin-bottom: 12px;">
+                    <label class="file-label" for="excelFile">Choose CSV File</label>
+                    <input type="file" id="excelFile" accept=".csv,.txt">
+                    <span class="file-name" id="fileName">No file selected</span>
+                </div>
+                <div class="code-block">
+Example CSV format:<br>
+POL,TUR<br>
+Cześć,Merhaba<br>
+Dziękuję,Teşekkür ederim<br>
+Proszę,Lütfen
+                </div>
+                <div class="button-group">
+                    <button class="button btn-primary" onclick="app.importExcel()">Import CSV</button>
+                    <button class="button btn-secondary" onclick="app.clearExcelInput()">Clear</button>
+                </div>
+                <div id="excelMsg"></div>
+            </div>
+        </div>
+
+        <!-- URL IMPORT TAB -->
+        <div id="import-url" class="tab-content">
+            <div class="section">
+                <h2>URL Encoding &amp; Sharing</h2>
+                <p><strong>How it works:</strong> Create a JSON array below, click "Generate URL", copy it, and share. When someone opens that URL, words load automatically.</p>
+                
+                <div style="background: var(--primary-light); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin-bottom: 12px;"><strong>Example JSON (click to copy):</strong></p>
+                    <div id="exampleJson" style="background: var(--bg); padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 12px; cursor: pointer; user-select: all; border: 1px solid var(--border);">[{"pol":"Cześć","tur":"Merhaba"},{"pol":"Dziękuję","tur":"Teşekkür ederim"},{"pol":"Proszę","tur":"Lütfen"}]</div>
+                    <button class="button btn-secondary" onclick="(function(){var el=document.getElementById('exampleJson'); if(window.getSelection && document.createRange){var range=document.createRange(); range.selectNodeContents(el); var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range);} else if(document.body.createTextRange){var range=document.body.createTextRange(); range.moveToElementText(el); range.select();} document.execCommand('copy'); app.showMessage('urlMsg','Example copied to clipboard!','success');})();" style="margin-top: 8px;">Copy Example</button>
+                </div>
+                
+                <label>Your JSON Array</label>
+                <textarea id="jsonInput" placeholder='[{"pol":"Word1","tur":"Word2"}]' style="min-height: 120px;"></textarea>
+                <div class="button-group">
+                    <button class="button btn-primary" onclick="app.generateUrl()">Generate URL</button>
+                    <button class="button btn-secondary" onclick="document.getElementById('jsonInput').value=''">Clear</button>
+                </div>
+                <div id="urlMsg"></div>
+                <div id="urlResult" style="display: none; margin-top: 20px;">
+                    <label>Generated URL:</label>
+                    <input type="text" id="urlOutput" readonly>
+                    <div class="button-group">
+                        <button class="button btn-secondary" onclick="app.copyUrl()">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="settings" class="tab-content">
+            <div class="section">
+                <h2>Settings & Info</h2>
+                <p><strong>Total Words:</strong> <span id="totalCount">0</span></p>
+                <p><strong>Theme:</strong> <span id="themeStatus">Light</span></p>
+                <div style="margin-top: 20px;">
+                    <p><strong>Export Data:</strong></p>
+                    <div class="button-group">
+                        <button class="button btn-secondary" onclick="app.exportJSON()">Export JSON</button>
+                        <button class="button btn-secondary" onclick="app.exportCSV()">Export CSV</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            cards: [],
+            filtered: [],
+            index: 0,
+            direction: 'pol-tur',
+            flipped: false,
+            filters: { easy: true, medium: true, hard: true, unmarked: true },
+            themeMode: 'light',
+            inMemoryStorage: {},
+
+            init() {
+                this.initTheme();
+                this.setupTabs();
+                this.loadData();
+                this.loadFromUrl();
+                this.setupEventListeners();
+                this.updateUI();
+            },
+
+            initTheme() {
+                const btn = document.getElementById('themeBtn');
+                
+                let savedTheme = null;
+                try {
+                    savedTheme = localStorage.getItem('flashcard-theme');
+                } catch (e) {
+                    console.warn('localStorage not available');
+                }
+                
+                this.themeMode = savedTheme || 'light';
+                this.applyTheme();
+                
+                btn.addEventListener('click', () => {
+                    this.themeMode = this.themeMode === 'light' ? 'dark' : 'light';
+                    this.applyTheme();
+                    
+                    try {
+                        localStorage.setItem('flashcard-theme', this.themeMode);
+                    } catch (e) {
+                        console.warn('Could not save theme');
+                    }
+                });
+            },
+
+            applyTheme() {
+                if (this.themeMode === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    document.getElementById('themeBtn').textContent = '☀️';
+                    document.getElementById('themeStatus').textContent = 'Dark';
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                    document.getElementById('themeBtn').textContent = '🌙';
+                    document.getElementById('themeStatus').textContent = 'Light';
+                }
+            },
+
+            setupTabs() {
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const tabName = btn.dataset.tab;
+                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                        btn.classList.add('active');
+                        document.getElementById(tabName).classList.add('active');
+                    });
+                });
+            },
+
+            setupEventListeners() {
+                document.getElementById('flashcard').addEventListener('click', () => this.flipCard());
+                document.getElementById('directionBtn').addEventListener('click', () => this.toggleDirection());
+                document.getElementById('excelFile').addEventListener('change', (e) => {
+                    document.getElementById('fileName').textContent = e.target.files[0]?.name || 'No file selected';
+                });
+                ['chkEasy', 'chkMedium', 'chkHard', 'chkUnmarked'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', () => this.applyFilters());
+                });
+            },
+
+            importText() {
+                const text = document.getElementById('textInput').value;
+                const lines = text.trim().split('\n').filter(l => l.trim());
+                const pairs = [];
+
+                lines.forEach(line => {
+                    const [pol, tur] = line.split('\t').map(s => s.trim());
+                    if (pol && tur) pairs.push({ pol, tur, difficulty: 'unmarked' });
+                });
+
+                if (pairs.length === 0) {
+                    this.showMessage('textMsg', 'No valid pairs found', 'error');
+                    return;
+                }
+
+                this.cards = pairs;
+                this.filtered = [...this.cards];
+                this.index = 0;
+                this.flipped = false;
+                this.saveData();
+                this.updateUI();
+                this.showMessage('textMsg', `✓ Imported ${pairs.length} pairs`, 'success');
+                this.switchTab('study');
+            },
+
+            async importExcel() {
+                const file = document.getElementById('excelFile').files[0];
+                if (!file) {
+                    this.showMessage('excelMsg', 'No file selected', 'error');
+                    return;
+                }
+
+                try {
+                    const buffer = await file.arrayBuffer();
+                    const data = this.parseCSV(buffer);
+                    
+                    if (data.length === 0) {
+                        this.showMessage('excelMsg', 'No valid data found. Make sure file has POL and TUR columns', 'error');
+                        return;
+                    }
+
+                    this.cards = data;
+                    this.filtered = [...this.cards];
+                    this.index = 0;
+                    this.flipped = false;
+                    this.saveData();
+                    this.updateUI();
+                    this.showMessage('excelMsg', `✓ Imported ${data.length} word pairs`, 'success');
+                    this.switchTab('study');
+                } catch (error) {
+                    console.error('CSV import error:', error);
+                    this.showMessage('excelMsg', 'Error: ' + error.message, 'error');
+                }
+            },
+
+            parseCSV(buffer) {
+                try {
+                    const decoder = new TextDecoder('utf-8');
+                    const text = decoder.decode(new Uint8Array(buffer));
+                    const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                    const lines = normalized.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+                    if (lines.length < 2) return [];
+
+                    const header = lines[0];
+                    let delimiter = '\t';
+                    if (!header.includes('\t')) {
+                        if (header.includes(';')) delimiter = ';';
+                        else if (header.includes(',')) delimiter = ',';
+                    }
+
+                    const headerRow = header.split(delimiter).map(h => h.trim().toUpperCase());
+                    let polIdx = -1, turIdx = -1, ignoreIdx = -1;
+
+                    for (let i = 0; i < headerRow.length; i++) {
+                        if (headerRow[i].includes('POL') || headerRow[i] === 'POLISH') polIdx = i;
+                        if (headerRow[i].includes('TUR') || headerRow[i] === 'TURKISH') turIdx = i;
+                        if (headerRow[i].includes('IGNORE')) ignoreIdx = i;
+                    }
+
+                    if (polIdx === -1) polIdx = 0;
+                    if (turIdx === -1) turIdx = 1;
+                    if (ignoreIdx === -1) ignoreIdx = 2;
+
+                    const pairs = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        const cells = lines[i].split(delimiter).map(c => c.trim());
+                        if (!cells[polIdx] || !cells[turIdx]) continue;
+                        
+                        if (ignoreIdx < cells.length && cells[ignoreIdx]) {
+                            if (cells[ignoreIdx].toUpperCase() === 'OK') continue;
+                        }
+
+                        pairs.push({
+                            pol: cells[polIdx],
+                            tur: cells[turIdx],
+                            difficulty: 'unmarked'
+                        });
+                    }
+
+                    return pairs;
+                } catch (e) {
+                    return [];
+                }
+            },
+
+
+
+            generateUrl() {
+                try {
+                    const json = document.getElementById('jsonInput').value.trim();
+                    const data = JSON.parse(json);
+                    
+                    if (!Array.isArray(data)) throw new Error('Must be array');
+
+                    const encoder = new TextEncoder();
+                    const bytes = encoder.encode(json);
+                    let binary = '';
+                    for (let i = 0; i < bytes.length; i++) {
+                        binary += String.fromCharCode(bytes[i]);
+                    }
+                    const encoded = btoa(binary);
+                    const url = window.location.origin + window.location.pathname + '?words=' + encodeURIComponent(encoded);
+                    
+                    document.getElementById('urlOutput').value = url;
+                    document.getElementById('urlResult').style.display = 'block';
+                    this.showMessage('urlMsg', 'URL generated!', 'success');
+                } catch (error) {
+                    this.showMessage('urlMsg', 'Error: ' + error.message, 'error');
+                }
+            },
+
+            copyUrl() {
+                const urlOutput = document.getElementById('urlOutput');
+                urlOutput.select();
+                document.execCommand('copy');
+                this.showMessage('urlMsg', 'Copied!', 'success');
+            },
+
+            loadFromUrl() {
+                const params = new URLSearchParams(window.location.search);
+                const encoded = params.get('words');
+                
+                if (!encoded) return;
+
+                try {
+                    const binary = atob(decodeURIComponent(encoded));
+                    const bytes = new Uint8Array(binary.length);
+                    for (let i = 0; i < binary.length; i++) {
+                        bytes[i] = binary.charCodeAt(i);
+                    }
+                    const decoder = new TextDecoder('utf-8');
+                    const json = decoder.decode(bytes);
+                    const data = JSON.parse(json);
+                    console.log('Loaded from URL:', data.length, 'pairs');
+                    
+                    if (Array.isArray(data)) {
+                        this.cards = data.map(d => ({
+                            pol: d.pol || '',
+                            tur: d.tur || '',
+                            difficulty: 'unmarked'
+                        })).filter(d => d.pol && d.tur);
+                        
+                        this.filtered = [...this.cards];
+                        this.saveData();
+                        this.updateUI();
+                        
+                        if (this.cards.length > 0) {
+                            setTimeout(() => {
+                                this.switchTab('study');
+                                this.showMessage('textMsg', `✓ Loaded ${this.cards.length} word pairs from URL`, 'success');
+                            }, 100);
+                        }
+                    }
+                } catch (error) {
+                    console.error('URL load error:', error);
+                }
+            },
+
+            flipCard() {
+                this.flipped = !this.flipped;
+                this.updateCardDisplay();
+            },
+
+            nextCard() {
+                if (this.filtered.length === 0) return;
+                this.index = (this.index + 1) % this.filtered.length;
+                this.flipped = false;
+                this.updateCardDisplay();
+            },
+
+            prevCard() {
+                if (this.filtered.length === 0) return;
+                this.index = (this.index - 1 + this.filtered.length) % this.filtered.length;
+                this.flipped = false;
+                this.updateCardDisplay();
+            },
+
+            toggleDirection() {
+                this.direction = this.direction === 'pol-tur' ? 'tur-pol' : 'pol-tur';
+                this.flipped = false;
+                this.updateCardDisplay();
+            },
+
+            markDifficulty(level) {
+                if (this.filtered.length === 0) return;
+                const card = this.filtered[this.index];
+                const original = this.cards.find(c => c.pol === card.pol && c.tur === card.tur);
+                if (original) original.difficulty = level;
+                this.saveData();
+                this.nextCard();
+            },
+
+            updateCardDisplay() {
+                const flashcard = document.getElementById('flashcard');
+                const label = document.getElementById('cardLabel');
+                const text = document.getElementById('cardText');
+
+                if (this.filtered.length === 0) {
+                    text.textContent = 'No cards';
+                    label.textContent = '';
+                    return;
+                }
+
+                const card = this.filtered[this.index];
+                const [front, back, frontLabel, backLabel] = this.direction === 'pol-tur'
+                    ? [card.pol, card.tur, 'Polish', 'Turkish']
+                    : [card.tur, card.pol, 'Turkish', 'Polish'];
+
+                if (this.flipped) {
+                    text.textContent = back;
+                    label.textContent = backLabel;
+                    flashcard.classList.add('flipped');
+                    text.classList.add('flipped');
+                    label.classList.add('flipped');
+                } else {
+                    text.textContent = front;
+                    label.textContent = frontLabel;
+                    flashcard.classList.remove('flipped');
+                    text.classList.remove('flipped');
+                    label.classList.remove('flipped');
+                }
+
+                this.updateProgress();
+                document.getElementById('directionBtn').textContent = 
+                    this.direction === 'pol-tur' ? 'Polish → Turkish' : 'Turkish → Polish';
+            },
+
+            updateProgress() {
+                const total = this.filtered.length;
+                const current = this.index + 1;
+                document.getElementById('cardCounter').textContent = `Card ${current} / ${total}`;
+                document.getElementById('progressFill').style.width = total > 0 ? (current / total * 100) + '%' : '0%';
+            },
+
+            shuffle() {
+                for (let i = this.filtered.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.filtered[i], this.filtered[j]] = [this.filtered[j], this.filtered[i]];
+                }
+                this.index = 0;
+                this.flipped = false;
+                this.updateCardDisplay();
+            },
+
+            resetProgress() {
+                this.index = 0;
+                this.flipped = false;
+                this.updateCardDisplay();
+            },
+
+            resetFilters() {
+                this.filters = { easy: true, medium: true, hard: true, unmarked: true };
+                document.getElementById('chkEasy').checked = true;
+                document.getElementById('chkMedium').checked = true;
+                document.getElementById('chkHard').checked = true;
+                document.getElementById('chkUnmarked').checked = true;
+                this.applyFilters();
+            },
+
+            applyFilters() {
+                this.filters = {
+                    easy: document.getElementById('chkEasy').checked,
+                    medium: document.getElementById('chkMedium').checked,
+                    hard: document.getElementById('chkHard').checked,
+                    unmarked: document.getElementById('chkUnmarked').checked
+                };
+
+                this.filtered = this.cards.filter(card => {
+                    const diff = card.difficulty || 'unmarked';
+                    return this.filters[diff];
+                });
+
+                this.index = 0;
+                this.flipped = false;
+                this.updateUI();
+            },
+
+            clearAll() {
+                if (confirm('Delete all words?')) {
+                    this.cards = [];
+                    this.filtered = [];
+                    this.saveData();
+                    this.updateUI();
+                }
+            },
+
+            clearExcelInput() {
+                document.getElementById('excelFile').value = '';
+                document.getElementById('fileName').textContent = 'No file selected';
+            },
+
+            exportJSON() {
+                const json = JSON.stringify(this.cards, null, 2);
+                this.downloadFile(json, 'flashcards.json', 'application/json');
+            },
+
+            exportCSV() {
+                let csv = 'Polish,Turkish,Difficulty\n';
+                this.cards.forEach(c => {
+                    csv += `"${c.pol.replace(/"/g, '""')}","${c.tur.replace(/"/g, '""')}","${c.difficulty}"\n`;
+                });
+                this.downloadFile(csv, 'flashcards.csv', 'text/csv');
+            },
+
+            downloadFile(content, filename, type) {
+                const blob = new Blob([content], { type: type + '; charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            },
+
+            updateUI() {
+                document.getElementById('totalCount').textContent = this.cards.length;
+                
+                if (this.cards.length === 0) {
+                    document.getElementById('emptyStudy').style.display = 'block';
+                    document.getElementById('studyContent').style.display = 'none';
+                } else {
+                    document.getElementById('emptyStudy').style.display = 'none';
+                    document.getElementById('studyContent').style.display = 'block';
+                    this.updateCardDisplay();
+                }
+            },
+
+            showMessage(elementId, message, type) {
+                const el = document.getElementById(elementId);
+                el.innerHTML = `<div class="message ${type}">${message}</div>`;
+                setTimeout(() => { el.innerHTML = ''; }, 3000);
+            },
+
+            switchTab(tabName) {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            },
+
+            saveData() {
+                const json = JSON.stringify(this.cards);
+                try {
+                    localStorage.setItem('flashcard-data', json);
+                } catch (e) {
+                    this.inMemoryStorage.data = json;
+                }
+            },
+
+            loadData() {
+                let json = null;
+                try {
+                    json = localStorage.getItem('flashcard-data');
+                } catch (e) {
+                    json = this.inMemoryStorage.data;
+                }
+                
+                if (json) {
+                    try {
+                        this.cards = JSON.parse(json);
+                        this.filtered = [...this.cards];
+                    } catch (e) {
+                        console.error('Load error:', e);
+                    }
+                }
+            }
+        };
+
+        document.addEventListener('keydown', (e) => {
+            if (app.filtered.length === 0) return;
+            if (e.key === 'ArrowRight') app.nextCard();
+            if (e.key === 'ArrowLeft') app.prevCard();
+            if (e.key === ' ') { e.preventDefault(); app.flipCard(); }
+        });
+
+        app.init();
+    </script>
+</body>
+</html>
