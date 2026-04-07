@@ -550,8 +550,10 @@ Proszę	Lütfen
         <div id="import-excel" class="tab-content">
             <div class="section">
                 <h2>Import from CSV File</h2>
-                <p>Upload a CSV file with columns: POL, TUR</p>
+                <p>Upload a CSV file with columns: POL, TUR, IGNORE (optional column)</p>
                 <p>Supports tab-separated, comma-separated, and semicolon-separated formats</p>
+                <p>To skip a line: Put value OK for target rows in IGNORE column.</p>
+
                 <div style="margin-bottom: 12px;">
                     <label class="file-label" for="excelFile">Choose CSV File</label>
                     <input type="file" id="excelFile" accept=".csv,.txt">
