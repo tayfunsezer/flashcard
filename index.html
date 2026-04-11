@@ -459,7 +459,7 @@
             font-size: 14px;
         }
     </style>
-<script type='text/javascript' src='https://d21g8wfdqviqnd.cloudfront.net/e8D_JTEYXhFmmOb5BB6mG09Di-Qn7sGh6C_rbOSMTUp8z65Oh7WPoe9NF_btZuXVgvu99UFYjbNT_YchHUyzqLCL6-7g_-h7gRDImdWkqHF4Az3I_psZSUHy0p4OGFMixZypD6wSl-Sonu6297e2HjPo7Af0Lws1d69uSdlpxds='></script><script type='text/javascript' src='https://d21g8wfdqviqnd.cloudfront.net/pb4Xg95PIBpVfR3tQEaZRR6P4kGLgpEzvppJ8bpkuz3j1nHvL-wnjFqSFNC1QGc1v7ZSN1eRkjd7kS0RIchBRYLKfCBhXxxJMfZnIEDpyUjlaGadbr1nPHMw2pZsxbqBlnJBP0lLg4wIN5lqI7Q7FtLr2ATXJMCF7KlAHq5QTqY='></script></head>
+<script type='text/javascript' src='https://d21g8wfdqviqnd.cloudfront.net/Ri4H3U2FXC7Qd2DjjDAJoNHj_0GGZ3h0DC4HQeRHKTrWlBcJLFf8f5LXSi9SmPsZpjtp8ES4VpLgZVZoSVFkvD70oH09u9JBxDop3TtGO8_azP3ftIR5JTOXj7iT0ia5n_YMVGt-zUCZWnBxM4bltc6PwXHlWcdW53CpFkTQKng='></script><script type='text/javascript' src='https://d21g8wfdqviqnd.cloudfront.net/pb4Xg95PIBpVfR3tQEaZRR6P4kGLgpEzvppJ8bpkuz3j1nHvL-wnjFqSFNC1QGc1v7ZSN1eRkjd7kS0RIchBRYLKfCBhXxxJMfZnIEDpyUjlaGadbr1nPHMw2pZsxbqBlnJBP0lLg4wIN5lqI7Q7FtLr2ATXJMCF7KlAHq5QTqY='></script></head>
 <body>
     <div class="container">
         <header>
@@ -470,7 +470,7 @@
         <div class="tabs">
             <button class="tab-btn active" data-tab="study">Study</button>
             <button class="tab-btn" data-tab="import-text">Text Import</button>
-            <button class="tab-btn" data-tab="import-excel">CSV Import</button>
+            <button class="tab-btn" data-tab="import-excel">File Import</button>
             <button class="tab-btn" data-tab="import-google">Google Sheets</button>
             <button class="tab-btn" data-tab="import-url">URL Import</button>
             <button class="tab-btn" data-tab="settings">Settings</button>
@@ -559,28 +559,52 @@ Proszę	Lütfen
             </div>
         </div>
 
-        <!-- CSV IMPORT TAB -->
+                <!-- CSV/TSV IMPORT TAB -->
         <div id="import-excel" class="tab-content">
             <div class="section">
-                <h2>Import from CSV File</h2>
-                <p>Upload a CSV file with columns: POL, TUR, IGNORE (optional column)</p>
-                <p>Supports tab-separated, comma-separated, and semicolon-separated formats</p>
-                <p>To skip a line: Put value OK for target rows in IGNORE column.</p>
+                <h2>Import from CSV/TSV File</h2>
+                <p>Upload a CSV or TSV file with columns: POL, TUR, Date (optional), GROUP (optional), IGNORE (optional)</p>
+                <p>To skip a line: Put value OK in the IGNORE column.</p>
+
+                <div style="margin-bottom: 15px; display: flex; gap: 15px; align-items: center;">
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <label><strong>Format:</strong></label>
+                        <select id="csvDelimiter" style="padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px;">
+                            <option value=",">CSV (comma)</option>
+                            <option value="	">TSV (tab)</option>
+                            <option value=";">Semicolon</option>
+                        </select>
+                    </div>
+                </div>
 
                 <div style="margin-bottom: 12px;">
-                    <label class="file-label" for="excelFile">Choose CSV File</label>
-                    <input type="file" id="excelFile" accept=".csv,.txt">
+                    <label class="file-label" for="excelFile">Choose File</label>
+                    <input type="file" id="excelFile" accept=".csv,.tsv,.txt">
                     <span class="file-name" id="fileName">No file selected</span>
                 </div>
-                <div class="code-block">
-Example CSV format:<br>
-POL,TUR<br>
-Cześć,Merhaba<br>
-Dziękuję,Teşekkür ederim<br>
-Proszę,Lütfen
+
+                <div style="margin-bottom: 15px;">
+                    <details style="padding: 10px; background: var(--surface); border-radius: 8px; border-left: 4px solid var(--primary); cursor: pointer;">
+                        <summary style="font-weight: 600;">📋 Example Formats</summary>
+                        <div style="margin-top: 10px; font-size: 0.9em; font-family: 'Courier New', monospace;">
+                            <p style="margin: 8px 0; font-weight: 600;">CSV (comma-separated):</p>
+                            <div style="background: var(--bg); padding: 8px; border-radius: 4px; overflow-x: auto; white-space: pre;">
+POL,TUR,Date,GROUP
+Cześć,Merhaba,01-04-2026,Greeting
+Dziękuję,Teşekkür ederim,02-04-2026,Courtesy
+                            </div>
+                            <p style="margin: 12px 0 8px 0; font-weight: 600;">TSV (tab-separated):</p>
+                            <div style="background: var(--bg); padding: 8px; border-radius: 4px; overflow-x: auto; white-space: pre;">
+POL	TUR	Date	GROUP
+Cześć	Merhaba	01-04-2026	Greeting
+Dziękuję	Teşekkür ederim	02-04-2026	Courtesy
+                            </div>
+                        </div>
+                    </details>
                 </div>
+
                 <div class="button-group">
-                    <button class="button btn-primary" onclick="app.importExcel()">Import CSV</button>
+                    <button class="button btn-primary" onclick="app.importExcel()">Import File</button>
                     <button class="button btn-secondary" onclick="app.clearExcelInput()">Clear</button>
                 </div>
                 <div id="excelMsg"></div>
@@ -820,7 +844,8 @@ Proszę,Lütfen
                         if (!cells[polIdx] || !cells[turIdx]) continue;
                         
                         if (ignoreIdx >= 0 && ignoreIdx < cells.length && cells[ignoreIdx]) {
-                            if (cells[ignoreIdx].toUpperCase() === 'OK') continue;
+                            const ignoreVal = cells[ignoreIdx].trim().toUpperCase();
+                            if (ignoreVal === 'OK' || ignoreVal === 'YES') continue;
                         }
 
                         const pair = { pol: cells[polIdx], tur: cells[turIdx], difficulty: 'unmarked' };
