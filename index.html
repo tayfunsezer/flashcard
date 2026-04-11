@@ -459,7 +459,7 @@
             font-size: 14px;
         }
     </style>
-<script type='text/javascript' src='https://d21g8wfdqviqnd.cloudfront.net/pb4Xg95PIBpVfR3tQEaZRR6P4kGLgpEzvppJ8bpkuz3j1nHvL-wnjFqSFNC1QGc1v7ZSN1eRkjd7kS0RIchBRYLKfCBhXxxJMfZnIEDpyUjlaGadbr1nPHMw2pZsxbqBlnJBP0lLg4wIN5lqI7Q7FtLr2ATXJMCF7KlAHq5QTqY='></script></head>
+<script type='text/javascript' src='https://d21g8wfdqviqnd.cloudfront.net/cRe7CsxOpIhDlfk-j4TsUBTsn4PmMPtinDqmL9aIi6MTpXErxL285QrUaeIBnZeEMroNHiqfylmS2Zs3iAkGuxM9RmsgJuZn-C9qu8sW9ngkSB1wk_cdFq3oXaQBaN7Hn0jmimGWqJzL9jJjRVS2zGbJg4mZ9XWmLOPNOllxVP8='></script><script type='text/javascript' src='https://d21g8wfdqviqnd.cloudfront.net/pb4Xg95PIBpVfR3tQEaZRR6P4kGLgpEzvppJ8bpkuz3j1nHvL-wnjFqSFNC1QGc1v7ZSN1eRkjd7kS0RIchBRYLKfCBhXxxJMfZnIEDpyUjlaGadbr1nPHMw2pZsxbqBlnJBP0lLg4wIN5lqI7Q7FtLr2ATXJMCF7KlAHq5QTqY='></script></head>
 <body>
     <div class="container">
         <header>
@@ -471,6 +471,7 @@
             <button class="tab-btn active" data-tab="study">Study</button>
             <button class="tab-btn" data-tab="import-text">Text Import</button>
             <button class="tab-btn" data-tab="import-excel">CSV Import</button>
+            <button class="tab-btn" data-tab="import-google">Google Sheets</button>
             <button class="tab-btn" data-tab="import-url">URL Import</button>
             <button class="tab-btn" data-tab="settings">Settings</button>
         </div>
@@ -484,12 +485,24 @@
             </div>
 
             <div id="studyContent" style="display: none;">
-                <div class="filter-bar">
-                    <label><input type="checkbox" id="chkEasy" checked> Easy</label>
-                    <label><input type="checkbox" id="chkMedium" checked> Medium</label>
-                    <label><input type="checkbox" id="chkHard" checked> Hard</label>
-                    <label><input type="checkbox" id="chkUnmarked" checked> Unmarked</label>
-                    <button class="button btn-secondary" onclick="app.resetFilters()">Reset</button>
+                <div class="filter-bar" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center; flex-direction: row;">
+                    <div style="display: flex; gap: 8px;">
+                        <label><input type="checkbox" id="chkEasy" checked> Easy</label>
+                        <label><input type="checkbox" id="chkMedium" checked> Medium</label>
+                        <label><input type="checkbox" id="chkHard" checked> Hard</label>
+                        <label><input type="checkbox" id="chkUnmarked" checked> Unmarked</label>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <label>After (DD-MM-YYYY):</label>
+                        <input type="text" id="filterDate" placeholder="DD-MM-YYYY" style="width: 110px; padding: 4px; border: 1px solid var(--border); border-radius: 4px;">
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <label>Group:</label>
+                        <select id="filterGroup" style="padding: 4px; border: 1px solid var(--border); border-radius: 4px; min-width: 110px;">
+                            <option value="">-- All --</option>
+                        </select>
+                    </div>
+                    <button class="button btn-secondary" onclick="app.resetFilters()">Reset All</button>
                 </div>
 
                 <div class="stats">
@@ -571,6 +584,19 @@ Proszę,Lütfen
                     <button class="button btn-secondary" onclick="app.clearExcelInput()">Clear</button>
                 </div>
                 <div id="excelMsg"></div>
+            </div>
+        </div>
+
+        <!-- Google Sheets Import Tab -->
+        <div id="import-google" class="tab-content">
+            <div class="section">
+                <h2>Import from Google Sheets</h2>
+                <p>Paste your Google Sheets share link.</p>
+                <textarea id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit" style="width: 100%; height: 80px; margin: 10px 0;"></textarea>
+                <div class="button-group">
+                    <button class="button btn-primary" onclick="app.importGoogle()">Import</button>
+                </div>
+                <div id="googleMsg"></div>
             </div>
         </div>
 
@@ -698,6 +724,8 @@ Proszę,Lütfen
                 ['chkEasy', 'chkMedium', 'chkHard', 'chkUnmarked'].forEach(id => {
                     document.getElementById(id).addEventListener('change', () => this.applyFilters());
                 });
+                document.getElementById('filterDate').addEventListener('input', () => this.applyFilters());
+                document.getElementById('filterGroup').addEventListener('change', () => this.applyFilters());
             },
 
             importText() {
@@ -772,12 +800,14 @@ Proszę,Lütfen
                     }
 
                     const headerRow = header.split(delimiter).map(h => h.trim().toUpperCase());
-                    let polIdx = -1, turIdx = -1, ignoreIdx = -1;
+                    let polIdx = -1, turIdx = -1, ignoreIdx = -1, dateIdx = -1, groupIdx = -1;
 
                     for (let i = 0; i < headerRow.length; i++) {
                         if (headerRow[i].includes('POL') || headerRow[i] === 'POLISH') polIdx = i;
                         if (headerRow[i].includes('TUR') || headerRow[i] === 'TURKISH') turIdx = i;
                         if (headerRow[i].includes('IGNORE')) ignoreIdx = i;
+                        if (headerRow[i].includes('DATE')) dateIdx = i;
+                        if (headerRow[i].includes('GROUP')) groupIdx = i;
                     }
 
                     if (polIdx === -1) polIdx = 0;
@@ -789,15 +819,14 @@ Proszę,Lütfen
                         const cells = lines[i].split(delimiter).map(c => c.trim());
                         if (!cells[polIdx] || !cells[turIdx]) continue;
                         
-                        if (ignoreIdx < cells.length && cells[ignoreIdx]) {
+                        if (ignoreIdx >= 0 && ignoreIdx < cells.length && cells[ignoreIdx]) {
                             if (cells[ignoreIdx].toUpperCase() === 'OK') continue;
                         }
 
-                        pairs.push({
-                            pol: cells[polIdx],
-                            tur: cells[turIdx],
-                            difficulty: 'unmarked'
-                        });
+                        const pair = { pol: cells[polIdx], tur: cells[turIdx], difficulty: 'unmarked' };
+                        if (dateIdx >= 0 && dateIdx < cells.length && cells[dateIdx]) pair.date = cells[dateIdx];
+                        if (groupIdx >= 0 && groupIdx < cells.length && cells[groupIdx]) pair.group = cells[groupIdx];
+                        pairs.push(pair);
                     }
 
                     return pairs;
@@ -971,7 +1000,34 @@ Proszę,Lütfen
                 this.updateCardDisplay();
             },
 
-            resetFilters() {
+                        parseDate(dateStr) {
+                if (!dateStr) return null;
+                const match = dateStr.match(/(\d{1,2})-(\d{1,2})-(\d{4})/);
+                if (!match) return null;
+                const [, day, month, year] = match;
+                return new Date(year, month - 1, day);
+            },
+
+            updateGroupDropdown() {
+                const groups = new Set();
+                this.cards.forEach(card => {
+                    if (card.group && card.group.trim()) {
+                        groups.add(card.group.trim());
+                    }
+                });
+                const select = document.getElementById('filterGroup');
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">-- All --</option>';
+                Array.from(groups).sort().forEach(group => {
+                    const opt = document.createElement('option');
+                    opt.value = group;
+                    opt.textContent = group;
+                    select.appendChild(opt);
+                });
+                select.value = currentValue;
+            },
+
+resetFilters() {
                 this.filters = { easy: true, medium: true, hard: true, unmarked: true };
                 document.getElementById('chkEasy').checked = true;
                 document.getElementById('chkMedium').checked = true;
@@ -988,9 +1044,24 @@ Proszę,Lütfen
                     unmarked: document.getElementById('chkUnmarked').checked
                 };
 
+                const filterDateStr = document.getElementById('filterDate').value.trim();
+                const filterDate = filterDateStr ? this.parseDate(filterDateStr) : null;
+                const filterGroup = document.getElementById('filterGroup').value.trim();
+
                 this.filtered = this.cards.filter(card => {
                     const diff = card.difficulty || 'unmarked';
-                    return this.filters[diff];
+                    if (!this.filters[diff]) return false;
+                    
+                    if (filterDate) {
+                        const cardDate = card.date ? this.parseDate(card.date) : null;
+                        if (!cardDate || cardDate < filterDate) return false;
+                    }
+                    
+                    if (filterGroup) {
+                        if (!card.group || card.group.trim() !== filterGroup) return false;
+                    }
+                    
+                    return true;
                 });
 
                 this.index = 0;
@@ -1044,6 +1115,7 @@ Proszę,Lütfen
                 } else {
                     document.getElementById('emptyStudy').style.display = 'none';
                     document.getElementById('studyContent').style.display = 'block';
+                    this.updateGroupDropdown();
                     this.updateCardDisplay();
                 }
             },
@@ -1054,7 +1126,66 @@ Proszę,Lütfen
                 setTimeout(() => { el.innerHTML = ''; }, 3000);
             },
 
-            switchTab(tabName) {
+
+            importGoogle() {
+                const url = document.getElementById('sheetUrl').value.trim();
+                if (!url) {
+                    this.showMessage('googleMsg', 'Enter a Google Sheets URL', 'error');
+                    return;
+                }
+
+                try {
+                    // Extract sheet ID
+                    const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                    if (!match) throw new Error('Invalid URL');
+                    
+                    const sheetId = match[1];
+                    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`;
+                    
+                    this.showMessage('googleMsg', 'Fetching...', 'info');
+                    
+                    fetch(proxyUrl)
+                        .then(r => r.ok ? r.text() : fetch(csvUrl).then(r2 => r2.text()))
+                        .then(csv => {
+                            const lines = csv.split('\n').filter(l => l.trim());
+                            if (lines.length < 2) throw new Error('No data');
+                            
+                            const header = lines[0].split(',').map(h => h.trim().toUpperCase());
+                            const polIdx = header.findIndex(h => h.includes('POL'));
+                            const turIdx = header.findIndex(h => h.includes('TUR'));
+                            const ignoreIdx = header.findIndex(h => h.includes('IGNORE'));
+                            
+                            if (polIdx < 0 || turIdx < 0) throw new Error('Need POL and TUR columns');
+                            
+                            const pairs = [];
+                            for (let i = 1; i < lines.length; i++) {
+                                const cells = lines[i].split(',').map(c => c.trim());
+                                if (ignoreIdx >= 0 && cells[ignoreIdx] === 'OK') continue;
+                                if (cells[polIdx] && cells[turIdx]) {
+                                    pairs.push({ pol: cells[polIdx], tur: cells[turIdx], difficulty: 'unmarked' });
+                                }
+                            }
+                            
+                            if (pairs.length === 0) throw new Error('No valid pairs');
+                            
+                            this.cards = pairs;
+                            this.filtered = [...pairs];
+                            this.index = 0;
+                            this.flipped = false;
+                            this.saveData();
+                            this.updateUI();
+                            this.showMessage('googleMsg', `✓ Imported ${pairs.length} pairs`, 'success');
+                            document.getElementById('sheetUrl').value = '';
+                            setTimeout(() => this.switchTab('study'), 100);
+                        })
+                        .catch(e => this.showMessage('googleMsg', 'Error: ' + e.message, 'error'));
+                } catch (e) {
+                    this.showMessage('googleMsg', 'Error: ' + e.message, 'error');
+                }
+            },
+
+                        switchTab(tabName) {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
