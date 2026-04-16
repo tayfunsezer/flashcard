@@ -479,6 +479,10 @@ const app = {
             this.updateGroupDropdown();
             this.updateCardDisplay();
         }
+        
+        // Dispatch an event to notify the quiz module that flashcards have been updated
+        // This will trigger the resetQuiz() function in quiz.js
+        document.dispatchEvent(new CustomEvent('flashcardsUpdated'));
     },
 
     showMessage(elementId, message, type) {
