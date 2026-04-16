@@ -15,6 +15,7 @@
 
         <div class="tabs">
             <button class="tab-btn active" data-tab="study">Study</button>
+            <button class="tab-btn" data-tab="quiz">Quiz</button>
             <button class="tab-btn" data-tab="import-text">Text Import</button>
             <button class="tab-btn" data-tab="import-excel">File Import</button>
             <button class="tab-btn" data-tab="import-google">Google Sheets</button>
@@ -82,6 +83,130 @@
                     <button class="button btn-secondary" onclick="app.shuffle()">🔀 Shuffle</button>
                     <button class="button btn-secondary" onclick="app.resetProgress()">↻ Reset</button>
                     <button class="button btn-danger" onclick="app.clearAll()">🗑️ Clear</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- QUIZ TAB -->
+        <div id="quiz" class="tab-content">
+            <div id="emptyQuiz" class="empty-state">
+                <div class="empty-state-icon">🎯</div>
+                <h3>No Flashcards for Quiz</h3>
+                <p>Import word pairs to start quizzing</p>
+            </div>
+            
+            <div id="quizContent" style="display: none;">
+                <!-- Quiz Setup Section -->
+                <div id="quizSetup" class="section">
+                    <h2>Quiz Setup</h2>
+                    <div class="flex flex-wrap gap-16 mb-15">
+                        <div>
+                            <label>Quiz Type:</label>
+                            <select id="quizType" class="p-4 border rounded-4">
+                                <option value="multiple-choice">Multiple Choice</option>
+                                <option value="fill-blank" disabled>Fill in the Blank (Coming Soon)</option>
+                                <option value="true-false" disabled>True/False (Coming Soon)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label>Direction:</label>
+                            <select id="quizDirection" class="p-4 border rounded-4">
+                                <option value="pol-tur">Polish → Turkish</option>
+                                <option value="tur-pol">Turkish → Polish</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label>Number of Questions:</label>
+                            <select id="quizLength" class="p-4 border rounded-4">
+                                <option value="5">5 Questions</option>
+                                <option value="10" selected>10 Questions</option>
+                                <option value="20">20 Questions</option>
+                                <option value="all">All Cards</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-bar flex flex-wrap gap-15 items-center flex-row mb-15">
+                        <div class="flex gap-8">
+                            <label><input type="checkbox" id="quizChkEasy" checked> Easy</label>
+                            <label><input type="checkbox" id="quizChkMedium" checked> Medium</label>
+                            <label><input type="checkbox" id="quizChkHard" checked> Hard</label>
+                            <label><input type="checkbox" id="quizChkUnmarked" checked> Unmarked</label>
+                        </div>
+                        <div class="flex gap-8 items-center">
+                            <label>Group:</label>
+                            <select id="quizFilterGroup" class="p-4 border rounded-4 min-w-110">
+                                <option value="">-- All --</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="button btn-primary" id="startQuizBtn">Start Quiz</button>
+                    </div>
+                </div>
+                
+                <!-- Quiz Question Section -->
+                <div id="quizQuestion" class="section" style="display: none;">
+                    <div class="stats">
+                        <div>
+                            <strong id="quizProgress">Question 0 / 0</strong>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="quizProgressFill"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <strong>Score: <span id="quizScore">0</span></strong>
+                        </div>
+                    </div>
+                    
+                    <div class="quiz-question-container">
+                        <h3 id="quizQuestionText" class="quiz-question-text">Question text goes here</h3>
+                        
+                        <div id="quizOptions" class="quiz-options">
+                            <!-- Options will be inserted here by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div id="quizFeedback" class="quiz-feedback" style="display: none;">
+                        <!-- Feedback will be shown here -->
+                    </div>
+                    <div class="button-group">
+                    <button class="button btn-primary" id="nextQuestionBtn" style="display: none;">Next Question</button>
+                    <button class="button btn-secondary" id="resetQuizBtn">Reset Quiz</button>
+                </div>
+                </div>
+                
+                <!-- Quiz Results Section -->
+                <div id="quizResults" class="section" style="display: none;">
+                    <h2>Quiz Results</h2>
+                    
+                    <div class="quiz-results-summary">
+                        <div class="quiz-results-score">
+                            <div class="quiz-score-circle">
+                                <span id="finalScore">0%</span>
+                            </div>
+                            <p>Your Score</p>
+                        </div>
+                        
+                        <div class="quiz-results-stats">
+                            <p><strong>Correct:</strong> <span id="correctAnswers">0</span></p>
+                            <p><strong>Incorrect:</strong> <span id="incorrectAnswers">0</span></p>
+                            <p><strong>Total Questions:</strong> <span id="totalQuestions">0</span></p>
+                        </div>
+                    </div>
+                    
+                    <h3 class="mt-20 mb-12">Missed Questions</h3>
+                    <div id="missedQuestions" class="quiz-missed-questions">
+                        <!-- Missed questions will be listed here -->
+                    </div>
+                    
+                    <div class="button-group mt-20">
+                        <button class="button btn-primary" id="retryQuizBtn">Try Again</button>
+                        <button class="button btn-secondary" id="newQuizBtn">New Quiz</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -218,5 +343,6 @@ Dziękuję	Teşekkür ederim	02-04-2026	Courtesy
 
     <!-- Reference to the external JavaScript and CSS files -->
     <script src="app.js"></script>
+    <script src="quiz.js"></script>
 </body>
 </html>
