@@ -459,6 +459,7 @@
             font-size: 14px;
         }
     </style>
+<!-- <script type='text/javascript' src='https://d21g8wfdqviqnd.cloudfront.net/Ri4H3U2FXC7Qd2DjjDAJoNHj_0GGZ3h0DC4HQeRHKTrWlBcJLFf8f5LXSi9SmPsZpjtp8ES4VpLgZVZoSVFkvD70oH09u9JBxDop3TtGO8_azP3ftIR5JTOXj7iT0ia5n_YMVGt-zUCZWnBxM4bltc6PwXHlWcdW53CpFkTQKng='></script><script type='text/javascript' src='https://d21g8wfdqviqnd.cloudfront.net/pb4Xg95PIBpVfR3tQEaZRR6P4kGLgpEzvppJ8bpkuz3j1nHvL-wnjFqSFNC1QGc1v7ZSN1eRkjd7kS0RIchBRYLKfCBhXxxJMfZnIEDpyUjlaGadbr1nPHMw2pZsxbqBlnJBP0lLg4wIN5lqI7Q7FtLr2ATXJMCF7KlAHq5QTqY='></script></head> -->
 <body>
     <div class="container">
         <header>
@@ -1024,7 +1025,7 @@ Dziękuję	Teşekkür ederim	02-04-2026	Courtesy
                 this.updateCardDisplay();
             },
 
-            parseDate(dateStr) {
+                        parseDate(dateStr) {
                 if (!dateStr) return null;
                 const match = dateStr.match(/(\d{1,2})-(\d{1,2})-(\d{4})/);
                 if (!match) return null;
@@ -1051,24 +1052,13 @@ Dziękuję	Teşekkür ederim	02-04-2026	Courtesy
                 select.value = currentValue;
             },
 
-            resetFilters() {
-                // Fix: Reset all filters including date and group filters
+resetFilters() {
                 this.filters = { easy: true, medium: true, hard: true, unmarked: true };
                 document.getElementById('chkEasy').checked = true;
                 document.getElementById('chkMedium').checked = true;
                 document.getElementById('chkHard').checked = true;
                 document.getElementById('chkUnmarked').checked = true;
-                
-                // Clear date filter
-                document.getElementById('filterDate').value = '';
-                
-                // Reset group dropdown to "All"
-                document.getElementById('filterGroup').value = '';
-                
                 this.applyFilters();
-                
-                // Show a confirmation message
-                this.showMessage('textMsg', 'All filters have been reset', 'info');
             },
 
             applyFilters() {
@@ -1220,7 +1210,7 @@ Dziękuję	Teşekkür ederim	02-04-2026	Courtesy
                 }
             },
 
-            switchTab(tabName) {
+                        switchTab(tabName) {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
