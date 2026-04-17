@@ -1,0 +1,45 @@
+===============================================
+SAMPLE 20-QUESTION QUIZ URL
+===============================================
+
+Copy and paste this URL into your browser to test the quiz feature:
+
+http://localhost:8000/?qCont=W3sicXVlc3Rpb24iOiJXaGF0IGlzIHRoZSBjYXBpdGFsIG9mIEZyYW5jZT8iLCJvcHRpb25zIjpbIkxvbmRvbiIsIkJlcmxpbiIsIlBhcmlzIiwiTWFkcmlkIl0sImNvcnJlY3RJbmRleCI6Mn0seyJxdWVzdGlvbiI6IldoYXQgaXMgdGhlIGNhcGl0YWwgb2YgR2VybWFueT8iLCJvcHRpb25zIjpbIk11bmljaCIsIkJlcmxpbiIsIkhhbWJ1cmciLCJGcmFua2Z1cnQiXSwiY29ycmVjdEluZGV4IjoxfSx7InF1ZXN0aW9uIjoiV2hhdCBpcyB0aGUgY2FwaXRhbCBvZiBTcGFpbj8iLCJvcHRpb25zIjpbIkJhcmNlbG9uYSIsIlZhbGVuY2lhIiwiTWFkcmlkIiwiU2V2aWxsZSJdLCJjb3JyZWN0SW5kZXgiOjJ9LHsicXVlc3Rpb24iOiJXaGF0IGlzIHRoZSBjYXBpdGFsIG9mIEl0YWx5PyIsIm9wdGlvbnMiOlsiTWlsYW4iLCJSb21lIiwiRmxvcmVuY2UiLCJWZW5pY2UiXSwiY29ycmVjdEluZGV4IjoxfSx7InF1ZXN0aW9uIjoiV2hhdCBpcyB0aGUgY2FwaXRhbCBvZiBQb2xhbmQ/Iiwib3B0aW9ucyI6WyJLcmFrb3ciLCJXYXJzYXciLCJHZGFuc2siLCJXcm9jbGF3Il0sImNvcnJlY3RJbmRleCI6MX0seyJxdWVzdGlvbiI6IldoYXQgaXMgdGhlIGNhcGl0YWwgb2YgVHVya2V5PyIsIm9wdGlvbnMiOlsiSXN0YW5idWwiLCJBbmthcmEiLCJJem1pciIsIkFudGFseWEiXSwiY29ycmVjdEluZGV4IjoxfSx7InF1ZXN0aW9uIjoiV2hhdCBpcyB0aGUgbGFyZ2VzdCBwbGFuZXQgaW4gb3VyIHNvbGFyIHN5c3RlbT8iLCJvcHRpb25zIjpbIlNhdHVybiIsIkp1cGl0ZXIiLCJOZXB0dW5lIiwiVXJhbnVzIl0sImNvcnJlY3RJbmRleCI6MX0seyJxdWVzdGlvbiI6IldobyB3cm90ZSBSb21lbyBhbmQgSnVsaWV0PyIsIm9wdGlvbnMiOlsiSmFuZSBBdXN0ZW4iLCJXaWxsaWFtIFNoYWtlc3BlYXJlIiwiQ2hhcmxlcyBEaWNrZW5zIiwiTWFyayBUd2FpbiJdLCJjb3JyZWN0SW5kZXgiOjF9LHsicXVlc3Rpb24iOiJXaGF0IGlzIHRoZSBjaGVtaWNhbCBzeW1ib2wgZm9yIEdvbGQ/Iiwib3B0aW9ucyI6WyJHZCIsIkFnIiwiQXUiLCJHbCJdLCJjb3JyZWN0SW5kZXgiOjJ9LHsicXVlc3Rpb24iOiJXaGF0IHllYXIgZGlkIHRoZSBUaXRhbmljIHNpbms/Iiwib3B0aW9ucyI6WyIxOTEyIiwiMTkxNSIsIjE5MjAiLCIxOTA1Il0sImNvcnJlY3RJbmRleCI6MH0seyJxdWVzdGlvbiI6IldoYXQgaXMgdGhlIHNtYWxsZXN0IGNvdW50cnkgaW4gdGhlIHdvcmxkPyIsIm9wdGlvbnMiOlsiTW9uYWNvIiwiVmF0aWNhbiBDaXR5IiwiTGllY2h0ZW5zdGVpbiIsIlNhbiBNYXJpbm8iXSwiY29ycmVjdEluZGV4IjoxfSx7InF1ZXN0aW9uIjoiSG93IG1hbnkgY29udGluZW50cyBhcmUgdGhlcmU/Iiwib3B0aW9ucyI6WyI1IiwiNiIsIjciLCI4Il0sImNvcnJlY3RJbmRleCI6Mn0seyJxdWVzdGlvbiI6IldoYXQgaXMgdGhlIGhpZ2hlc3QgbW91bnRhaW4gaW4gdGhlIHdvcmxkPyIsIm9wdGlvbnMiOlsiSzIiLCJLYW5nY2hlbmp1bmdhIiwiTW91bnQgRXZlcmVzdCIsIkxob3RzZSJdLCJjb3JyZWN0SW5kZXgiOjJ9LHsicXVlc3Rpb24iOiJXaGF0IGlzIHRoZSBsb25nZXN0IHJpdmVyIGluIHRoZSB3b3JsZD8iLCJvcHRpb25zIjpbIkFtYXpvbiIsIk5pbGUiLCJZYW5ndHplIiwiTWlzc2lzc2lwcGkiXSwiY29ycmVjdEluZGV4IjoxfSx7InF1ZXN0aW9uIjoiSW4gd2hhdCB5ZWFyIGRpZCBXb3JsZCBXYXIgSUkgZW5kPyIsIm9wdGlvbnMiOlsiMTk0MyIsIjE5NDQiLCIxOTQ1IiwiMTk0NiJdLCJjb3JyZWN0SW5kZXgiOjJ9LHsicXVlc3Rpb24iOiJXaGF0IGlzIHRoZSBjYXBpdGFsIG9mIEF1c3RyYWxpYT8iLCJvcHRpb25zIjpbIlN5ZG5leSIsIk1lbGJvdXJuZSIsIkNhbmJlcnJhIiwiQnJpc2JhbmUiXSwiY29ycmVjdEluZGV4IjoyfSx7InF1ZXN0aW9uIjoiV2hhdCBpcyB0aGUgYm9pbGluZyBwb2ludCBvZiB3YXRlciBpbiBDZWxzaXVzPyIsIm9wdGlvbnMiOlsiOTCwQyIsIjEwMLBDIiwiMTEwsEMiLCIxMjCwQyJdLCJjb3JyZWN0SW5kZXgiOjF9LHsicXVlc3Rpb24iOiJXaG8gaXMgdGhlIGF1dGhvciBvZiAxOTg0PyIsIm9wdGlvbnMiOlsiR2VvcmdlIEJlcm5hcmQgU2hhdyIsIkdlb3JnZSBPcndlbGwiLCJILkcuIFdlbGxzIiwiQWxkb3VzIEh1eGxleSJdLCJjb3JyZWN0SW5kZXgiOjF9LHsicXVlc3Rpb24iOiJIb3cgbWFueSBzaWRlcyBkb2VzIGEgaGV4YWdvbiBoYXZlPyIsIm9wdGlvbnMiOlsiNSIsIjYiLCI3IiwiOCJdLCJjb3JyZWN0SW5kZXgiOjF9LHsicXVlc3Rpb24iOiJXaGF0IGlzIHRoZSBjYXBpdGFsIG9mIEphcGFuPyIsIm9wdGlvbnMiOlsiS3lvdG8iLCJPc2FrYSIsIlRva3lvIiwiWW9rb2hhbWEiXSwiY29ycmVjdEluZGV4IjoyfV0=
+
+===============================================
+QUESTIONS IN THIS QUIZ (20 Total)
+===============================================
+
+1. What is the capital of France? → Paris
+2. What is the capital of Germany? → Berlin
+3. What is the capital of Spain? → Madrid
+4. What is the capital of Italy? → Rome
+5. What is the capital of Poland? → Warsaw
+6. What is the capital of Turkey? → Ankara
+7. What is the largest planet in our solar system? → Jupiter
+8. Who wrote Romeo and Juliet? → William Shakespeare
+9. What is the chemical symbol for Gold? → Au
+10. What year did the Titanic sink? → 1912
+11. What is the smallest country in the world? → Vatican City
+12. How many continents are there? → 7
+13. What is the highest mountain in the world? → Mount Everest
+14. What is the longest river in the world? → Nile
+15. In what year did World War II end? → 1945
+16. What is the capital of Australia? → Canberra
+17. What is the boiling point of water in Celsius? → 100°C
+18. Who is the author of 1984? → George Orwell
+19. How many sides does a hexagon have? → 6
+20. What is the capital of Japan? → Tokyo
+
+===============================================
+HOW TO USE
+===============================================
+
+1. Make sure the local server is running: python3 -m http.server 8000
+2. Copy the URL above
+3. Paste it into your browser address bar
+4. The quiz will load automatically with all 20 questions
+5. The Quiz tab will be the only visible tab (use "📂 Show Tabs" to access others)
+6. Click "Reset Quiz" to exit and return to normal mode
+
+===============================================

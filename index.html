@@ -89,13 +89,15 @@
         
         <!-- QUIZ TAB -->
         <div id="quiz" class="tab-content">
-            <div id="emptyQuiz" class="empty-state">
-                <div class="empty-state-icon">🎯</div>
-                <h3>No Flashcards for Quiz</h3>
-                <p>Import word pairs to start quizzing</p>
-            </div>
             
             <div id="quizContent" style="display: none;">
+                <!-- Empty State Message (shown when no cards) -->
+                <div id="emptyQuizMessage" class="empty-state" style="display: none;">
+                    <div class="empty-state-icon">🎯</div>
+                    <h3>No Flashcards for Quiz</h3>
+                    <p>Import word pairs to start quizzing, or use the helper below to test an external quiz</p>
+                </div>
+
                 <!-- Quiz Setup Section -->
                 <div id="quizSetup" class="section">
                     <h2>Quiz Setup</h2>
@@ -146,6 +148,29 @@
                     <div class="button-group">
                         <button class="button btn-primary" id="startQuizBtn">Start Quiz</button>
                     </div>
+                    
+                    <!-- JSON to Base64 Helper -->
+                    <div class="mt-20 pt-20 border-top">
+                        <h3 class="mb-15">📋 External Quiz Helper</h3>
+                        <p class="mb-10"><strong>Create a quiz to share via URL:</strong></p>
+                        <p class="text-sm mb-15">JSON format: <code class="bg-bg p-4 rounded-3 text-xs">[{"question":"...","options":["A","B","C","D"],"correctIndex":0}]</code></p>
+                        
+                        <label class="block mb-8"><strong>Your JSON:</strong></label>
+                        <textarea id="jsonQuizInput" placeholder='[{"question":"What is the capital of France?","options":["London","Berlin","Paris","Madrid"],"correctIndex":2}]' class="w-full min-height-120 p-10 border rounded-6 font-mono text-xs"></textarea>
+                        
+                        <div class="button-group mt-12">
+                            <button class="button btn-primary" onclick="quiz.generateBase64()">Generate Base64</button>
+                            <button class="button btn-secondary" onclick="document.getElementById('jsonQuizInput').value=''">Clear</button>
+                        </div>
+                        
+                        <div id="base64Result" style="display: none;" class="mt-15 p-12 bg-success-light rounded-6 border">
+                            <p class="mb-8"><strong>Your Base64 URL:</strong></p>
+                            <input type="text" id="base64Output" readonly class="w-full p-10 border rounded-4 font-mono text-xs mb-8">
+                            <button class="button btn-secondary w-full" onclick="quiz.copyBase64Url()">Copy to Clipboard</button>
+                        </div>
+                        
+                        <div id="base64Error" style="display: none;" class="mt-15 p-12 bg-danger-light rounded-6 border text-danger"></div>
+                    </div>
                 </div>
                 
                 <!-- Quiz Question Section -->
@@ -174,9 +199,9 @@
                         <!-- Feedback will be shown here -->
                     </div>
                     <div class="button-group">
-                    <button class="button btn-secondary" id="resetQuizBtn">Reset Quiz</button>
-                    <button class="button btn-primary" id="nextQuestionBtn" style="display: none;">Next Question</button>
-                </div>
+                        <button class="button btn-secondary" id="resetQuizBtn">Reset Quiz</button>
+                        <button class="button btn-primary" id="nextQuestionBtn" style="display: none;">Next Question</button>
+                    </div>
                 </div>
                 
                 <!-- Quiz Results Section -->

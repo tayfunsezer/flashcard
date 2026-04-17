@@ -431,11 +431,37 @@ const app = {
     },
 
     clearAll() {
-        if (confirm('Delete all words?')) {
+        if (confirm('Delete all words and clear everything?')) {
             this.cards = [];
             this.filtered = [];
             this.saveData();
             this.updateUI();
+            
+            // Also clear the quiz and all data for a complete fresh start
+            if (typeof quiz !== 'undefined') {
+                // Clear quiz state
+                quiz.state.questions = [];
+                quiz.state.currentQuestionIndex = 0;
+                quiz.state.score = 0;
+                quiz.state.selectedOption = null;
+                quiz.state.quizInProgress = false;
+                quiz.state.missedQuestions = [];
+                
+                // Clear URL parameters
+                const url = new URL(window.location);
+                url.searchParams.delete('qCont');
+                window.history.replaceState({}, '', url);
+                
+                // Clear all storage
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Restore all tabs and reset UI
+                quiz.setTabsVisibility(false);
+                document.getElementById('quizSetup').style.display = 'block';
+                document.getElementById('quizQuestion').style.display = 'none';
+                document.getElementById('quizResults').style.display = 'none';
+            }
         }
     },
 
@@ -478,6 +504,11 @@ const app = {
             document.getElementById('studyContent').style.display = 'block';
             this.updateGroupDropdown();
             this.updateCardDisplay();
+        }
+        
+        // Update quiz groups directly if quiz module is available
+        if (typeof quiz !== 'undefined' && quiz && quiz.populateGroupFilter) {
+            quiz.populateGroupFilter();
         }
         
         // Dispatch an event to notify the quiz module that flashcards have been updated

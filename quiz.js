@@ -31,7 +31,7 @@ const quiz = {
     init: function() {
         console.log("Quiz module initializing...");
         
-        // Set up event listeners
+        // Set up event listeners (always, even for external data)
         document.getElementById('startQuizBtn').addEventListener('click', this.startQuiz.bind(this));
         document.getElementById('nextQuestionBtn').addEventListener('click', this.nextQuestion.bind(this));
         document.getElementById('retryQuizBtn').addEventListener('click', this.retryQuiz.bind(this));
@@ -49,6 +49,27 @@ const quiz = {
                 }
             });
         });
+        
+        // Check for external quiz data in URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const dataParam = urlParams.get('qCont');
+        if (dataParam) {
+            try {
+                const decoded = atob(dataParam);
+                const jsonData = JSON.parse(decoded);
+                if (this.validateExternalData(jsonData)) {
+                    this.setExternalQuestions(jsonData);
+                    this.startQuizFromExternal();
+                    return; // Skip normal initialization
+                } else {
+                    console.warn("Invalid external quiz data");
+                    alert("Invalid quiz data in URL. Proceeding with normal quiz.");
+                }
+            } catch (e) {
+                console.error("Error parsing external quiz data:", e);
+                alert("Error parsing quiz data from URL. Proceeding with normal quiz.");
+            }
+        }
         
         // Initialize the quiz filter group dropdown with available groups
         this.populateGroupFilter();
@@ -68,20 +89,113 @@ const quiz = {
         console.log("Quiz module initialized");
     },
 
+    // Validate external quiz data structure
+    validateExternalData: function(data) {
+        if (!Array.isArray(data) || data.length === 0 || data.length > 20) {
+            return false;
+        }
+        for (const item of data) {
+            if (typeof item.question !== 'string' || item.question.trim() === '') {
+                return false;
+            }
+            if (!Array.isArray(item.options) || item.options.length !== 4) {
+                return false;
+            }
+            for (const option of item.options) {
+                if (typeof option !== 'string' || option.trim() === '') {
+                    return false;
+                }
+            }
+            if (typeof item.correctIndex !== 'number' || item.correctIndex < 0 || item.correctIndex > 3) {
+                return false;
+            }
+        }
+        return true;
+    },
+
+    // Set questions from external data
+    setExternalQuestions: function(data) {
+        this.state.questions = data.map(item => ({
+            question: item.question,
+            correctAnswer: item.options[item.correctIndex],
+            options: [...item.options], // copy array
+            userAnswer: null,
+            isCorrect: null,
+            originalCard: null // no original card for external
+        }));
+        console.log("Set external questions:", this.state.questions.length);
+    },
+
+    // Set tab visibility - if externalOnly is true, hide all tabs except Quiz
+    setTabsVisibility: function(externalOnly) {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        
+        tabButtons.forEach(button => {
+            const isQuizTab = button.getAttribute('data-tab') === 'quiz';
+            if (externalOnly) {
+                button.style.display = isQuizTab ? 'block' : 'none';
+            } else {
+                button.style.display = 'block';
+            }
+        });
+    },
+
+
+    // Start quiz from external data
+    startQuizFromExternal: function() {
+        console.log("Starting quiz from external data...");
+        
+        // Reset quiz state
+        this.state.currentQuestionIndex = 0;
+        this.state.score = 0;
+        this.state.selectedOption = null;
+        this.state.quizInProgress = true;
+        this.state.missedQuestions = [];
+        
+        // Hide other tabs, show only Quiz
+        this.setTabsVisibility(true);
+        
+        // Click Quiz tab to activate it
+        const quizTab = document.querySelector('[data-tab="quiz"]');
+        if (quizTab) {
+            quizTab.click();
+        }
+        
+        // Check for cards to show quiz content (even if no flashcards)
+        this.checkForCards();
+        
+        // Show the first question
+        this.showQuestion();
+        
+        // Hide setup, show question
+        document.getElementById('quizSetup').style.display = 'none';
+        document.getElementById('quizQuestion').style.display = 'block';
+        document.getElementById('quizResults').style.display = 'none';
+    },
+
     // Check if there are cards available for quiz
     checkForCards: function() {
         console.log("Checking for cards...");
         console.log("App cards:", app.cards);
+        console.log("Quiz in progress:", this.state.quizInProgress);
         
         const hasCards = app && app.cards && app.cards.length > 0;
+        const quizActive = this.state.quizInProgress || this.state.questions.length > 0;
+        
         console.log("Has cards:", hasCards);
+        console.log("Quiz active:", quizActive);
         
-        const emptyQuiz = document.getElementById('emptyQuiz');
         const quizContent = document.getElementById('quizContent');
+        const emptyMessage = document.getElementById('emptyQuizMessage');
         
-        if (emptyQuiz && quizContent) {
-            emptyQuiz.style.display = hasCards ? 'none' : 'block';
-            quizContent.style.display = hasCards ? 'block' : 'none';
+        if (quizContent) {
+            // Always show quizContent so the helper is always accessible
+            quizContent.style.display = 'block';
+            
+            // Show/hide the empty message based on whether there are cards
+            if (emptyMessage) {
+                emptyMessage.style.display = hasCards ? 'none' : 'block';
+            }
         } else {
             console.error("Quiz elements not found in DOM");
         }
@@ -468,7 +582,7 @@ const quiz = {
 
     // Reset the quiz and go back to setup
     resetQuiz: function() {
-        console.log("Resetting quiz");
+        console.log("Resetting quiz and clearing all data...");
         
         // Reset everything
         this.state.questions = [];
@@ -477,6 +591,18 @@ const quiz = {
         this.state.selectedOption = null;
         this.state.quizInProgress = false;
         this.state.missedQuestions = [];
+        
+        // Clear URL parameters
+        const url = new URL(window.location);
+        url.searchParams.delete('qCont');
+        window.history.replaceState({}, '', url);
+        
+        // Clear all localStorage and sessionStorage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Restore all tabs visibility
+        this.setTabsVisibility(false);
         
         // Show setup, hide question and results
         document.getElementById('quizSetup').style.display = 'block';
@@ -491,6 +617,62 @@ const quiz = {
             [array[i], array[j]] = [array[j], array[i]];
         }
         return array;
+    },
+
+    // Generate Base64 from JSON input
+    generateBase64: function() {
+        const jsonInput = document.getElementById('jsonQuizInput').value.trim();
+        const errorDiv = document.getElementById('base64Error');
+        const resultDiv = document.getElementById('base64Result');
+        
+        // Clear previous messages
+        errorDiv.style.display = 'none';
+        resultDiv.style.display = 'none';
+        
+        // Validate JSON
+        if (!jsonInput) {
+            errorDiv.textContent = 'Please enter JSON data';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        
+        try {
+            const jsonData = JSON.parse(jsonInput);
+            
+            // Validate structure
+            if (!this.validateExternalData(jsonData)) {
+                errorDiv.textContent = 'Invalid JSON structure. Must be array with 1-20 items, each with "question" (string), "options" (array of 4 strings), and "correctIndex" (0-3).';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            // Generate Base64
+            const base64 = btoa(jsonInput);
+            const url = window.location.origin + window.location.pathname + '?qCont=' + base64;
+            
+            // Display result
+            document.getElementById('base64Output').value = url;
+            resultDiv.style.display = 'block';
+            
+            console.log("Generated Base64 URL:", url);
+        } catch (e) {
+            errorDiv.textContent = 'Invalid JSON: ' + e.message;
+            errorDiv.style.display = 'block';
+        }
+    },
+
+    // Copy Base64 URL to clipboard
+    copyBase64Url: function() {
+        const output = document.getElementById('base64Output');
+        output.select();
+        document.execCommand('copy');
+        
+        // Show feedback
+        const originalText = output.placeholder;
+        output.placeholder = 'Copied!';
+        setTimeout(() => {
+            output.placeholder = originalText;
+        }, 2000);
     }
 };
 
