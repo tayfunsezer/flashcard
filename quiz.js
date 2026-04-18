@@ -22,7 +22,8 @@ const quiz = {
                 hard: true,
                 unmarked: true,
                 group: '',
-                afterDate: ''
+                dateFrom: '',
+                dateTo: ''
             }
         }
     },
@@ -221,8 +222,11 @@ const quiz = {
         
         // Get unique groups
         const groups = [...new Set(app.cards
-            .filter(card => card.group && card.group.trim() !== '')
-            .map(card => card.group))];
+            .flatMap(card => {
+                if (card.groups && Array.isArray(card.groups)) return card.groups;
+                if (card.group && card.group.trim()) return [card.group.trim()];
+                return [];
+            }))];
         
         console.log("Available groups:", groups);
         
@@ -245,14 +249,16 @@ const quiz = {
         this.state.settings.length = document.getElementById('quizLength').value;
         
         // Get filters
-        const filterDateStr = document.getElementById('quizFilterDatePicker').value.trim();
+        const filterDateFromStr = document.getElementById('quizFilterDateFromPicker').value.trim();
+        const filterDateToStr = document.getElementById('quizFilterDateToPicker').value.trim();
         this.state.settings.filters = {
             easy: document.getElementById('quizChkEasy').checked,
             medium: document.getElementById('quizChkMedium').checked,
             hard: document.getElementById('quizChkHard').checked,
             unmarked: document.getElementById('quizChkUnmarked').checked,
             group: document.getElementById('quizFilterGroup').value,
-            afterDate: filterDateStr
+            dateFrom: filterDateFromStr,
+            dateTo: filterDateToStr
         };
         
         console.log("Quiz settings:", this.state.settings);
@@ -294,18 +300,21 @@ const quiz = {
             if (!card.difficulty && !this.state.settings.filters.unmarked) return false;
             
             // Filter by group if specified
-            if (this.state.settings.filters.group && 
-                (!card.group || card.group !== this.state.settings.filters.group)) {
-                return false;
+            if (this.state.settings.filters.group) {
+                const cardGroups = card.groups || (card.group ? [card.group] : []);
+                if (!cardGroups.includes(this.state.settings.filters.group)) {
+                    return false;
+                }
             }
             
-            // Filter by date if specified
-            if (this.state.settings.filters.afterDate) {
-                const filterDate = app.parseDate(this.state.settings.filters.afterDate);
-                if (filterDate) {
-                    const cardDate = card.date ? app.parseDate(card.date) : null;
-                    if (!cardDate || cardDate < filterDate) return false;
-                }
+            // Filter by date range (inclusive)
+            if (this.state.settings.filters.dateFrom || this.state.settings.filters.dateTo) {
+                const cardDate = card.date ? app.parseDate(card.date) : null;
+                if (!cardDate) return false;
+                const filterDateFrom = this.state.settings.filters.dateFrom ? app.parseDate(this.state.settings.filters.dateFrom) : null;
+                const filterDateTo = this.state.settings.filters.dateTo ? app.parseDate(this.state.settings.filters.dateTo) : null;
+                if (filterDateFrom && cardDate < filterDateFrom) return false;
+                if (filterDateTo && cardDate > filterDateTo) return false;
             }
             
             return true;

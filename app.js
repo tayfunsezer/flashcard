@@ -77,18 +77,25 @@ const app = {
         });
         document.getElementById('filterGroup').addEventListener('change', () => this.applyFilters());
         
-        const filterDatePickerEl = document.getElementById('filterDatePicker');
-        if (filterDatePickerEl) {
-            const handler = () => {
-                console.log("Date picker event fired, value:", filterDatePickerEl.value);
-                this.applyFilters();
-            };
-            filterDatePickerEl.addEventListener('change', handler);
-            filterDatePickerEl.addEventListener('input', handler);
-            console.log("Date picker event listeners attached");
-        } else {
-            console.warn("filterDatePicker element not found");
-        }
+        const setupDateRangePicker = (fromId, toId) => {
+            const fromEl = document.getElementById(fromId);
+            const toEl = document.getElementById(toId);
+            if (fromEl && toEl) {
+                const handler = () => {
+                    console.log("Date range picker changed:", fromEl.value, "to", toEl.value);
+                    this.applyFilters();
+                };
+                fromEl.addEventListener('change', handler);
+                fromEl.addEventListener('input', handler);
+                toEl.addEventListener('change', handler);
+                toEl.addEventListener('input', handler);
+                console.log("Date range pickers attached");
+            } else {
+                console.warn("Date range picker elements not found:", fromId, toId);
+            }
+        };
+        
+        setupDateRangePicker('filterDateFromPicker', 'filterDateToPicker');
     },
 
     importText() {
@@ -189,7 +196,9 @@ const app = {
 
                 const pair = { pol: cells[polIdx], tur: cells[turIdx], difficulty: 'unmarked' };
                 if (dateIdx >= 0 && dateIdx < cells.length && cells[dateIdx]) pair.date = cells[dateIdx];
-                if (groupIdx >= 0 && groupIdx < cells.length && cells[groupIdx]) pair.group = cells[groupIdx];
+                if (groupIdx >= 0 && groupIdx < cells.length && cells[groupIdx]) {
+                    pair.groups = cells[groupIdx].split('|').map(g => g.trim()).filter(g => g);
+                }
                 pairs.push(pair);
             }
 
@@ -248,11 +257,16 @@ const app = {
             console.log('Loaded from URL:', data.length, 'pairs');
             
             if (Array.isArray(data)) {
-                this.cards = data.map(d => ({
-                    pol: d.pol || '',
-                    tur: d.tur || '',
-                    difficulty: 'unmarked'
-                })).filter(d => d.pol && d.tur);
+                this.cards = data.map(d => {
+                    const card = {
+                        pol: d.pol || '',
+                        tur: d.tur || '',
+                        difficulty: d.difficulty || 'unmarked'
+                    };
+                    if (d.groups && Array.isArray(d.groups)) card.groups = d.groups;
+                    if (d.date) card.date = d.date;
+                    return card;
+                }).filter(d => d.pol && d.tur);
                 
                 this.filtered = [...this.cards];
                 this.saveData();
@@ -381,7 +395,10 @@ const app = {
     updateGroupDropdown() {
         const groups = new Set();
         this.cards.forEach(card => {
-            if (card.group && card.group.trim()) {
+            if (card.groups && Array.isArray(card.groups)) {
+                card.groups.forEach(g => groups.add(g));
+            } else if (card.group && card.group.trim()) {
+                // Backward compatibility with old single-group format
                 groups.add(card.group.trim());
             }
         });
@@ -405,8 +422,9 @@ const app = {
         document.getElementById('chkHard').checked = true;
         document.getElementById('chkUnmarked').checked = true;
         
-        // Clear date filter
-        document.getElementById('filterDatePicker').value = '';
+        // Clear date filters
+        document.getElementById('filterDateFromPicker').value = '';
+        document.getElementById('filterDateToPicker').value = '';
         
         // Reset group dropdown to "All"
         document.getElementById('filterGroup').value = '';
@@ -425,24 +443,27 @@ const app = {
             unmarked: document.getElementById('chkUnmarked').checked
         };
 
-        const filterDateStr = document.getElementById('filterDatePicker').value.trim();
-        console.log("Filter date picker value:", filterDateStr);
-        const filterDate = filterDateStr ? this.parseDate(filterDateStr) : null;
-        console.log("Parsed filter date:", filterDate);
+        const filterDateFromStr = document.getElementById('filterDateFromPicker').value.trim();
+        const filterDateToStr = document.getElementById('filterDateToPicker').value.trim();
+        const filterDateFrom = filterDateFromStr ? this.parseDate(filterDateFromStr) : null;
+        const filterDateTo = filterDateToStr ? this.parseDate(filterDateToStr) : null;
         const filterGroup = document.getElementById('filterGroup').value.trim();
 
         this.filtered = this.cards.filter(card => {
             const diff = card.difficulty || 'unmarked';
             if (!this.filters[diff]) return false;
             
-            if (filterDate) {
+            // Filter by date range (inclusive)
+            if (filterDateFrom || filterDateTo) {
                 const cardDate = card.date ? this.parseDate(card.date) : null;
-                console.log("Card:", card.pol, "Date:", card.date, "Parsed:", cardDate);
-                if (!cardDate || cardDate < filterDate) return false;
+                if (!cardDate) return false;
+                if (filterDateFrom && cardDate < filterDateFrom) return false;
+                if (filterDateTo && cardDate > filterDateTo) return false;
             }
             
             if (filterGroup) {
-                if (!card.group || card.group.trim() !== filterGroup) return false;
+                const cardGroups = card.groups || (card.group ? [card.group.trim()] : []);
+                if (!cardGroups.includes(filterGroup)) return false;
             }
             
             return true;

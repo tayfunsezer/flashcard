@@ -3,6 +3,8 @@
 ## Project Overview
 A web-based flashcard application for learning Polish-Turkish word pairs. Users can import cards via text, Excel, Google Sheets, or URL, then study or take quizzes with advanced filtering capabilities.
 
+**Design**: Fully responsive, mobile-first UI with touch-friendly controls. Optimized for all devices: phones, tablets, and desktops. All interactive elements (buttons, date pickers, selects) are touch-accessible and mobile-optimized.
+
 ## Architecture
 
 ### File Structure
@@ -27,7 +29,8 @@ Both `app` and `quiz` are singleton objects with methods:
   pol: string,           // Polish word
   tur: string,           // Turkish word
   difficulty: string,    // 'easy', 'medium', 'hard', or 'unmarked' (default)
-  group: string,         // Category (optional)
+  groups: [string],      // Array of categories (optional, e.g., ['Home', 'Verb'])
+  group: string,         // Backward compatibility: single group (optional, deprecated)
   date: string           // Import date in DD-MM-YYYY format (optional)
 }
 ```
@@ -49,20 +52,26 @@ Both `app` and `quiz` are singleton objects with methods:
 ### 1. Filtering System
 **Location**: `app.js:applyFilters()` | `quiz.js:generateQuestions()`
 - **Difficulty**: Checkboxes (Easy/Medium/Hard/Unmarked) filter by `card.difficulty`
-- **Group**: Dropdown auto-populated from unique card groups
-- **Date**: Date picker (YYYY-MM-DD format) with `parseDate()` conversion
+- **Group**: Dropdown auto-populated from unique groups across all cards
+  - CSV GROUP column supports **pipe-separated values**: `Home|Verb|Expressions` assigns card to multiple groups
+  - Filtering: Card matches if any of its groups match selected group
+- **Date Range**: Two date pickers (From/To) with inclusive filtering
+  - From date: Shows cards with date >= From (optional)
+  - To date: Shows cards with date <= To (optional)
+  - Both optional — filter only applies if at least one is set
   - `parseDate()` handles both `YYYY-MM-DD` (picker) and `DD-MM-YYYY` (import)
-  - Logic: Show cards with date >= selected date
 
 ### 2. Data Persistence
 - **Study cards**: `localStorage` (app.cards)
 - **Quiz state**: Preserved during session
 - **Theme**: `flashcard-theme` stored in localStorage
 - **Fallback**: In-memory storage if localStorage unavailable
-
-### 3. Import Methods
-- **Text**: Tab-separated pairs (POL\tTUR per line)
-- **Excel/CSV**: Auto-detects delimiter; looks for POL/TUR columns
+ — no group support
+- **Excel/CSV**: Auto-detects delimiter; looks for POL/TUR/GROUP columns
+  - **GROUP column**: Pipe-separated groups (e.g., `Home|Verb`) create multiple group assignments
+  - Single group (e.g., `Home`) also works for backward compatibility
+- **Google Sheets**: Fetches public sheet via proxy (`api.allorigins.win`), supports GROUP column
+- **URL**: Base64-encoded JSON with validation, supports `groups: [string]` or `group: string` for POL/TUR columns
 - **Google Sheets**: Fetches public sheet via proxy (`api.allorigins.win`)
 - **URL**: Base64-encoded JSON with validation
 
@@ -112,11 +121,14 @@ Both `app` and `quiz` are singleton objects with methods:
 - Show user-friendly messages via `showMessage(msgId, text, level)`
 
 ## CSS Guidelines
-- **Flexbox layout**: `.flex`, `.flex-row`, `.flex-wrap` classes
-- **Spacing**: `gap-*`, `p-*`, `m-*` (e.g., `gap-8` = 8px)
+- **Flexbox layout**: `.flex`, `.flex-row`, `.flex-wrap` classes for responsive grid
+- **Spacing**: `gap-*`, `p-*`, `m-*` (e.g., `gap-8` = 8px) for touch-friendly spacing
+- **Touch targets**: Minimum 44px height for buttons/inputs (mobile accessibility standard)
 - **Colors**: Use CSS variables for theme consistency
-- **Responsive**: Single column on mobile, breakpoints at 768px+
+- **Mobile-first**: `flex-wrap` on filter containers ensures stacking on small screens
+- **Responsive**: Single column on mobile, breakpoints at 768px+ for larger screens
 - **Dark mode**: Duplicate selectors with `html[data-theme="dark"]` prefix
+- **Touch**: All interactive elements (date pickers, selects, buttons) have `cursor: pointer` for visual feedback
 
 ## Testing Checklist
 - [ ] Import data from all 4 methods works
@@ -124,9 +136,12 @@ Both `app` and `quiz` are singleton objects with methods:
 - [ ] Filters work independently and combined
 - [ ] Quiz generates questions with correct distractors
 - [ ] Scoring is accurate
-- [ ] Date filters include/exclude cards correctly
+- [ ] Date range filters include/exclude cards correctly
 - [ ] Theme toggle persists across sessions
-- [ ] Mobile device touch/tap works for date pickers
+- [ ] Mobile device touch/tap works for all buttons and controls
+- [ ] Date pickers clickable on mobile (From and To pickers)
+- [ ] Date range filtering on both Study and Quiz tabs works
+- [ ] Layout responsive on small screens (mobile wrapping of filters)
 - [ ] localStorage fallback works in private browsing
 
 ## Performance Notes
@@ -140,7 +155,10 @@ Both `app` and `quiz` are singleton objects with methods:
 **Date filter not working**
 - Ensure cards have `date` property in imported data
 - Check `parseDate()` handles both YYYY-MM-DD and DD-MM-YYYY
-- Verify date picker element exists: `#filterDatePicker` (study), `#quizFilterDatePicker` (quiz)
+- Verify date picker elements exist: `#filterDateFromPicker`, `#filterDateToPicker` (study), `#quizFilterDateFromPicker`, `#quizFilterDateToPicker` (quiz)
+- If only "From" is set: filters cards >= From date
+- If only "To" is set: filters cards <= To date
+- If both set: filters cards within range (inclusive)
 
 **Cards not appearing after import**
 - Check localStorage isn't full/disabled
@@ -155,6 +173,10 @@ Both `app` and `quiz` are singleton objects with methods:
 ## Development Tips
 1. Hard refresh (Cmd+Shift+R) to clear cache when modifying JS
 2. Console logs added to debug filtering/date parsing
-3. Use DevTools device emulation for mobile testing
-4. Test with sample data: QUIZ_20_SAMPLE.txt or create own CSV
-5. Check localStorage in DevTools Application tab
+3. **Mobile testing**: Use DevTools device emulation (Toggle device toolbar: Cmd+Shift+M)
+4. **Touch testing**: DevTools device emulation simulates touch events on date pickers and buttons
+5. Test with sample data: QUIZ_20_SAMPLE.txt or create own CSV
+6. Check localStorage in DevTools Application tab
+7. **Responsive design**: Test at 320px (phone), 768px (tablet), 1024px (desktop) widths
+8. Ensure all filter containers use `flex-wrap` for proper mobile stacking
+9. Verify touch targets (buttons, inputs) have sufficient height (44px+) for mobile accessibility
