@@ -40,8 +40,8 @@
                         <label><input type="checkbox" id="chkUnmarked" checked> Unmarked</label>
                     </div>
                     <div class="flex gap-8 items-center">
-                        <label>After (DD-MM-YYYY):</label>
-                        <input type="text" id="filterDate" placeholder="DD-MM-YYYY" class="w-110 p-4 border rounded-4">
+                        <label for="filterDatePicker">After:</label>
+                        <input type="date" id="filterDatePicker" class="p-4 border rounded-4" style="cursor: pointer;">
                     </div>
                     <div class="flex gap-8 items-center">
                         <label>Group:</label>
@@ -142,6 +142,10 @@
                             <select id="quizFilterGroup" class="p-4 border rounded-4 min-w-110">
                                 <option value="">-- All --</option>
                             </select>
+                        </div>
+                        <div class="flex gap-8 items-center">
+                            <label for="quizFilterDatePicker">After:</label>
+                            <input type="date" id="quizFilterDatePicker" class="p-4 border rounded-4" style="cursor: pointer;">
                         </div>
                     </div>
                     

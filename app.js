@@ -75,8 +75,20 @@ const app = {
         ['chkEasy', 'chkMedium', 'chkHard', 'chkUnmarked'].forEach(id => {
             document.getElementById(id).addEventListener('change', () => this.applyFilters());
         });
-        document.getElementById('filterDate').addEventListener('input', () => this.applyFilters());
         document.getElementById('filterGroup').addEventListener('change', () => this.applyFilters());
+        
+        const filterDatePickerEl = document.getElementById('filterDatePicker');
+        if (filterDatePickerEl) {
+            const handler = () => {
+                console.log("Date picker event fired, value:", filterDatePickerEl.value);
+                this.applyFilters();
+            };
+            filterDatePickerEl.addEventListener('change', handler);
+            filterDatePickerEl.addEventListener('input', handler);
+            console.log("Date picker event listeners attached");
+        } else {
+            console.warn("filterDatePicker element not found");
+        }
     },
 
     importText() {
@@ -352,6 +364,14 @@ const app = {
 
     parseDate(dateStr) {
         if (!dateStr) return null;
+        
+        // Handle HTML date input format (YYYY-MM-DD)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            const [year, month, day] = dateStr.split('-');
+            return new Date(year, month - 1, day);
+        }
+        
+        // Handle DD-MM-YYYY format (backward compatibility)
         const match = dateStr.match(/(\d{1,2})-(\d{1,2})-(\d{4})/);
         if (!match) return null;
         const [, day, month, year] = match;
@@ -386,7 +406,7 @@ const app = {
         document.getElementById('chkUnmarked').checked = true;
         
         // Clear date filter
-        document.getElementById('filterDate').value = '';
+        document.getElementById('filterDatePicker').value = '';
         
         // Reset group dropdown to "All"
         document.getElementById('filterGroup').value = '';
@@ -405,8 +425,10 @@ const app = {
             unmarked: document.getElementById('chkUnmarked').checked
         };
 
-        const filterDateStr = document.getElementById('filterDate').value.trim();
+        const filterDateStr = document.getElementById('filterDatePicker').value.trim();
+        console.log("Filter date picker value:", filterDateStr);
         const filterDate = filterDateStr ? this.parseDate(filterDateStr) : null;
+        console.log("Parsed filter date:", filterDate);
         const filterGroup = document.getElementById('filterGroup').value.trim();
 
         this.filtered = this.cards.filter(card => {
@@ -415,6 +437,7 @@ const app = {
             
             if (filterDate) {
                 const cardDate = card.date ? this.parseDate(card.date) : null;
+                console.log("Card:", card.pol, "Date:", card.date, "Parsed:", cardDate);
                 if (!cardDate || cardDate < filterDate) return false;
             }
             
@@ -425,6 +448,7 @@ const app = {
             return true;
         });
 
+        console.log("Filtered cards count:", this.filtered.length);
         this.index = 0;
         this.flipped = false;
         this.updateUI();

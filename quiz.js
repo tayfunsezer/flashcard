@@ -245,13 +245,14 @@ const quiz = {
         this.state.settings.length = document.getElementById('quizLength').value;
         
         // Get filters
+        const filterDateStr = document.getElementById('quizFilterDatePicker').value.trim();
         this.state.settings.filters = {
             easy: document.getElementById('quizChkEasy').checked,
             medium: document.getElementById('quizChkMedium').checked,
             hard: document.getElementById('quizChkHard').checked,
             unmarked: document.getElementById('quizChkUnmarked').checked,
             group: document.getElementById('quizFilterGroup').value,
-            afterDate: '' // Not implemented in this version
+            afterDate: filterDateStr
         };
         
         console.log("Quiz settings:", this.state.settings);
@@ -296,6 +297,15 @@ const quiz = {
             if (this.state.settings.filters.group && 
                 (!card.group || card.group !== this.state.settings.filters.group)) {
                 return false;
+            }
+            
+            // Filter by date if specified
+            if (this.state.settings.filters.afterDate) {
+                const filterDate = app.parseDate(this.state.settings.filters.afterDate);
+                if (filterDate) {
+                    const cardDate = card.date ? app.parseDate(card.date) : null;
+                    if (!cardDate || cardDate < filterDate) return false;
+                }
             }
             
             return true;

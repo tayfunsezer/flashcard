@@ -1,0 +1,160 @@
+# Polish-Turkish Flashcard Learner - Copilot Instructions
+
+## Project Overview
+A web-based flashcard application for learning Polish-Turkish word pairs. Users can import cards via text, Excel, Google Sheets, or URL, then study or take quizzes with advanced filtering capabilities.
+
+## Architecture
+
+### File Structure
+- **index.html** — UI with 7 tabs: Study, Quiz, Text Import, File Import, Google Sheets, URL Import, Settings
+- **app.js** — Main application logic for study mode, data management, and filtering
+- **quiz.js** — Quiz mode logic, question generation, and scoring
+- **styles.css** — Main styling (light/dark theme support)
+- **quiz-styles.css** — Quiz-specific component styles
+
+### Module Structure
+Both `app` and `quiz` are singleton objects with methods:
+- **Initialization**: `init()`, `setupEventListeners()`, `checkForCards()`
+- **Data ops**: `saveData()`, `loadData()`, `parseCSV()`, `parseDate()`
+- **UI updates**: `updateUI()`, `updateCardDisplay()`, `showQuestion()`
+- **Filtering**: `applyFilters()`, `generateQuestions()` with difficulty/group/date filters
+
+## Data Model
+
+### Card Structure
+```javascript
+{
+  pol: string,           // Polish word
+  tur: string,           // Turkish word
+  difficulty: string,    // 'easy', 'medium', 'hard', or 'unmarked' (default)
+  group: string,         // Category (optional)
+  date: string           // Import date in DD-MM-YYYY format (optional)
+}
+```
+
+### Quiz Question Structure
+```javascript
+{
+  question: string,      // Polish or Turkish word (based on direction)
+  correctAnswer: string, // Turkish or Polish word
+  options: [string],     // 4 multiple choice options
+  userAnswer: string,    // User's selected answer
+  isCorrect: boolean,    // Answer correctness
+  originalCard: object   // Reference to source card
+}
+```
+
+## Key Features & Implementation
+
+### 1. Filtering System
+**Location**: `app.js:applyFilters()` | `quiz.js:generateQuestions()`
+- **Difficulty**: Checkboxes (Easy/Medium/Hard/Unmarked) filter by `card.difficulty`
+- **Group**: Dropdown auto-populated from unique card groups
+- **Date**: Date picker (YYYY-MM-DD format) with `parseDate()` conversion
+  - `parseDate()` handles both `YYYY-MM-DD` (picker) and `DD-MM-YYYY` (import)
+  - Logic: Show cards with date >= selected date
+
+### 2. Data Persistence
+- **Study cards**: `localStorage` (app.cards)
+- **Quiz state**: Preserved during session
+- **Theme**: `flashcard-theme` stored in localStorage
+- **Fallback**: In-memory storage if localStorage unavailable
+
+### 3. Import Methods
+- **Text**: Tab-separated pairs (POL\tTUR per line)
+- **Excel/CSV**: Auto-detects delimiter; looks for POL/TUR columns
+- **Google Sheets**: Fetches public sheet via proxy (`api.allorigins.win`)
+- **URL**: Base64-encoded JSON with validation
+
+### 4. Quiz Generation
+**Location**: `quiz.js:generateQuestions()`
+- Filters cards by difficulty + group + date
+- Shuffles filtered cards
+- Generates distractors from other cards
+- Supports multiple choice only (fill-blank/true-false coming soon)
+
+### 5. Theme System
+- **toggle**: `app.initTheme()` with localStorage + CSS attribute
+- **Dark mode**: `html[data-theme="dark"]` selector in CSS
+- **CSS variables**: `--primary`, `--success`, `--danger`, `--bg`, etc.
+
+### 6. Event Flow
+**Study Mode**:
+1. Import → `saveData()` → `updateUI()` → display card
+2. Difficulty button → `markDifficulty()` → update card → `nextCard()`
+3. Filter change → `applyFilters()` → update `filtered[]` → reset index → `updateUI()`
+
+**Quiz Mode**:
+1. Setup filters → `startQuiz()`
+2. `generateQuestions()` applies all filters
+3. `showQuestion()` displays current question
+4. Answer → check correctness → show feedback → `nextQuestion()`
+5. End → display score + missed questions
+
+## Common Patterns
+
+### Adding a New Filter
+1. Add checkbox/dropdown in HTML with unique `id`
+2. Read value in filter function: `document.getElementById(id).value`
+3. Apply logic in card filter: `if (filterValue) { /* logic */ }`
+4. Reset in `resetFilters()`: `document.getElementById(id).value = ''`
+
+### Date Handling
+- **Input format**: HTML `<input type="date">` uses `YYYY-MM-DD`
+- **Storage format**: CSV stores as `DD-MM-YYYY`
+- **parseDate()**: Handles both formats, returns `Date` object
+- **Comparison**: Use `date1 < date2` for chronological ordering
+
+### Error Handling
+- Wrap external data parsing in try-catch (Google Sheets, URL imports)
+- Check element existence before `addEventListener`: `if (el) { ... }`
+- Log errors to console for debugging
+- Show user-friendly messages via `showMessage(msgId, text, level)`
+
+## CSS Guidelines
+- **Flexbox layout**: `.flex`, `.flex-row`, `.flex-wrap` classes
+- **Spacing**: `gap-*`, `p-*`, `m-*` (e.g., `gap-8` = 8px)
+- **Colors**: Use CSS variables for theme consistency
+- **Responsive**: Single column on mobile, breakpoints at 768px+
+- **Dark mode**: Duplicate selectors with `html[data-theme="dark"]` prefix
+
+## Testing Checklist
+- [ ] Import data from all 4 methods works
+- [ ] Cards display correctly after import
+- [ ] Filters work independently and combined
+- [ ] Quiz generates questions with correct distractors
+- [ ] Scoring is accurate
+- [ ] Date filters include/exclude cards correctly
+- [ ] Theme toggle persists across sessions
+- [ ] Mobile device touch/tap works for date pickers
+- [ ] localStorage fallback works in private browsing
+
+## Performance Notes
+- CSV parsing: Uses `TextDecoder` for proper encoding
+- Quiz: Shuffles only filtered cards, not entire deck
+- UI updates: Minimal DOM reflows in `updateUI()`
+- Filter listeners: Attached once on init via `addEventListener`
+
+## Common Issues & Solutions
+
+**Date filter not working**
+- Ensure cards have `date` property in imported data
+- Check `parseDate()` handles both YYYY-MM-DD and DD-MM-YYYY
+- Verify date picker element exists: `#filterDatePicker` (study), `#quizFilterDatePicker` (quiz)
+
+**Cards not appearing after import**
+- Check localStorage isn't full/disabled
+- Verify CSV has POL and TUR column headers
+- Check `parseCSV()` delimiter detection (tab, semicolon, comma)
+
+**Quiz not starting**
+- Ensure at least 1 card matches filter criteria
+- Check `generateQuestions()` runs after filter apply
+- Verify correct `<input>` IDs for filter controls
+
+## Development Tips
+1. Hard refresh (Cmd+Shift+R) to clear cache when modifying JS
+2. Console logs added to debug filtering/date parsing
+3. Use DevTools device emulation for mobile testing
+4. Test with sample data: QUIZ_20_SAMPLE.txt or create own CSV
+5. Check localStorage in DevTools Application tab
