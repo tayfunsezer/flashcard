@@ -56,8 +56,16 @@ const quiz = {
         const dataParam = urlParams.get('qCont');
         if (dataParam) {
             try {
+                // Decode Base64 with UTF-8 support for Polish characters
                 const decoded = atob(dataParam);
-                const jsonData = JSON.parse(decoded);
+                const bytes = new Uint8Array(decoded.length);
+                for (let i = 0; i < decoded.length; i++) {
+                    bytes[i] = decoded.charCodeAt(i);
+                }
+                const decoder = new TextDecoder('utf-8');
+                const jsonString = decoder.decode(bytes);
+                const jsonData = JSON.parse(jsonString);
+                
                 if (this.validateExternalData(jsonData)) {
                     this.setExternalQuestions(jsonData);
                     this.startQuizFromExternal();
