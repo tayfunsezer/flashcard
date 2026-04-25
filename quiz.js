@@ -51,33 +51,52 @@ const quiz = {
             });
         });
         
-        // Check for external quiz data in URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const dataParam = urlParams.get('qCont');
-        if (dataParam) {
-            try {
-                // Decode Base64 with UTF-8 support for Polish characters
-                const decoded = atob(dataParam);
-                const bytes = new Uint8Array(decoded.length);
-                for (let i = 0; i < decoded.length; i++) {
-                    bytes[i] = decoded.charCodeAt(i);
+        // Check for external quiz data in URL fragment identifier (preferred) or query parameter
+        let jsonData = null;
+        
+        // First try the fragment identifier (larger data support)
+        const fragmentHash = window.location.hash;
+        if (fragmentHash && fragmentHash.startsWith('#qData=')) {
+            const fragmentData = fragmentHash.substring('#qData='.length);
+            if (fragmentData) {
+                try {
+                    // Decode Base64 with Unicode support
+                    const jsonString = decodeURIComponent(escape(atob(fragmentData)));
+                    jsonData = JSON.parse(jsonString);
+                    console.log("Found quiz data in URL fragment");
+                } catch (e) {
+                    console.error("Error parsing fragment identifier quiz data:", e);
+                    alert("Error parsing quiz data from URL fragment. Trying query parameter or proceeding with normal quiz.");
                 }
-                const decoder = new TextDecoder('utf-8');
-                const jsonString = decoder.decode(bytes);
-                const jsonData = JSON.parse(jsonString);
-                
-                if (this.validateExternalData(jsonData)) {
-                    this.setExternalQuestions(jsonData);
-                    this.startQuizFromExternal();
-                    return; // Skip normal initialization
-                } else {
-                    console.warn("Invalid external quiz data");
-                    alert("Invalid quiz data in URL. Proceeding with normal quiz.");
-                }
-            } catch (e) {
-                console.error("Error parsing external quiz data:", e);
-                alert("Error parsing quiz data from URL. Proceeding with normal quiz.");
             }
+        }
+        
+        // If fragment didn't work, try the query parameter (backward compatibility)
+        if (!jsonData) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dataParam = urlParams.get('qCont');
+            if (dataParam) {
+                try {
+                    // Decode Base64 with Unicode support
+                    const jsonString = decodeURIComponent(escape(atob(dataParam)));
+                    jsonData = JSON.parse(jsonString);
+                    console.log("Found quiz data in URL query parameter");
+                } catch (e) {
+                    console.error("Error parsing query parameter quiz data:", e);
+                    alert("Error parsing quiz data from URL. Proceeding with normal quiz.");
+                }
+            }
+        }
+        
+        // If we have valid data from either source, start external quiz
+        if (jsonData && this.validateExternalData(jsonData)) {
+            this.setExternalQuestions(jsonData);
+            this.startQuizFromExternal();
+            return; // Skip normal initialization
+        } else if (jsonData) {
+            // We had data but it was invalid
+            console.warn("Invalid external quiz data");
+            alert("Invalid quiz data in URL. Proceeding with normal quiz.");
         }
         
         // Initialize the quiz filter group dropdown with available groups
@@ -100,7 +119,7 @@ const quiz = {
 
     // Validate external quiz data structure
     validateExternalData: function(data) {
-        if (!Array.isArray(data) || data.length === 0 || data.length > 20) {
+        if (!Array.isArray(data) || data.length === 0) {
             return false;
         }
         for (const item of data) {
@@ -619,10 +638,10 @@ const quiz = {
         this.state.quizInProgress = false;
         this.state.missedQuestions = [];
         
-        // Clear URL parameters
+        // Clear URL parameters and fragment
         const url = new URL(window.location);
         url.searchParams.delete('qCont');
-        window.history.replaceState({}, '', url);
+        window.history.replaceState({}, '', url.pathname + url.search);
         
         // Clear all localStorage and sessionStorage
         localStorage.clear();
@@ -668,20 +687,55 @@ const quiz = {
             
             // Validate structure
             if (!this.validateExternalData(jsonData)) {
-                errorDiv.textContent = 'Invalid JSON structure. Must be array with 1-20 items, each with "question" (string), "options" (array of 4 strings), and "correctIndex" (0-3).';
+                errorDiv.textContent = 'Invalid JSON structure. Must be an array with at least one item, each with "question" (string), "options" (array of 4 strings), and "correctIndex" (0-3).';
                 errorDiv.style.display = 'block';
                 return;
             }
             
-            // Generate Base64
-            const base64 = btoa(jsonInput);
-            const url = window.location.origin + window.location.pathname + '?qCont=' + base64;
+            // Generate Base64 with Unicode support
+            const base64 = btoa(unescape(encodeURIComponent(jsonInput)));
+            
+            // Estimate size
+            const estimatedSize = base64.length;
+            const useFragment = estimatedSize > 1500; // Use fragment for data larger than ~1.5KB
+            
+            // Create URLs for both methods
+            const queryUrl = window.location.origin + window.location.pathname + '?qCont=' + base64;
+            const fragmentUrl = window.location.origin + window.location.pathname + '#qData=' + base64;
+            
+            // Choose which URL to display based on size
+            const finalUrl = useFragment ? fragmentUrl : queryUrl;
             
             // Display result
-            document.getElementById('base64Output').value = url;
+            document.getElementById('base64Output').value = finalUrl;
+            
+            // Show recommendation message if using fragment due to size
+            if (useFragment) {
+                const noteElem = document.createElement('div');
+                noteElem.className = 'url-note';
+                noteElem.innerHTML = `<p>Note: Using fragment identifier (#qData) due to large data size (${Math.round(estimatedSize/1024 * 10) / 10}KB).</p>
+                                      <p>This URL has better compatibility with large quizzes.</p>`;
+                
+                // Add alternate URL option
+                const altUrlBtn = document.createElement('button');
+                altUrlBtn.textContent = "Show query parameter URL (less compatible)";
+                altUrlBtn.className = "btn btn-sm";
+                altUrlBtn.addEventListener('click', function() {
+                    document.getElementById('base64Output').value = queryUrl;
+                    this.textContent = "Show fragment URL (recommended)";
+                    this.addEventListener('click', function() {
+                        document.getElementById('base64Output').value = fragmentUrl;
+                        this.textContent = "Show query parameter URL (less compatible)";
+                    }, { once: true });
+                });
+                
+                noteElem.appendChild(altUrlBtn);
+                resultDiv.appendChild(noteElem);
+            }
+            
             resultDiv.style.display = 'block';
             
-            console.log("Generated Base64 URL:", url);
+            console.log("Generated Base64 URL:", finalUrl);
         } catch (e) {
             errorDiv.textContent = 'Invalid JSON: ' + e.message;
             errorDiv.style.display = 'block';
