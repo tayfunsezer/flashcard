@@ -108,7 +108,7 @@
                             <select id="quizType" class="p-4 border rounded-4">
                                 <option value="multiple-choice">Multiple Choice</option>
                                 <option value="fill-blank" disabled>Fill in the Blank (Coming Soon)</option>
-                                <option value="true-false" disabled>True/False (Coming Soon)</option>
+                                <option value="true-false">True/False</option>
                             </select>
                         </div>
                         
@@ -194,6 +194,7 @@
                     
                     <div class="quiz-question-container">
                         <h3 id="quizQuestionText" class="quiz-question-text">Question text goes here</h3>
+                        <div id="quizTrueFalsePair" style="display:none; font-size:1.3em; font-weight:600; text-align:center; margin: 16px 0; padding: 16px; background: var(--surface); border-radius: 8px; border: 2px solid var(--border);"></div>
                         
                         <div id="quizOptions" class="quiz-options">
                             <!-- Options will be inserted here by JavaScript -->

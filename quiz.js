@@ -362,32 +362,48 @@ const quiz = {
         filteredCards = filteredCards.slice(0, quizLength);
         
         // Create questions
+        const isPolToTur = this.state.settings.direction === 'pol-tur';
+        const isTrueFalse = this.state.settings.type === 'true-false';
+
         this.state.questions = filteredCards.map(card => {
-            // Determine question and correct answer based on direction
-            const isPolToTur = this.state.settings.direction === 'pol-tur';
             const question = isPolToTur ? card.pol : card.tur;
             const correctAnswer = isPolToTur ? card.tur : card.pol;
-            
-            // For multiple choice, generate options
-            let options = [correctAnswer];
-            
-            if (this.state.settings.type === 'multiple-choice') {
-                // Get other cards to use as distractors
-                const otherCards = app.cards.filter(c => c !== card);
-                const shuffledOtherCards = this.shuffleArray([...otherCards]);
-                
-                // Add 3 distractors (or fewer if not enough cards)
-                for (let i = 0; i < Math.min(3, shuffledOtherCards.length); i++) {
-                    const distractor = isPolToTur ? shuffledOtherCards[i].tur : shuffledOtherCards[i].pol;
-                    if (!options.includes(distractor)) {
-                        options.push(distractor);
-                    }
+
+            if (isTrueFalse) {
+                const showCorrect = Math.random() < 0.5;
+                let shownAnswer = correctAnswer;
+                if (!showCorrect) {
+                    const cardGroups = card.groups || (card.group ? [card.group] : []);
+                    const sameGroupCards = app.cards.filter(c => {
+                        if (c === card) return false;
+                        const cGroups = c.groups || (c.group ? [c.group] : []);
+                        return cardGroups.length > 0 && cardGroups.some(g => cGroups.includes(g));
+                    });
+                    const pool = sameGroupCards.length > 0 ? sameGroupCards : app.cards.filter(c => c !== card);
+                    const randomCard = pool[Math.floor(Math.random() * pool.length)];
+                    shownAnswer = randomCard ? (isPolToTur ? randomCard.tur : randomCard.pol) : correctAnswer;
                 }
-                
-                // Shuffle options
-                options = this.shuffleArray(options);
+                return {
+                    question,
+                    correctAnswer,
+                    shownAnswer,
+                    tfCorrect: showCorrect || shownAnswer === correctAnswer,
+                    options: ['True', 'False'],
+                    userAnswer: null,
+                    isCorrect: null,
+                    originalCard: card
+                };
             }
-            
+
+            let options = [correctAnswer];
+            const otherCards = app.cards.filter(c => c !== card);
+            const shuffledOtherCards = this.shuffleArray([...otherCards]);
+            for (let i = 0; i < Math.min(3, shuffledOtherCards.length); i++) {
+                const distractor = isPolToTur ? shuffledOtherCards[i].tur : shuffledOtherCards[i].pol;
+                if (!options.includes(distractor)) options.push(distractor);
+            }
+            options = this.shuffleArray(options);
+
             return {
                 question,
                 correctAnswer,
@@ -416,8 +432,18 @@ const quiz = {
         document.getElementById('quizScore').textContent = this.state.score;
         
         // Set question text
-        document.getElementById('quizQuestionText').textContent = 
-            `${this.state.settings.direction === 'pol-tur' ? '🇵🇱' : '🇹🇷'} ${currentQuestion.question}`;
+        const flag = this.state.settings.direction === 'pol-tur' ? '🇵🇱' : '🇹🇷';
+        const isTrueFalse = this.state.settings.type === 'true-false';
+
+        if (isTrueFalse) {
+            document.getElementById('quizQuestionText').textContent = 'Is this correct?';
+            const pairEl = document.getElementById('quizTrueFalsePair');
+            pairEl.textContent = `${flag} ${currentQuestion.question}  →  ${currentQuestion.shownAnswer}`;
+            pairEl.style.display = 'block';
+        } else {
+            document.getElementById('quizQuestionText').textContent = `${flag} ${currentQuestion.question}`;
+            document.getElementById('quizTrueFalsePair').style.display = 'none';
+        }
         
         // Create options
         const optionsContainer = document.getElementById('quizOptions');
@@ -430,17 +456,14 @@ const quiz = {
             
             const optionLetter = document.createElement('span');
             optionLetter.className = 'quiz-option-letter';
-            optionLetter.textContent = String.fromCharCode(65 + index); // A, B, C, D
+            optionLetter.textContent = isTrueFalse ? (option === 'True' ? '✓' : '✗') : String.fromCharCode(65 + index);
             
             const optionText = document.createElement('span');
             optionText.textContent = option;
             
             optionElement.appendChild(optionLetter);
             optionElement.appendChild(optionText);
-            
-            // Add click handler
             optionElement.addEventListener('click', () => this.selectOption(index));
-            
             optionsContainer.appendChild(optionElement);
         });
         
@@ -469,7 +492,10 @@ const quiz = {
         options[index].classList.add('selected');
         
         // Check if correct
-        const isCorrect = selectedOption === currentQuestion.correctAnswer;
+        const isTrueFalse = this.state.settings.type === 'true-false';
+        const isCorrect = isTrueFalse
+            ? (selectedOption === 'True') === currentQuestion.tfCorrect
+            : selectedOption === currentQuestion.correctAnswer;
         currentQuestion.userAnswer = selectedOption;
         currentQuestion.isCorrect = isCorrect;
         
@@ -506,9 +532,13 @@ const quiz = {
         });
         
         // Show feedback message
-        feedbackElement.innerHTML = isCorrect ? 
-            '<strong>Correct!</strong> Great job!' :
-            `<strong>Incorrect.</strong> The correct answer is: ${currentQuestion.correctAnswer}`;
+        const isTrueFalse = this.state.settings.type === 'true-false';
+        const correctAnswerText = isTrueFalse
+            ? `The pair is ${currentQuestion.tfCorrect ? 'correct ✓' : 'incorrect ✗'}. Correct answer: ${currentQuestion.question} → ${currentQuestion.correctAnswer}`
+            : currentQuestion.correctAnswer;
+        feedbackElement.innerHTML = isCorrect ?
+            `<strong>Correct!</strong> Great job! &nbsp;✅ ${currentQuestion.question} → ${currentQuestion.correctAnswer}` :
+            `<strong>Incorrect.</strong> The correct answer is: ${correctAnswerText}`;
         
         feedbackElement.className = `quiz-feedback ${isCorrect ? 'correct' : 'incorrect'}`;
         feedbackElement.style.display = 'block';
