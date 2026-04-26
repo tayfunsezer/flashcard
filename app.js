@@ -69,6 +69,7 @@ const app = {
     setupEventListeners() {
         document.getElementById('flashcard').addEventListener('click', () => this.flipCard());
         document.getElementById('directionBtn').addEventListener('click', () => this.toggleDirection());
+        document.getElementById('speakBtn').addEventListener('click', () => this.speakCurrent());
         document.getElementById('excelFile').addEventListener('change', (e) => {
             document.getElementById('fileName').textContent = e.target.files[0]?.name || 'No file selected';
         });
@@ -299,6 +300,7 @@ const app = {
     flipCard() {
         this.flipped = !this.flipped;
         this.updateCardDisplay();
+        if (document.getElementById('autoSpeak').checked) this.speakCurrent();
     },
 
     nextCard() {
@@ -361,8 +363,9 @@ const app = {
         }
 
         this.updateProgress();
-        document.getElementById('directionBtn').textContent = 
+        document.getElementById('directionBtn').textContent =
             this.direction === 'pol-tur' ? 'Polish → Turkish' : 'Turkish → Polish';
+        if (document.getElementById('autoSpeak').checked) this.speakCurrent();
     },
 
     updateProgress() {
@@ -574,6 +577,26 @@ const app = {
         // Dispatch an event to notify the quiz module that flashcards have been updated
         // This will trigger the resetQuiz() function in quiz.js
         document.dispatchEvent(new CustomEvent('flashcardsUpdated'));
+    },
+
+    speak(text, lang) {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(text);
+        utt.lang = lang;
+        utt.rate = 0.8;
+        window.speechSynthesis.speak(utt);
+    },
+
+    speakCurrent() {
+        if (this.filtered.length === 0) return;
+        const card = this.filtered[this.index];
+        const isPolFront = this.direction === 'pol-tur';
+        if (this.flipped) {
+            this.speak(isPolFront ? card.tur : card.pol, isPolFront ? 'tr-TR' : 'pl-PL');
+        } else {
+            this.speak(isPolFront ? card.pol : card.tur, isPolFront ? 'pl-PL' : 'tr-TR');
+        }
     },
 
     showMessage(elementId, message, type) {

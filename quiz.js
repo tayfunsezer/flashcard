@@ -542,7 +542,11 @@ const quiz = {
         
         feedbackElement.className = `quiz-feedback ${isCorrect ? 'correct' : 'incorrect'}`;
         feedbackElement.style.display = 'block';
-        
+
+        // Speak the correct answer
+        const isPolToTur = this.state.settings.direction === 'pol-tur';
+        app.speak(currentQuestion.correctAnswer, isPolToTur ? 'tr-TR' : 'pl-PL');
+
         // Show next button
         document.getElementById('nextQuestionBtn').style.display = 'block';
         
