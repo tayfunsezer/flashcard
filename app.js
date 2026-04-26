@@ -222,7 +222,7 @@ const app = {
                 binary += String.fromCharCode(bytes[i]);
             }
             const encoded = btoa(binary);
-            const url = window.location.origin + window.location.pathname + '?words=' + encodeURIComponent(encoded);
+            const url = window.location.origin + window.location.pathname + '#words=' + encodeURIComponent(encoded);
             
             document.getElementById('urlOutput').value = url;
             document.getElementById('urlResult').style.display = 'block';
@@ -241,8 +241,13 @@ const app = {
 
     loadFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        const encoded = params.get('words');
-        
+        let encoded = params.get('words');
+
+        if (!encoded) {
+            const hash = window.location.hash;
+            if (hash.startsWith('#words=')) encoded = decodeURIComponent(hash.slice('#words='.length));
+        }
+
         if (!encoded) return;
 
         try {
