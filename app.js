@@ -104,8 +104,15 @@ const app = {
         const pairs = [];
 
         lines.forEach(line => {
-            const [pol, tur] = line.split('\t').map(s => s.trim());
-            if (pol && tur) pairs.push({ pol, tur, difficulty: 'unmarked' });
+            const cells = line.split('\t').map(s => s.trim());
+            const [pol, tur, date, groupsRaw, ignore] = cells;
+            if (!pol || !tur) return;
+            const ignoreVal = (ignore || '').toUpperCase();
+            if (ignoreVal === 'OK' || ignoreVal === 'YES') return;
+            const pair = { pol, tur, difficulty: 'unmarked' };
+            if (date) pair.date = date;
+            if (groupsRaw) pair.groups = groupsRaw.split('|').map(g => g.trim()).filter(g => g);
+            pairs.push(pair);
         });
 
         if (pairs.length === 0) {
@@ -486,6 +493,9 @@ const app = {
             this.filtered = [];
             this.saveData();
             this.updateUI();
+            document.getElementById('textInput').value = '';
+            document.getElementById('jsonInput').value = '';
+            this.clearExcelInput();
             
             // Also clear the quiz and all data for a complete fresh start
             if (typeof quiz !== 'undefined') {

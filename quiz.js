@@ -357,8 +357,7 @@ const quiz = {
         }
         
         // Limit to specified length
-        const quizLength = this.state.settings.length === 'all' ? 
-            filteredCards.length : Math.min(parseInt(this.state.settings.length), filteredCards.length);
+        const quizLength = Math.min(parseInt(this.state.settings.length) || filteredCards.length, filteredCards.length);
         
         filteredCards = filteredCards.slice(0, quizLength);
         
@@ -772,6 +771,14 @@ const quiz = {
             errorDiv.textContent = 'Invalid JSON: ' + e.message;
             errorDiv.style.display = 'block';
         }
+    },
+
+    // Copy example JSON to clipboard
+    copyExampleJson: function() {
+        const example = '[{"question":"What is the capital of France?","options":["London","Berlin","Paris","Madrid"],"correctIndex":2}]';
+        navigator.clipboard.writeText(example).then(() => {
+            app.showMessage('textMsg', 'Example copied!', 'success');
+        });
     },
 
     // Copy Base64 URL to clipboard
