@@ -36,6 +36,7 @@ const quiz = {
         document.getElementById('startQuizBtn').addEventListener('click', this.startQuiz.bind(this));
         document.getElementById('nextQuestionBtn').addEventListener('click', this.nextQuestion.bind(this));
         document.getElementById('retryQuizBtn').addEventListener('click', this.retryQuiz.bind(this));
+        document.getElementById('requizMissedBtn').addEventListener('click', this.requizMissed.bind(this));
         document.getElementById('newQuizBtn').addEventListener('click', this.resetQuiz.bind(this));
         // Add event listener for reset button during quiz
         document.getElementById('resetQuizBtn').addEventListener('click', this.resetQuiz.bind(this));
@@ -247,13 +248,13 @@ const quiz = {
             groupSelect.remove(1);
         }
         
-        // Get unique groups
+        // Get unique groups sorted alphabetically
         const groups = [...new Set(app.cards
             .flatMap(card => {
                 if (card.groups && Array.isArray(card.groups)) return card.groups;
                 if (card.group && card.group.trim()) return [card.group.trim()];
                 return [];
-            }))];
+            }))].sort((a, b) => a.localeCompare(b));
         
         console.log("Available groups:", groups);
         
@@ -274,6 +275,7 @@ const quiz = {
         this.state.settings.type = document.getElementById('quizType').value;
         this.state.settings.direction = document.getElementById('quizDirection').value;
         this.state.settings.length = document.getElementById('quizLength').value;
+        this.state.settings.randomize = document.getElementById('quizRandomize').checked;
         
         // Get filters
         const filterDateFromStr = document.getElementById('quizFilterDateFromPicker').value.trim();
@@ -349,8 +351,10 @@ const quiz = {
         
         console.log("Filtered cards:", filteredCards.length);
         
-        // Shuffle the cards
-        filteredCards = this.shuffleArray([...filteredCards]);
+        // Shuffle the cards if randomize is enabled
+        if (this.state.settings.randomize !== false) {
+            filteredCards = this.shuffleArray([...filteredCards]);
+        }
         
         // Limit to specified length
         const quizLength = this.state.settings.length === 'all' ? 
@@ -594,8 +598,36 @@ const quiz = {
             });
         }
         
+        // Show/hide Re-quiz Missed button
+        document.getElementById('requizMissedBtn').style.display =
+            this.state.missedQuestions.length > 0 ? 'inline-block' : 'none';
+
         // Quiz is no longer in progress
         this.state.quizInProgress = false;
+    },
+
+    // Re-quiz only the missed questions
+    requizMissed: function() {
+        if (this.state.missedQuestions.length === 0) return;
+
+        // Reset each missed question's answer state
+        this.state.missedQuestions.forEach(q => {
+            q.userAnswer = null;
+            q.isCorrect = null;
+        });
+
+        this.state.questions = this.state.settings.randomize !== false
+            ? this.shuffleArray([...this.state.missedQuestions])
+            : [...this.state.missedQuestions];
+        this.state.currentQuestionIndex = 0;
+        this.state.score = 0;
+        this.state.selectedOption = null;
+        this.state.quizInProgress = true;
+        this.state.missedQuestions = [];
+
+        this.showQuestion();
+        document.getElementById('quizQuestion').style.display = 'block';
+        document.getElementById('quizResults').style.display = 'none';
     },
 
     // Retry the quiz with the same questions

@@ -567,64 +567,6 @@ const app = {
         setTimeout(() => { el.innerHTML = ''; }, 3000);
     },
 
-    importGoogle() {
-        const url = document.getElementById('sheetUrl').value.trim();
-        if (!url) {
-            this.showMessage('googleMsg', 'Enter a Google Sheets URL', 'error');
-            return;
-        }
-
-        try {
-            // Extract sheet ID
-            const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-            if (!match) throw new Error('Invalid URL');
-            
-            const sheetId = match[1];
-            const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`;
-            
-            this.showMessage('googleMsg', 'Fetching...', 'info');
-            
-            fetch(proxyUrl)
-                .then(r => r.ok ? r.text() : fetch(csvUrl).then(r2 => r2.text()))
-                .then(csv => {
-                    const lines = csv.split('\n').filter(l => l.trim());
-                    if (lines.length < 2) throw new Error('No data');
-                    
-                    const header = lines[0].split(',').map(h => h.trim().toUpperCase());
-                    const polIdx = header.findIndex(h => h.includes('POL'));
-                    const turIdx = header.findIndex(h => h.includes('TUR'));
-                    const ignoreIdx = header.findIndex(h => h.includes('IGNORE'));
-                    
-                    if (polIdx < 0 || turIdx < 0) throw new Error('Need POL and TUR columns');
-                    
-                    const pairs = [];
-                    for (let i = 1; i < lines.length; i++) {
-                        const cells = lines[i].split(',').map(c => c.trim());
-                        if (ignoreIdx >= 0 && cells[ignoreIdx] === 'OK') continue;
-                        if (cells[polIdx] && cells[turIdx]) {
-                            pairs.push({ pol: cells[polIdx], tur: cells[turIdx], difficulty: 'unmarked' });
-                        }
-                    }
-                    
-                    if (pairs.length === 0) throw new Error('No valid pairs');
-                    
-                    this.cards = pairs;
-                    this.filtered = [...pairs];
-                    this.index = 0;
-                    this.flipped = false;
-                    this.saveData();
-                    this.updateUI();
-                    this.showMessage('googleMsg', `✓ Imported ${pairs.length} pairs`, 'success');
-                    document.getElementById('sheetUrl').value = '';
-                    setTimeout(() => this.switchTab('study'), 100);
-                })
-                .catch(e => this.showMessage('googleMsg', 'Error: ' + e.message, 'error'));
-        } catch (e) {
-            this.showMessage('googleMsg', 'Error: ' + e.message, 'error');
-        }
-    },
-
     switchTab(tabName) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
