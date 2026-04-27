@@ -801,3 +801,96 @@ html[data-theme="dark"] .quiz-question-container {
 .my-10 {
     margin: 10px 0;
 }
+
+/* Multi-select group dropdown */
+.group-multiselect {
+    position: relative;
+    display: inline-block;
+}
+
+.group-multiselect summary {
+    list-style: none;
+    padding: 4px 24px 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    min-width: 110px;
+    white-space: nowrap;
+    user-select: none;
+    position: relative;
+}
+
+.group-multiselect summary::-webkit-details-marker { display: none; }
+
+.group-multiselect summary::after {
+    content: '▾';
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
+    color: var(--text-light);
+}
+
+.group-multiselect[open] summary::after { content: '▴'; }
+
+.group-multiselect-list {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    z-index: 100;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0;
+    min-width: 180px;
+    max-height: 260px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.group-multiselect-search {
+    width: 100%;
+    padding: 6px 10px;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 6px 6px 0 0;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+.group-multiselect-search:focus {
+    border-color: var(--primary);
+    box-shadow: none;
+}
+
+.group-multiselect-items {
+    overflow-y: auto;
+    flex: 1;
+    padding: 4px 0;
+}
+
+.group-multiselect-list label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    margin: 0;
+    font-weight: normal;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.group-multiselect-list label:hover { background: var(--surface); }
+
+.group-multiselect[open] .group-multiselect-search {
+    /* auto-focused via JS on toggle */
+}

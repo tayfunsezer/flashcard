@@ -76,8 +76,15 @@ const app = {
         ['chkEasy', 'chkMedium', 'chkHard', 'chkUnmarked'].forEach(id => {
             document.getElementById(id).addEventListener('change', () => this.applyFilters());
         });
-        document.getElementById('filterGroup').addEventListener('change', () => this.applyFilters());
-        
+
+        // Auto-focus search input when any group multiselect opens
+        document.addEventListener('toggle', e => {
+            if (e.target.classList && e.target.classList.contains('group-multiselect') && e.target.open) {
+                const input = e.target.querySelector('.group-multiselect-search');
+                if (input) setTimeout(() => input.focus(), 0);
+            }
+        }, true);
+
         const setupDateRangePicker = (fromId, toId) => {
             const fromEl = document.getElementById(fromId);
             const toEl = document.getElementById(toId);
@@ -413,40 +420,62 @@ const app = {
             if (card.groups && Array.isArray(card.groups)) {
                 card.groups.forEach(g => groups.add(g));
             } else if (card.group && card.group.trim()) {
-                // Backward compatibility with old single-group format
                 groups.add(card.group.trim());
             }
         });
-        const select = document.getElementById('filterGroup');
-        const currentValue = select.value;
-        select.innerHTML = '<option value="">-- All --</option>';
-        Array.from(groups).sort().forEach(group => {
-            const opt = document.createElement('option');
-            opt.value = group;
-            opt.textContent = group;
-            select.appendChild(opt);
+        const list = document.getElementById('filterGroupList');
+        if (!list) return;
+        const checked = this._getCheckedGroups('filterGroupList');
+        list.innerHTML = '<input class="group-multiselect-search" placeholder="Search..." type="text"><div class="group-multiselect-items" id="filterGroupItems"></div>';
+        const search = list.querySelector('.group-multiselect-search');
+        const items = list.querySelector('.group-multiselect-items');
+        search.addEventListener('input', () => {
+            const q = search.value.toLowerCase();
+            items.querySelectorAll('label').forEach(lbl => {
+                lbl.style.display = lbl.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
         });
-        select.value = currentValue;
+        search.addEventListener('click', e => e.stopPropagation());
+        search.addEventListener('keydown', e => e.stopPropagation());
+        Array.from(groups).sort().forEach(group => {
+            const lbl = document.createElement('label');
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = group;
+            cb.checked = checked.includes(group);
+            cb.addEventListener('change', () => this.applyFilters());
+            lbl.appendChild(cb);
+            lbl.appendChild(document.createTextNode(group));
+            items.appendChild(lbl);
+        });
+        this._updateGroupSummary('filterGroupList', 'filterGroupSummary');
+    },
+
+    _getCheckedGroups(listId) {
+        const list = document.getElementById(listId);
+        if (!list) return [];
+        return Array.from(list.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+    },
+
+    _updateGroupSummary(listId, summaryId) {
+        const selected = this._getCheckedGroups(listId);
+        const summary = document.getElementById(summaryId);
+        if (!summary) return;
+        summary.textContent = selected.length === 0 ? '-- All --' : selected.join(', ');
     },
 
     resetFilters() {
-        // Fix: Reset all filters including date and group filters
         this.filters = { easy: true, medium: true, hard: true, unmarked: true };
         document.getElementById('chkEasy').checked = true;
         document.getElementById('chkMedium').checked = true;
         document.getElementById('chkHard').checked = true;
         document.getElementById('chkUnmarked').checked = true;
-        
-        // Clear date filters
         document.getElementById('filterDateFromPicker').value = '';
         document.getElementById('filterDateToPicker').value = '';
-        
-        // Reset group dropdown to "All"
-        document.getElementById('filterGroup').value = '';
-        
+        const list = document.getElementById('filterGroupList');
+        if (list) list.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+        this._updateGroupSummary('filterGroupList', 'filterGroupSummary');
         this.applyFilters();
-        
-        // Show a confirmation message
         this.showMessage('textMsg', 'All filters have been reset', 'info');
     },
 
@@ -462,13 +491,13 @@ const app = {
         const filterDateToStr = document.getElementById('filterDateToPicker').value.trim();
         const filterDateFrom = filterDateFromStr ? this.parseDate(filterDateFromStr) : null;
         const filterDateTo = filterDateToStr ? this.parseDate(filterDateToStr) : null;
-        const filterGroup = document.getElementById('filterGroup').value.trim();
+        const selectedGroups = this._getCheckedGroups('filterGroupList');
+        this._updateGroupSummary('filterGroupList', 'filterGroupSummary');
 
         this.filtered = this.cards.filter(card => {
             const diff = card.difficulty || 'unmarked';
             if (!this.filters[diff]) return false;
             
-            // Filter by date range (inclusive)
             if (filterDateFrom || filterDateTo) {
                 const cardDate = card.date ? this.parseDate(card.date) : null;
                 if (!cardDate) return false;
@@ -476,9 +505,9 @@ const app = {
                 if (filterDateTo && cardDate > filterDateTo) return false;
             }
             
-            if (filterGroup) {
+            if (selectedGroups.length > 0) {
                 const cardGroups = card.groups || (card.group ? [card.group.trim()] : []);
-                if (!cardGroups.includes(filterGroup)) return false;
+                if (!selectedGroups.some(g => cardGroups.includes(g))) return false;
             }
             
             return true;

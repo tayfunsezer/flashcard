@@ -45,10 +45,11 @@
                         <input type="date" id="filterDateToPicker" class="p-4 border rounded-4" style="cursor: pointer;">
                     </div>
                     <div class="flex gap-8 items-center">
-                        <label>Group:</label>
-                        <select id="filterGroup" class="p-4 border rounded-4 min-w-110">
-                            <option value="">-- All --</option>
-                        </select>
+                        <label style="margin:0;">Group:</label>
+                        <details class="group-multiselect" id="filterGroupDetails">
+                            <summary id="filterGroupSummary">-- All --</summary>
+                            <div class="group-multiselect-list" id="filterGroupList"></div>
+                        </details>
                     </div>
                     <button class="button btn-secondary" onclick="app.resetFilters()">Reset All</button>
                 </div>
@@ -142,10 +143,11 @@
                             <label><input type="checkbox" id="quizChkUnmarked" checked> Unmarked</label>
                         </div>
                         <div class="flex gap-8 items-center">
-                            <label>Group:</label>
-                            <select id="quizFilterGroup" class="p-4 border rounded-4 min-w-110">
-                                <option value="">-- All --</option>
-                            </select>
+                            <label style="margin:0;">Group:</label>
+                            <details class="group-multiselect" id="quizFilterGroupDetails">
+                                <summary id="quizFilterGroupSummary">-- All --</summary>
+                                <div class="group-multiselect-list" id="quizFilterGroupList"></div>
+                            </details>
                         </div>
                         <div class="flex gap-8 items-center flex-wrap">
                             <label for="quizFilterDateFromPicker">From:</label>

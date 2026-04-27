@@ -23,6 +23,7 @@ const quiz = {
                 hard: true,
                 unmarked: true,
                 group: '',
+                groups: [],
                 dateFrom: '',
                 dateTo: ''
             }
@@ -235,23 +236,11 @@ const quiz = {
 
     // Populate the group filter dropdown
     populateGroupFilter: function() {
-        if (!app || !app.cards || app.cards.length === 0) {
-            console.log("No cards available for group filter");
-            return;
-        }
+        if (!app || !app.cards || app.cards.length === 0) return;
         
-        const groupSelect = document.getElementById('quizFilterGroup');
-        if (!groupSelect) {
-            console.error("Group filter element not found");
-            return;
-        }
+        const list = document.getElementById('quizFilterGroupList');
+        if (!list) return;
         
-        // Clear existing options except the first one
-        while (groupSelect.options.length > 1) {
-            groupSelect.remove(1);
-        }
-        
-        // Get unique groups sorted alphabetically
         const groups = [...new Set(app.cards
             .flatMap(card => {
                 if (card.groups && Array.isArray(card.groups)) return card.groups;
@@ -259,15 +248,42 @@ const quiz = {
                 return [];
             }))].sort((a, b) => a.localeCompare(b));
         
-        console.log("Available groups:", groups);
-        
-        // Add options
-        groups.forEach(group => {
-            const option = document.createElement('option');
-            option.value = group;
-            option.textContent = group;
-            groupSelect.appendChild(option);
+        const checked = Array.from(list.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+        list.innerHTML = '<input class="group-multiselect-search" placeholder="Search..." type="text"><div class="group-multiselect-items" id="quizFilterGroupItems"></div>';
+        const search = list.querySelector('.group-multiselect-search');
+        const items = list.querySelector('.group-multiselect-items');
+        search.addEventListener('input', () => {
+            const q = search.value.toLowerCase();
+            items.querySelectorAll('label').forEach(lbl => {
+                lbl.style.display = lbl.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
         });
+        search.addEventListener('click', e => e.stopPropagation());
+        search.addEventListener('keydown', e => e.stopPropagation());
+        groups.forEach(group => {
+            const lbl = document.createElement('label');
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = group;
+            cb.checked = checked.includes(group);
+            cb.addEventListener('change', () => this._updateQuizGroupSummary());
+            lbl.appendChild(cb);
+            lbl.appendChild(document.createTextNode(group));
+            items.appendChild(lbl);
+        });
+        this._updateQuizGroupSummary();
+    },
+
+    _getCheckedQuizGroups: function() {
+        const list = document.getElementById('quizFilterGroupList');
+        if (!list) return [];
+        return Array.from(list.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+    },
+
+    _updateQuizGroupSummary: function() {
+        const selected = this._getCheckedQuizGroups();
+        const summary = document.getElementById('quizFilterGroupSummary');
+        if (summary) summary.textContent = selected.length === 0 ? '-- All --' : selected.join(', ');
     },
 
     // Start a new quiz
@@ -288,7 +304,7 @@ const quiz = {
             medium: document.getElementById('quizChkMedium').checked,
             hard: document.getElementById('quizChkHard').checked,
             unmarked: document.getElementById('quizChkUnmarked').checked,
-            group: document.getElementById('quizFilterGroup').value,
+            groups: this._getCheckedQuizGroups(),
             dateFrom: filterDateFromStr,
             dateTo: filterDateToStr
         };
@@ -332,9 +348,9 @@ const quiz = {
             if (!card.difficulty && !this.state.settings.filters.unmarked) return false;
             
             // Filter by group if specified
-            if (this.state.settings.filters.group) {
+            if (this.state.settings.filters.groups && this.state.settings.filters.groups.length > 0) {
                 const cardGroups = card.groups || (card.group ? [card.group] : []);
-                if (!cardGroups.includes(this.state.settings.filters.group)) {
+                if (!this.state.settings.filters.groups.some(g => cardGroups.includes(g))) {
                     return false;
                 }
             }
