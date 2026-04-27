@@ -7,6 +7,7 @@ const app = {
     filters: { easy: true, medium: true, hard: true, unmarked: true },
     themeMode: 'light',
     inMemoryStorage: {},
+    leitnerSessionCount: 0,
 
     init() {
         this.initTheme();
@@ -15,6 +16,7 @@ const app = {
         this.loadFromUrl();
         this.setupEventListeners();
         this.updateUI();
+        this.leitner._updateSettingsPanel();
     },
 
     initTheme() {
@@ -68,6 +70,7 @@ const app = {
 
     setupEventListeners() {
         document.getElementById('flashcard').addEventListener('click', () => this.flipCard());
+        document.getElementById('leitnerCard').addEventListener('click', () => this.leitner.flip());
         document.getElementById('directionBtn').addEventListener('click', () => this.toggleDirection());
         document.getElementById('speakBtn').addEventListener('click', () => this.speakCurrent());
         document.getElementById('excelFile').addEventListener('change', (e) => {
@@ -255,14 +258,12 @@ const app = {
     },
 
     loadFromUrl() {
+        const hash = window.location.hash;
         const params = new URLSearchParams(window.location.search);
         let encoded = params.get('words');
-
         if (!encoded) {
-            const hash = window.location.hash;
             if (hash.startsWith('#words=')) encoded = decodeURIComponent(hash.slice('#words='.length));
         }
-
         if (!encoded) return;
 
         try {
@@ -591,11 +592,14 @@ const app = {
         if (this.cards.length === 0) {
             document.getElementById('emptyStudy').style.display = 'block';
             document.getElementById('studyContent').style.display = 'none';
+            document.getElementById('leitnerSession').style.display = 'none';
+            document.getElementById('leitnerComplete').style.display = 'none';
         } else {
             document.getElementById('emptyStudy').style.display = 'none';
             document.getElementById('studyContent').style.display = 'block';
             this.updateGroupDropdown();
             this.updateCardDisplay();
+            this.leitner._updateSettingsPanel();
         }
         
         // Update quiz groups directly if quiz module is available
@@ -645,6 +649,7 @@ const app = {
         const json = JSON.stringify(this.cards);
         try {
             localStorage.setItem('flashcard-data', json);
+            localStorage.setItem('leitner-session', String(this.leitnerSessionCount));
         } catch (e) {
             this.inMemoryStorage.data = json;
         }
@@ -654,6 +659,8 @@ const app = {
         let json = null;
         try {
             json = localStorage.getItem('flashcard-data');
+            const sc = localStorage.getItem('leitner-session');
+            if (sc) this.leitnerSessionCount = parseInt(sc) || 0;
         } catch (e) {
             json = this.inMemoryStorage.data;
         }
@@ -666,6 +673,135 @@ const app = {
                 console.error('Load error:', e);
             }
         }
+    },
+
+    leitner: {
+        _session: { cards: [], index: 0, direction: 'pol-tur', flipped: false, movedUp: 0, movedDown: 0 },
+
+        _getDueCards() {
+            const sc = app.leitnerSessionCount;
+            if (sc === 0) return [];
+            const intervals = { 1: 1, 2: 2, 3: 4, 4: 8, 5: 16 };
+            return app.filtered.filter(c => {
+                const box = c.box || 1;
+                return sc % intervals[box] === 0;
+            });
+        },
+
+        _renderCard() {
+            const s = this._session;
+            const card = s.cards[s.index];
+            const [front, frontLabel] = s.direction === 'pol-tur'
+                ? [card.pol, 'Polish'] : [card.tur, 'Turkish'];
+            document.getElementById('leitnerCardText').textContent = front;
+            document.getElementById('leitnerCardLabel').textContent = frontLabel;
+            document.getElementById('leitnerBoxBadge').textContent = `\ud83d\udce6 Box ${card.box || 1}`;
+            const total = s.cards.length;
+            document.getElementById('leitnerCardCounter').textContent = `Card ${s.index + 1} / ${total}`;
+            document.getElementById('leitnerProgressFill').style.width = `${((s.index + 1) / total * 100)}%`;
+            document.getElementById('leitnerCard').classList.remove('flipped');
+            document.getElementById('leitnerCardText').classList.remove('flipped');
+            document.getElementById('leitnerCardLabel').classList.remove('flipped');
+            document.getElementById('leitnerFlipBtn').style.display = 'inline-block';
+            document.getElementById('leitnerAnswerBtns').style.display = 'none';
+            s.flipped = false;
+        },
+
+        flip() {
+            const s = this._session;
+            if (s.flipped || document.getElementById('leitnerSession').style.display === 'none') return;
+            s.flipped = true;
+            const card = s.cards[s.index];
+            const [back, backLabel] = s.direction === 'pol-tur'
+                ? [card.tur, 'Turkish'] : [card.pol, 'Polish'];
+            document.getElementById('leitnerCardText').textContent = back;
+            document.getElementById('leitnerCardLabel').textContent = backLabel;
+            document.getElementById('leitnerCard').classList.add('flipped');
+            document.getElementById('leitnerCardText').classList.add('flipped');
+            document.getElementById('leitnerCardLabel').classList.add('flipped');
+            document.getElementById('leitnerFlipBtn').style.display = 'none';
+            document.getElementById('leitnerAnswerBtns').style.display = 'flex';
+        },
+
+        answer(correct) {
+            const s = this._session;
+            const card = s.cards[s.index];
+            const oldBox = card.box || 1;
+            if (correct) {
+                card.box = Math.min(oldBox + 1, 5);
+                if (card.box > oldBox) s.movedUp++;
+            } else {
+                card.box = 1;
+                s.movedDown++;
+            }
+            if (s.index < s.cards.length - 1) {
+                s.index++;
+                this._renderCard();
+            } else {
+                this._showComplete();
+            }
+        },
+
+        startSession() {
+            app.leitnerSessionCount++;
+            const due = this._getDueCards();
+            if (due.length === 0) {
+                app.showMessage('textMsg', 'No cards due for this session!', 'info');
+                app.leitnerSessionCount--;
+                return;
+            }
+            const dir = document.getElementById('leitnerDirection').value;
+            this._session = { cards: due, index: 0, direction: dir, flipped: false, movedUp: 0, movedDown: 0 };
+            document.getElementById('studyContent').style.display = 'none';
+            document.getElementById('leitnerComplete').style.display = 'none';
+            document.getElementById('leitnerSession').style.display = 'block';
+            this._renderCard();
+            app.saveData();
+        },
+
+        _showComplete() {
+            document.getElementById('leitnerSession').style.display = 'none';
+            document.getElementById('leitnerMovedUp').textContent = this._session.movedUp;
+            document.getElementById('leitnerMovedDown').textContent = this._session.movedDown;
+            document.getElementById('leitnerComplete').style.display = 'block';
+            app.saveData();
+            this._updateSettingsPanel();
+        },
+
+        endSession() {
+            this._showComplete();
+        },
+
+        backToDeck() {
+            document.getElementById('leitnerComplete').style.display = 'none';
+            document.getElementById('leitnerSession').style.display = 'none';
+            document.getElementById('studyContent').style.display = 'block';
+            this._updateDueCount();
+        },
+
+        _updateDueCount() {
+            const due = this._getDueCards();
+            document.getElementById('leitnerDueCount').textContent = `${due.length} cards due today`;
+        },
+
+        _updateSettingsPanel() {
+            document.getElementById('leitnerSessionNum').textContent = app.leitnerSessionCount;
+            const counts = [0,0,0,0,0];
+            app.cards.forEach(c => { counts[(c.box || 1) - 1]++; });
+            document.getElementById('leitnerBoxStats').innerHTML =
+                counts.map((n, i) => `Box ${i+1}: ${n} card${n !== 1 ? 's' : ''}`).join('<br>');
+            this._updateDueCount();
+        },
+
+        resetProgress() {
+            if (!confirm('Reset all Leitner progress? All cards will return to Box 1 and session count resets to 0.')) return;
+            app.cards.forEach(c => { c.box = 1; });
+            app.leitnerSessionCount = 0;
+            app.saveData();
+            this._updateSettingsPanel();
+            app.showMessage('leitnerMsg', 'Leitner progress reset.', 'info');
+        },
+
     }
 };
 

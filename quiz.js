@@ -832,9 +832,11 @@ const quiz = {
         url.searchParams.delete('qCont');
         window.history.replaceState({}, '', url.pathname + url.search);
         
-        // Clear all localStorage and sessionStorage
-        localStorage.clear();
-        sessionStorage.clear();
+        // Clear only quiz-related storage, not Leitner progress
+        try {
+            localStorage.removeItem('flashcard-data');
+            sessionStorage.clear();
+        } catch(e) {}
         
         // Restore all tabs visibility
         this.setTabsVisibility(false);
