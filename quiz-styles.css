@@ -167,6 +167,11 @@ html[data-theme="dark"] .quiz-question-container {
     color: var(--success);
 }
 
+.quiz-saved-answer {
+    color: var(--primary);
+    margin-bottom: 4px;
+}
+
 .min-height-120 {
     min-height: 120px;
 }

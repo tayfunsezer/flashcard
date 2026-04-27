@@ -12,6 +12,7 @@ const quiz = {
         selectedOption: null,
         quizInProgress: false,
         missedQuestions: [],
+        savedForLater: [],
         settings: {
             type: 'multiple-choice',
             direction: 'pol-tur',
@@ -35,11 +36,13 @@ const quiz = {
         // Set up event listeners (always, even for external data)
         document.getElementById('startQuizBtn').addEventListener('click', this.startQuiz.bind(this));
         document.getElementById('nextQuestionBtn').addEventListener('click', this.nextQuestion.bind(this));
+        document.getElementById('prevQuestionBtn').addEventListener('click', this.prevQuestion.bind(this));
         document.getElementById('retryQuizBtn').addEventListener('click', this.retryQuiz.bind(this));
         document.getElementById('requizMissedBtn').addEventListener('click', this.requizMissed.bind(this));
+        document.getElementById('requizSavedBtn').addEventListener('click', this.requizSaved.bind(this));
         document.getElementById('newQuizBtn').addEventListener('click', this.resetQuiz.bind(this));
-        // Add event listener for reset button during quiz
         document.getElementById('resetQuizBtn').addEventListener('click', this.resetQuiz.bind(this));
+        document.getElementById('saveForLaterBtn').addEventListener('click', this.saveForLater.bind(this));
         
         // Add tab switching handler for the quiz tab
         const tabButtons = document.querySelectorAll('.tab-btn');
@@ -417,24 +420,26 @@ const quiz = {
         console.log("Generated questions:", this.state.questions.length);
     },
 
+    // Recalculate score from scratch based on answered questions
+    recalcScore: function() {
+        this.state.score = this.state.questions.filter(q => q.isCorrect === true).length;
+        this.state.missedQuestions = this.state.questions.filter(q => q.isCorrect === false);
+    },
+
     // Show the current question
     showQuestion: function() {
         const currentQuestion = this.state.questions[this.state.currentQuestionIndex];
-        console.log("Showing question:", this.state.currentQuestionIndex + 1);
-        
-        // Update progress
-        document.getElementById('quizProgress').textContent = 
-            `Question ${this.state.currentQuestionIndex + 1} / ${this.state.questions.length}`;
-        document.getElementById('quizProgressFill').style.width = 
-            `${((this.state.currentQuestionIndex + 1) / this.state.questions.length) * 100}%`;
-        
-        // Update score
-        document.getElementById('quizScore').textContent = this.state.score;
-        
-        // Set question text
-        const flag = this.state.settings.direction === 'pol-tur' ? '🇵🇱' : '🇹🇷';
         const isTrueFalse = this.state.settings.type === 'true-false';
+        const flag = this.state.settings.direction === 'pol-tur' ? '🇵🇱' : '🇹🇷';
 
+        // Update progress
+        document.getElementById('quizProgress').textContent =
+            `Question ${this.state.currentQuestionIndex + 1} / ${this.state.questions.length}`;
+        document.getElementById('quizProgressFill').style.width =
+            `${((this.state.currentQuestionIndex + 1) / this.state.questions.length) * 100}%`;
+        document.getElementById('quizScore').textContent = this.state.score;
+
+        // Set question text
         if (isTrueFalse) {
             document.getElementById('quizQuestionText').textContent = 'Is this correct?';
             const pairEl = document.getElementById('quizTrueFalsePair');
@@ -444,72 +449,125 @@ const quiz = {
             document.getElementById('quizQuestionText').textContent = `${flag} ${currentQuestion.question}`;
             document.getElementById('quizTrueFalsePair').style.display = 'none';
         }
-        
-        // Create options
+
+        // Build options
         const optionsContainer = document.getElementById('quizOptions');
         optionsContainer.innerHTML = '';
-        
         currentQuestion.options.forEach((option, index) => {
             const optionElement = document.createElement('div');
             optionElement.className = 'quiz-option';
             optionElement.dataset.index = index;
-            
+
             const optionLetter = document.createElement('span');
             optionLetter.className = 'quiz-option-letter';
             optionLetter.textContent = isTrueFalse ? (option === 'True' ? '✓' : '✗') : String.fromCharCode(65 + index);
-            
+
             const optionText = document.createElement('span');
             optionText.textContent = option;
-            
+
             optionElement.appendChild(optionLetter);
             optionElement.appendChild(optionText);
             optionElement.addEventListener('click', () => this.selectOption(index));
             optionsContainer.appendChild(optionElement);
         });
-        
-        // Hide feedback and next button
+
+        // Prev button
+        document.getElementById('prevQuestionBtn').style.display =
+            this.state.currentQuestionIndex > 0 ? 'inline-block' : 'none';
+
+        // Save for Later button state
+        const alreadySaved = this.state.savedForLater.some(q => q === currentQuestion);
+        const saveBtn = document.getElementById('saveForLaterBtn');
+        saveBtn.style.display = 'inline-block';
+        saveBtn.textContent = alreadySaved ? '🔖 Saved!' : '🔖 Save for Later';
+        saveBtn.disabled = alreadySaved;
+
+        // If already answered, restore feedback state
+        if (currentQuestion.userAnswer !== null) {
+            this.state.selectedOption = currentQuestion.options.indexOf(currentQuestion.userAnswer);
+            this.restoreFeedback(currentQuestion);
+        } else {
+            this.state.selectedOption = null;
+            document.getElementById('quizFeedback').style.display = 'none';
+            document.getElementById('nextQuestionBtn').style.display = 'none';
+        }
+    },
+
+    // Restore feedback for an already-answered question
+    restoreFeedback: function(currentQuestion) {
+        const isTrueFalse = this.state.settings.type === 'true-false';
+        const options = document.querySelectorAll('.quiz-option');
+        const isCorrect = currentQuestion.isCorrect;
+
+        options.forEach((option, index) => {
+            const isSelectedOption = currentQuestion.options[index] === currentQuestion.userAnswer;
+            const isCorrectOption = currentQuestion.options[index] === currentQuestion.correctAnswer;
+            if (isCorrectOption) option.classList.add('correct');
+            else if (isSelectedOption) option.classList.add('incorrect');
+        });
+
+        const feedbackElement = document.getElementById('quizFeedback');
+        const correctAnswerText = isTrueFalse
+            ? `The pair is ${currentQuestion.tfCorrect ? 'correct ✓' : 'incorrect ✗'}. Correct answer: ${currentQuestion.question} → ${currentQuestion.correctAnswer}`
+            : currentQuestion.correctAnswer;
+        feedbackElement.innerHTML = isCorrect
+            ? `<strong>Correct!</strong> Great job! &nbsp;✅ ${currentQuestion.question} → ${currentQuestion.correctAnswer}`
+            : `<strong>Incorrect.</strong> The correct answer is: ${correctAnswerText}`;
+        feedbackElement.innerHTML += ` &nbsp;<button class="button btn-secondary" style="font-size:13px;padding:4px 10px;" onclick="quiz.changeAnswer()">✏️ Change Answer</button>`;
+        feedbackElement.className = `quiz-feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+        feedbackElement.style.display = 'block';
+
+        const isLast = this.state.currentQuestionIndex === this.state.questions.length - 1;
+        document.getElementById('nextQuestionBtn').style.display = 'inline-block';
+        document.getElementById('nextQuestionBtn').textContent = isLast ? 'Finish Quiz' : 'Next →';
+    },
+
+    // Allow user to change their answer
+    changeAnswer: function() {
+        const currentQuestion = this.state.questions[this.state.currentQuestionIndex];
+        // Undo previous answer from score
+        currentQuestion.userAnswer = null;
+        currentQuestion.isCorrect = null;
+        this.recalcScore();
+        document.getElementById('quizScore').textContent = this.state.score;
+
+        // Reset option styles
+        document.querySelectorAll('.quiz-option').forEach(o => {
+            o.classList.remove('correct', 'incorrect', 'selected');
+        });
         document.getElementById('quizFeedback').style.display = 'none';
         document.getElementById('nextQuestionBtn').style.display = 'none';
-        
-        // Reset selected option
+
+        const alreadySaved = this.state.savedForLater.some(q => q === currentQuestion);
+        const saveBtn = document.getElementById('saveForLaterBtn');
+        saveBtn.style.display = 'inline-block';
+        saveBtn.textContent = alreadySaved ? '🔖 Saved!' : '🔖 Save for Later';
+        saveBtn.disabled = alreadySaved;
+
         this.state.selectedOption = null;
     },
 
     // Handle option selection
     selectOption: function(index) {
-        // Ignore if already answered
         if (this.state.selectedOption !== null) return;
-        
+
         const currentQuestion = this.state.questions[this.state.currentQuestionIndex];
         const selectedOption = currentQuestion.options[index];
         this.state.selectedOption = index;
-        
-        console.log("Selected option:", selectedOption);
-        
-        // Mark the option as selected
+
         const options = document.querySelectorAll('.quiz-option');
         options.forEach(option => option.classList.remove('selected'));
         options[index].classList.add('selected');
-        
-        // Check if correct
+
         const isTrueFalse = this.state.settings.type === 'true-false';
         const isCorrect = isTrueFalse
             ? (selectedOption === 'True') === currentQuestion.tfCorrect
             : selectedOption === currentQuestion.correctAnswer;
         currentQuestion.userAnswer = selectedOption;
         currentQuestion.isCorrect = isCorrect;
-        
-        console.log("Is correct:", isCorrect);
-        
-        // Update score
-        if (isCorrect) {
-            this.state.score++;
-        } else {
-            // Add to missed questions
-            this.state.missedQuestions.push(currentQuestion);
-        }
-        
-        // Show feedback
+
+        this.recalcScore();
+
         setTimeout(() => this.showFeedback(isCorrect), 300);
     },
 
@@ -541,33 +599,34 @@ const quiz = {
             `<strong>Incorrect.</strong> The correct answer is: ${correctAnswerText}`;
         
         feedbackElement.className = `quiz-feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+        feedbackElement.innerHTML += ` &nbsp;<button class="button btn-secondary" style="font-size:13px;padding:4px 10px;" onclick="quiz.changeAnswer()">✏️ Change Answer</button>`;
         feedbackElement.style.display = 'block';
 
-        // Speak the correct answer
-        const isPolToTur = this.state.settings.direction === 'pol-tur';
-        app.speak(currentQuestion.correctAnswer, isPolToTur ? 'tr-TR' : 'pl-PL');
+        const isLast = this.state.currentQuestionIndex === this.state.questions.length - 1;
+        document.getElementById('nextQuestionBtn').style.display = 'inline-block';
+        document.getElementById('nextQuestionBtn').textContent = isLast ? 'Finish Quiz' : 'Next →';
+        document.getElementById('saveForLaterBtn').style.display = 'none';
+        document.getElementById('quizScore').textContent = this.state.score;
 
-        // Show next button
-        document.getElementById('nextQuestionBtn').style.display = 'block';
-        
-        // Update the original card difficulty based on performance
         if (app.updateCardDifficulty && typeof app.updateCardDifficulty === 'function') {
-            const newDifficulty = isCorrect ? 'easy' : 'hard';
-            app.updateCardDifficulty(currentQuestion.originalCard, newDifficulty);
+            app.updateCardDifficulty(currentQuestion.originalCard, isCorrect ? 'easy' : 'hard');
         }
     },
 
     // Move to the next question
     nextQuestion: function() {
-        this.state.currentQuestionIndex++;
-        
-        // Check if quiz is complete
-        if (this.state.currentQuestionIndex >= this.state.questions.length) {
+        if (this.state.currentQuestionIndex >= this.state.questions.length - 1) {
             this.showResults();
             return;
         }
-        
-        // Show the next question
+        this.state.currentQuestionIndex++;
+        this.showQuestion();
+    },
+
+    // Move to the previous question
+    prevQuestion: function() {
+        if (this.state.currentQuestionIndex <= 0) return;
+        this.state.currentQuestionIndex--;
         this.showQuestion();
     },
 
@@ -635,8 +694,56 @@ const quiz = {
         document.getElementById('requizMissedBtn').style.display =
             this.state.missedQuestions.length > 0 ? 'inline-block' : 'none';
 
+        // Show/hide Re-quiz Saved button
+        document.getElementById('requizSavedBtn').style.display =
+            this.state.savedForLater.length > 0 ? 'inline-block' : 'none';
+
+        // Show saved for later list
+        const savedContainer = document.getElementById('savedForLaterList');
+        savedContainer.innerHTML = '';
+        if (this.state.savedForLater.length === 0) {
+            savedContainer.innerHTML = '<p>No saved questions.</p>';
+        } else {
+            this.state.savedForLater.forEach((question, index) => {
+                const item = document.createElement('div');
+                item.className = 'quiz-missed-item';
+                item.innerHTML = `<div class="quiz-missed-question">${index + 1}. ${question.question}</div>
+                    <div class="quiz-saved-answer">Answer: ${question.correctAnswer}</div>`;
+                savedContainer.appendChild(item);
+            });
+        }
+
         // Quiz is no longer in progress
         this.state.quizInProgress = false;
+    },
+
+    // Save current question for later
+    saveForLater: function() {
+        const currentQuestion = this.state.questions[this.state.currentQuestionIndex];
+        const alreadySaved = this.state.savedForLater.some(q => q.question === currentQuestion.question);
+        if (!alreadySaved) {
+            this.state.savedForLater.push(currentQuestion);
+        }
+        document.getElementById('saveForLaterBtn').textContent = '🔖 Saved!';
+        document.getElementById('saveForLaterBtn').disabled = true;
+    },
+
+    // Re-quiz only saved questions
+    requizSaved: function() {
+        if (this.state.savedForLater.length === 0) return;
+
+        this.state.savedForLater.forEach(q => { q.userAnswer = null; q.isCorrect = null; });
+        this.state.questions = this.shuffleArray([...this.state.savedForLater]);
+        this.state.savedForLater = [];
+        this.state.currentQuestionIndex = 0;
+        this.state.score = 0;
+        this.state.selectedOption = null;
+        this.state.quizInProgress = true;
+        this.state.missedQuestions = [];
+
+        this.showQuestion();
+        document.getElementById('quizQuestion').style.display = 'block';
+        document.getElementById('quizResults').style.display = 'none';
     },
 
     // Re-quiz only the missed questions
@@ -702,6 +809,7 @@ const quiz = {
         this.state.selectedOption = null;
         this.state.quizInProgress = false;
         this.state.missedQuestions = [];
+        this.state.savedForLater = [];
         
         // Clear URL parameters and fragment
         const url = new URL(window.location);
