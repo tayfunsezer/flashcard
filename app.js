@@ -744,11 +744,15 @@ const app = {
 
         startSession() {
             app.leitnerSessionCount++;
-            const due = this._getDueCards();
+            let due = this._getDueCards();
             if (due.length === 0) {
                 app.showMessage('textMsg', 'No cards due for this session!', 'info');
                 app.leitnerSessionCount--;
                 return;
+            }
+            for (let i = due.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [due[i], due[j]] = [due[j], due[i]];
             }
             const dir = document.getElementById('leitnerDirection').value;
             this._session = { cards: due, index: 0, direction: dir, flipped: false, movedUp: 0, movedDown: 0 };
