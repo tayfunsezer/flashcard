@@ -681,6 +681,7 @@ const app = {
         _index: 0,
         _revealed: -1,
         _revealedTur: -1,
+        _notes: {},
 
         _getDialogs() {
             const map = {};
@@ -721,12 +722,57 @@ const app = {
             }
             if (!matches || matches.length === 0) { alert('No dialog found for that selection.'); return; }
             this._lines = matches.flatMap(d => d.lines);
+            this._loadNotes();
 
             this._index = 0;
             this._revealed = -1;
             this._revealedTur = -1;
             document.getElementById('dialogPlayer').style.display = 'block';
             this._render();
+        },
+
+        _noteKey(line) {
+            return 'dlg-note:' + line.pol.trim().slice(0, 40);
+        },
+
+        _loadNotes() {
+            this._notes = {};
+            this._lines.forEach(line => {
+                const k = this._noteKey(line);
+                try { const v = localStorage.getItem(k); if (v) this._notes[k] = v; } catch(e) {}
+            });
+        },
+
+        _saveNote(line, text) {
+            const k = this._noteKey(line);
+            try {
+                if (text.trim()) { localStorage.setItem(k, text); this._notes[k] = text; }
+                else { localStorage.removeItem(k); delete this._notes[k]; }
+            } catch(e) {}
+        },
+
+        toggleNote(i) {
+            const existing = document.getElementById(`dialog-note-${i}`);
+            if (existing) { existing.remove(); return; }
+            const line = this._lines[i];
+            const container = document.querySelectorAll('.dialog-line')[i];
+            if (!container) return;
+            const k = this._noteKey(line);
+            const saved = this._notes[k] || '';
+            const wrap = document.createElement('div');
+            wrap.id = `dialog-note-${i}`;
+            wrap.className = 'dialog-note-wrap';
+            wrap.innerHTML = `<textarea class="dialog-note-input" placeholder="Add a note...">${saved}</textarea><button class="dialog-note-save">Save</button>`;
+            wrap.querySelector('.dialog-note-save').addEventListener('click', () => {
+                const text = wrap.querySelector('textarea').value;
+                this._saveNote(line, text);
+                // update the note indicator without full re-render
+                const btn = container.querySelector('.dialog-note-btn');
+                if (btn) btn.textContent = text.trim() ? '📝' : '🖊';
+                wrap.remove();
+            });
+            container.appendChild(wrap);
+            wrap.querySelector('textarea').focus();
         },
 
         _render() {
@@ -737,9 +783,12 @@ const app = {
                 div.className = 'dialog-line' + (i === this._index ? ' active' : '');
                 const polHidden = i > this._revealed;
                 const turHidden = i > this._revealedTur;
+                const k = this._noteKey(line);
+                const hasNote = !!this._notes[k];
                 div.innerHTML =
                     `<div class="dialog-line-pol" style="${polHidden ? 'filter:blur(6px);user-select:none;' : ''}">${line.pol}</div>` +
-                    `<div class="dialog-line-tur" style="${turHidden ? 'filter:blur(6px);user-select:none;' : ''}">${line.tur}</div>`;
+                    `<div class="dialog-line-tur" style="${turHidden ? 'filter:blur(6px);user-select:none;' : ''}">${line.tur}</div>` +
+                    `<button class="dialog-note-btn" onclick="app.dialog.toggleNote(${i})">${hasNote ? '📝' : '🖊'}</button>`;
                 container.appendChild(div);
             });
             const total = this._lines.length;
@@ -820,6 +869,11 @@ const app = {
             const hasDialogs = dialogs.length > 0;
             document.getElementById('dialogEmpty').style.display = hasDialogs ? 'none' : 'block';
             document.getElementById('dialogContent').style.display = hasDialogs ? 'block' : 'none';
+            document.getElementById('dialogPlayer').style.display = 'none';
+            this._lines = [];
+            this._index = 0;
+            this._revealed = -1;
+            this._revealedTur = -1;
             if (hasDialogs) this._populate();
         }
     },
@@ -959,6 +1013,14 @@ const app = {
 };
 
 document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+    const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab;
+    if (activeTab === 'dialog') {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); app.dialog.next(); }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); app.dialog.prev(); }
+        if (e.key === ' ') { e.preventDefault(); app.dialog.reveal(); }
+        return;
+    }
     if (app.filtered.length === 0) return;
     if (e.key === 'ArrowRight') app.nextCard();
     if (e.key === 'ArrowLeft') app.prevCard();

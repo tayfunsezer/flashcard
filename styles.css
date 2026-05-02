@@ -1112,3 +1112,71 @@ html[data-theme="dark"] .quiz-question-container {
     padding: 10px 0 6px;
     z-index: 50;
 }
+
+/* Dialog line notes */
+.dialog-line {
+    position: relative;
+}
+
+.dialog-note-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    opacity: 0.4;
+    transition: opacity 0.2s;
+    padding: 2px;
+}
+
+.dialog-line:hover .dialog-note-btn,
+.dialog-note-btn:focus {
+    opacity: 1;
+}
+
+.dialog-note-wrap {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.dialog-note-input {
+    flex: 1;
+    min-height: 60px;
+    padding: 8px;
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+    margin: 0;
+    width: auto;
+}
+
+.dialog-note-save {
+    padding: 6px 12px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+}
