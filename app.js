@@ -610,6 +610,7 @@ const app = {
         // Dispatch an event to notify the quiz module that flashcards have been updated
         // This will trigger the resetQuiz() function in quiz.js
         document.dispatchEvent(new CustomEvent('flashcardsUpdated'));
+        this.dialog.updateUI();
     },
 
     speak(text, lang) {
@@ -672,6 +673,154 @@ const app = {
             } catch (e) {
                 console.error('Load error:', e);
             }
+        }
+    },
+
+    dialog: {
+        _lines: [],
+        _index: 0,
+        _revealed: -1,
+        _revealedTur: -1,
+
+        _getDialogs() {
+            const map = {};
+            app.cards.forEach(c => {
+                const date = c.date || '';
+                const group = (c.groups && c.groups[0]) || c.group || '';
+                const key = date + '||' + group;
+                if (!map[key]) map[key] = { date, group, lines: [] };
+                map[key].lines.push(c);
+            });
+            return Object.values(map).filter(d => d.lines.length > 1);
+        },
+
+        _populate() {
+            const dialogs = this._getDialogs();
+            const topicSel = document.getElementById('dialogTopicSelect');
+            const topics = [...new Set(dialogs.map(d => d.group))].sort();
+            topicSel.innerHTML = '<option value="">-- Any --</option>' + topics.map(t => `<option value="${t}">${t}</option>`).join('');
+        },
+
+        load() {
+            const dateRaw = document.getElementById('dialogDatePicker').value;
+            const group = document.getElementById('dialogTopicSelect').value;
+            const dialogs = this._getDialogs();
+            let matches;
+            if (dateRaw && group) {
+                const [y, m, d] = dateRaw.split('-');
+                const date = `${d}-${m}-${y}`;
+                matches = dialogs.filter(d => d.date === date && d.group === group);
+            } else if (group) {
+                matches = dialogs.filter(d => d.group === group);
+            } else if (dateRaw) {
+                const [y, m, d] = dateRaw.split('-');
+                const date = `${d}-${m}-${y}`;
+                matches = dialogs.filter(d => d.date === date);
+            } else {
+                alert('Please select a date or topic.'); return;
+            }
+            if (!matches || matches.length === 0) { alert('No dialog found for that selection.'); return; }
+            this._lines = matches.flatMap(d => d.lines);
+
+            this._index = 0;
+            this._revealed = -1;
+            this._revealedTur = -1;
+            document.getElementById('dialogPlayer').style.display = 'block';
+            this._render();
+        },
+
+        _render() {
+            const container = document.getElementById('dialogLines');
+            container.innerHTML = '';
+            this._lines.forEach((line, i) => {
+                const div = document.createElement('div');
+                div.className = 'dialog-line' + (i === this._index ? ' active' : '');
+                const polHidden = i > this._revealed;
+                const turHidden = i > this._revealedTur;
+                div.innerHTML =
+                    `<div class="dialog-line-pol" style="${polHidden ? 'filter:blur(6px);user-select:none;' : ''}">${line.pol}</div>` +
+                    `<div class="dialog-line-tur" style="${turHidden ? 'filter:blur(6px);user-select:none;' : ''}">${line.tur}</div>`;
+                container.appendChild(div);
+            });
+            const total = this._lines.length;
+            document.getElementById('dialogLineCounter').textContent = `Line ${this._index + 1} / ${total}`;
+            document.getElementById('dialogProgressFill').style.width = `${((this._index + 1) / total * 100)}%`;
+            const polRevealed = this._index <= this._revealed;
+            const turRevealed = this._index <= this._revealedTur;
+            document.getElementById('dialogRevealBtn').textContent = !polRevealed ? 'Reveal Polish' : !turRevealed ? 'Reveal Turkish' : 'Revealed';
+            document.getElementById('dialogRevealBtn').style.display = (polRevealed && turRevealed) ? 'none' : 'inline-block';
+            const activeLine = container.querySelector('.dialog-line.active');
+            if (activeLine) activeLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (document.getElementById('dialogAutoSpeak').checked) this._speakLine(this._index);
+        },
+
+        reveal() {
+            if (this._index > this._revealed) {
+                this._revealed = this._index;
+            } else if (this._index > this._revealedTur) {
+                this._revealedTur = this._index;
+            }
+            this._render();
+        },
+
+        next() {
+            if (this._index >= this._lines.length - 1) return;
+            if (this._index > this._revealedTur) return; // must reveal both first
+            this._index++;
+            this._render();
+        },
+
+        prev() {
+            if (this._index <= 0) return;
+            this._index--;
+            this._render();
+        },
+
+        showAll() {
+            this._revealed = this._lines.length - 1;
+            this._revealedTur = this._lines.length - 1;
+            this._render();
+        },
+
+        reset() {
+            this._index = 0;
+            this._revealed = -1;
+            this._revealedTur = -1;
+            this._render();
+        },
+
+        _speakLine(i) {
+            const line = this._lines[i];
+            if (!line) return;
+            const lang = document.getElementById('dialogLangSelect').value;
+            if (lang === 'pol') app.speak(line.pol, 'pl-PL');
+            else if (lang === 'tur') app.speak(line.tur, 'tr-TR');
+            else {
+                app.speak(line.pol, 'pl-PL');
+                setTimeout(() => app.speak(line.tur, 'tr-TR'), 2000);
+            }
+        },
+
+        speakAll() {
+            let delay = 0;
+            this._lines.forEach((line, i) => {
+                const lang = document.getElementById('dialogLangSelect').value;
+                const polDelay = delay;
+                setTimeout(() => app.speak(line.pol, 'pl-PL'), polDelay);
+                delay += 3000;
+                if (lang !== 'pol') {
+                    setTimeout(() => app.speak(line.tur, 'tr-TR'), delay);
+                    delay += 3000;
+                }
+            });
+        },
+
+        updateUI() {
+            const dialogs = this._getDialogs();
+            const hasDialogs = dialogs.length > 0;
+            document.getElementById('dialogEmpty').style.display = hasDialogs ? 'none' : 'block';
+            document.getElementById('dialogContent').style.display = hasDialogs ? 'block' : 'none';
+            if (hasDialogs) this._populate();
         }
     },
 

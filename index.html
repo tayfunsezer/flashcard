@@ -18,7 +18,8 @@
             <button class="tab-btn" data-tab="quiz">Quiz</button>
             <button class="tab-btn" data-tab="import-text">Text Import</button>
             <button class="tab-btn" data-tab="import-excel">File Import</button>
-            <button class="tab-btn" data-tab="import-url">URL Import</button>
+
+            <button class="tab-btn" data-tab="dialog">Dialog</button>
             <button class="tab-btn" data-tab="settings">Settings</button>
         </div>
 
@@ -157,6 +158,63 @@
             </div>
         </div>
         
+        <!-- DIALOG TAB -->
+        <div id="dialog" class="tab-content">
+            <div id="dialogEmpty" class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <h3>No Dialogs Yet</h3>
+                <p>Import a file with dialog lines to start</p>
+            </div>
+            <div id="dialogContent" style="display:none;">
+                <div class="section">
+                    <h2>💬 Dialog Practice</h2>
+                    <div class="flex flex-wrap gap-15 items-center mb-12">
+                        <div class="flex gap-8 items-center">
+                            <label style="margin:0;">Date:</label>
+                            <input type="date" id="dialogDatePicker" class="p-4 border rounded-4" style="cursor:pointer;">
+                        </div>
+                        <div class="flex gap-8 items-center">
+                            <label style="margin:0;">Topic:</label>
+                            <select id="dialogTopicSelect" class="p-4 border rounded-4" style="width:auto;margin:0;"></select>
+                        </div>
+                        <button class="button btn-primary" onclick="app.dialog.load()">Load Dialog</button>
+                    </div>
+                </div>
+
+                <div id="dialogPlayer" style="display:none;">
+                    <div class="stats">
+                        <div>
+                            <strong id="dialogLineCounter">Line 1 / 0</strong>
+                            <div class="progress-bar"><div class="progress-fill" id="dialogProgressFill"></div></div>
+                        </div>
+                        <div class="flex gap-8 items-center">
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" id="dialogAutoSpeak"> Auto-speak</label>
+                            <select id="dialogLangSelect" class="p-4 border rounded-4" style="width:auto;margin:0;">
+                                <option value="pol">Polish</option>
+                                <option value="tur">Turkish</option>
+                                <option value="both">Both</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="dialogLines" class="dialog-lines" style="margin-bottom: 80px;"></div>
+
+                    <div class="dialog-sticky-controls">
+                        <div class="controls" style="margin-bottom:8px;">
+                            <button class="button btn-secondary" onclick="app.dialog.prev()">← Prev</button>
+                            <button class="button btn-primary" id="dialogRevealBtn" onclick="app.dialog.reveal()">Reveal</button>
+                            <button class="button btn-secondary" onclick="app.dialog.next()">Next →</button>
+                        </div>
+                        <div class="controls">
+                            <button class="button btn-secondary" onclick="app.dialog.showAll()">👁 Show All</button>
+                            <button class="button btn-secondary" onclick="app.dialog.reset()">↻ Reset</button>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- QUIZ TAB -->
         <div id="quiz" class="tab-content">
             
@@ -391,35 +449,6 @@ Dziękuję	Teşekkür ederim	02-04-2026	Courtesy
                     <button class="button btn-secondary" onclick="app.clearExcelInput()">Clear</button>
                 </div>
                 <div id="excelMsg"></div>
-            </div>
-        </div>
-
-        <!-- URL IMPORT TAB -->
-        <div id="import-url" class="tab-content">
-            <div class="section">
-                <h2>URL Encoding &amp; Sharing</h2>
-                <p><strong>How it works:</strong> Create a JSON array below, click "Generate URL", copy it, and share. When someone opens that URL, words load automatically.</p>
-                
-                <div class="bg-primary-light p-16 rounded-8 mb-20">
-                    <p class="mb-12"><strong>Example JSON (click to copy):</strong></p>
-                    <div id="exampleJson" class="bg-bg p-12 rounded-6 font-mono text-xs cursor-pointer user-select-all border">[{"pol":"Cześć","tur":"Merhaba"},{"pol":"Dziękuję","tur":"Teşekkür ederim"},{"pol":"Proszę","tur":"Lütfen"}]</div>
-                    <button class="button btn-secondary mt-8" onclick="(function(){var el=document.getElementById('exampleJson'); if(window.getSelection && document.createRange){var range=document.createRange(); range.selectNodeContents(el); var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range);} else if(document.body.createTextRange){var range=document.body.createTextRange(); range.moveToElementText(el); range.select();} document.execCommand('copy'); app.showMessage('urlMsg','Example copied to clipboard!','success');})();">Copy Example</button>
-                </div>
-                
-                <label>Your JSON Array</label>
-                <textarea id="jsonInput" placeholder='[{"pol":"Word1","tur":"Word2"}]' class="min-height-120"></textarea>
-                <div class="button-group">
-                    <button class="button btn-primary" onclick="app.generateUrl()">Generate URL</button>
-                    <button class="button btn-secondary" onclick="document.getElementById('jsonInput').value=''">Clear</button>
-                </div>
-                <div id="urlMsg"></div>
-                <div id="urlResult" style="display: none;" class="mt-20">
-                    <label>Generated URL:</label>
-                    <input type="text" id="urlOutput" readonly>
-                    <div class="button-group">
-                        <button class="button btn-secondary" onclick="app.copyUrl()">Copy</button>
-                    </div>
-                </div>
             </div>
         </div>
 
