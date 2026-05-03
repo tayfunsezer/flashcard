@@ -168,14 +168,20 @@
             <div id="dialogContent" style="display:none;">
                 <div class="section">
                     <h2>💬 Dialog Practice</h2>
-                    <div class="flex flex-wrap gap-15 items-center mb-12">
-                        <div class="flex gap-8 items-center">
+                    <div class="flex flex-wrap gap-15 items-center mb-12" style="position:relative;">
+                        <div class="flex gap-8 items-center flex-wrap">
                             <label style="margin:0;">Date:</label>
                             <input type="date" id="dialogDatePicker" class="p-4 border rounded-4" style="cursor:pointer;">
+                            <span id="dialogDateHint" class="dialog-hint"></span>
                         </div>
-                        <div class="flex gap-8 items-center">
+                        <div class="flex gap-8 items-center flex-wrap">
                             <label style="margin:0;">Topic:</label>
                             <select id="dialogTopicSelect" class="p-4 border rounded-4" style="width:auto;margin:0;"></select>
+                            <button id="dialogTopicDatesBtn" class="dialog-dates-badge" style="display:none;" onclick="app.dialog.toggleDatesPopup()"></button>
+                        </div>
+                        <div id="dialogDatesPopup" class="dialog-dates-popup" style="display:none;">
+                            <div class="dialog-dates-popup-header"><span>Available Dates</span><button onclick="app.dialog.toggleDatesPopup()" class="dialog-dates-close">✕</button></div>
+                            <div id="dialogDatesGrid" class="dialog-dates-grid"></div>
                         </div>
                         <div class="flex gap-8 items-center">
                             <label style="margin:0;">Direction:</label>

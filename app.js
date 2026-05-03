@@ -700,6 +700,54 @@ const app = {
             const topicSel = document.getElementById('dialogTopicSelect');
             const topics = [...new Set(dialogs.map(d => d.group))].sort();
             topicSel.innerHTML = '<option value="">-- Any --</option>' + topics.map(t => `<option value="${t}">${t}</option>`).join('');
+            topicSel.addEventListener('change', () => this._updateHints());
+            document.getElementById('dialogDatePicker').addEventListener('change', () => this._updateHints());
+        },
+
+        _fmtDate(raw) {
+            // raw is DD-MM-YYYY, display as DD-MM
+            return raw ? raw.slice(0, 5) : raw;
+        },
+
+        _updateHints() {
+            const dialogs = this._getDialogs();
+            const dateRaw = document.getElementById('dialogDatePicker').value;
+            const topic = document.getElementById('dialogTopicSelect').value;
+
+            // Date → Topics hint
+            const dateHint = document.getElementById('dialogDateHint');
+            if (dateRaw) {
+                const [y, m, d] = dateRaw.split('-');
+                const date = `${d}-${m}-${y}`;
+                const topics = [...new Set(dialogs.filter(x => x.date === date).map(x => x.group))].filter(Boolean).sort();
+                dateHint.textContent = topics.length ? `Topics: ${topics.join(', ')}` : 'No topics on this date';
+            } else {
+                dateHint.textContent = '';
+            }
+
+            // Topic → Dates badge
+            const btn = document.getElementById('dialogTopicDatesBtn');
+            if (topic) {
+                const dates = [...new Set(dialogs.filter(x => x.group === topic).map(x => x.date))].filter(Boolean);
+                dates.sort((a, b) => {
+                    const parse = s => { const [dd,mm,yy] = s.split('-'); return new Date(yy,mm-1,dd); };
+                    return parse(b) - parse(a);
+                });
+                this._topicDates = dates;
+                btn.textContent = `📅 ${dates.length} date${dates.length !== 1 ? 's' : ''}`;
+                btn.style.display = 'inline-block';
+            } else {
+                btn.style.display = 'none';
+                document.getElementById('dialogDatesPopup').style.display = 'none';
+            }
+        },
+
+        toggleDatesPopup() {
+            const popup = document.getElementById('dialogDatesPopup');
+            const grid = document.getElementById('dialogDatesGrid');
+            if (popup.style.display !== 'none') { popup.style.display = 'none'; return; }
+            grid.innerHTML = (this._topicDates || []).map(d => `<span class="dialog-date-chip">${this._fmtDate(d)}</span>`).join('');
+            popup.style.display = 'block';
         },
 
         load() {
@@ -856,7 +904,10 @@ const app = {
             this._index = 0;
             this._revealed = -1;
             this._revealedTur = -1;
-            if (hasDialogs) this._populate();
+            if (hasDialogs) {
+                this._populate();
+                this._updateHints();
+            }
         }
     },
 
