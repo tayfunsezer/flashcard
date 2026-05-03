@@ -775,32 +775,40 @@ const app = {
             wrap.querySelector('textarea').focus();
         },
 
+        _direction() {
+            return document.getElementById('dialogDirection').value;
+        },
+
         _render() {
             const container = document.getElementById('dialogLines');
             container.innerHTML = '';
+            const dir = this._direction();
             this._lines.forEach((line, i) => {
                 const div = document.createElement('div');
                 div.className = 'dialog-line' + (i === this._index ? ' active' : '');
-                const polHidden = i > this._revealed;
-                const turHidden = i > this._revealedTur;
+                const frontHidden = i > this._revealed;
+                const backHidden = i > this._revealedTur;
+                const [frontText, backText, frontClass, backClass] = dir === 'pol-tur'
+                    ? [line.pol, line.tur, 'dialog-line-pol', 'dialog-line-tur']
+                    : [line.tur, line.pol, 'dialog-line-tur', 'dialog-line-pol'];
                 const k = this._noteKey(line);
                 const hasNote = !!this._notes[k];
                 div.innerHTML =
-                    `<div class="dialog-line-pol" style="${polHidden ? 'filter:blur(6px);user-select:none;' : ''}">${line.pol}</div>` +
-                    `<div class="dialog-line-tur" style="${turHidden ? 'filter:blur(6px);user-select:none;' : ''}">${line.tur}</div>` +
+                    `<div class="${frontClass}" style="${frontHidden ? 'filter:blur(6px);user-select:none;' : ''}">${frontText}</div>` +
+                    `<div class="${backClass}" style="${backHidden ? 'filter:blur(6px);user-select:none;' : ''}">${backText}</div>` +
                     `<button class="dialog-note-btn" onclick="app.dialog.toggleNote(${i})">${hasNote ? '📝' : '🖊'}</button>`;
                 container.appendChild(div);
             });
             const total = this._lines.length;
             document.getElementById('dialogLineCounter').textContent = `Line ${this._index + 1} / ${total}`;
             document.getElementById('dialogProgressFill').style.width = `${((this._index + 1) / total * 100)}%`;
-            const polRevealed = this._index <= this._revealed;
-            const turRevealed = this._index <= this._revealedTur;
-            document.getElementById('dialogRevealBtn').textContent = !polRevealed ? 'Reveal Polish' : !turRevealed ? 'Reveal Turkish' : 'Revealed';
-            document.getElementById('dialogRevealBtn').style.display = (polRevealed && turRevealed) ? 'none' : 'inline-block';
+            const frontRevealed = this._index <= this._revealed;
+            const backRevealed = this._index <= this._revealedTur;
+            const [frontLang, backLang] = dir === 'pol-tur' ? ['Polish', 'Turkish'] : ['Turkish', 'Polish'];
+            document.getElementById('dialogRevealBtn').textContent = !frontRevealed ? `Reveal ${frontLang}` : !backRevealed ? `Reveal ${backLang}` : 'Revealed';
+            document.getElementById('dialogRevealBtn').style.display = (frontRevealed && backRevealed) ? 'none' : 'inline-block';
             const activeLine = container.querySelector('.dialog-line.active');
             if (activeLine) activeLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            if (document.getElementById('dialogAutoSpeak').checked) this._speakLine(this._index);
         },
 
         reveal() {
@@ -836,32 +844,6 @@ const app = {
             this._revealed = -1;
             this._revealedTur = -1;
             this._render();
-        },
-
-        _speakLine(i) {
-            const line = this._lines[i];
-            if (!line) return;
-            const lang = document.getElementById('dialogLangSelect').value;
-            if (lang === 'pol') app.speak(line.pol, 'pl-PL');
-            else if (lang === 'tur') app.speak(line.tur, 'tr-TR');
-            else {
-                app.speak(line.pol, 'pl-PL');
-                setTimeout(() => app.speak(line.tur, 'tr-TR'), 2000);
-            }
-        },
-
-        speakAll() {
-            let delay = 0;
-            this._lines.forEach((line, i) => {
-                const lang = document.getElementById('dialogLangSelect').value;
-                const polDelay = delay;
-                setTimeout(() => app.speak(line.pol, 'pl-PL'), polDelay);
-                delay += 3000;
-                if (lang !== 'pol') {
-                    setTimeout(() => app.speak(line.tur, 'tr-TR'), delay);
-                    delay += 3000;
-                }
-            });
         },
 
         updateUI() {
@@ -1018,7 +1000,7 @@ document.addEventListener('keydown', (e) => {
     if (activeTab === 'dialog') {
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); app.dialog.next(); }
         if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); app.dialog.prev(); }
-        if (e.key === ' ') { e.preventDefault(); app.dialog.reveal(); }
+        if (e.key === ' ') { e.preventDefault(); const d = app.dialog; (d._index <= d._revealed && d._index <= d._revealedTur) ? d.next() : d.reveal(); }
         return;
     }
     if (app.filtered.length === 0) return;

@@ -177,6 +177,13 @@
                             <label style="margin:0;">Topic:</label>
                             <select id="dialogTopicSelect" class="p-4 border rounded-4" style="width:auto;margin:0;"></select>
                         </div>
+                        <div class="flex gap-8 items-center">
+                            <label style="margin:0;">Direction:</label>
+                            <select id="dialogDirection" class="p-4 border rounded-4" style="width:auto;margin:0;" onchange="app.dialog._lines.length && app.dialog._render()">
+                                <option value="pol-tur">Polish → Turkish</option>
+                                <option value="tur-pol">Turkish → Polish</option>
+                            </select>
+                        </div>
                         <button class="button btn-primary" onclick="app.dialog.load()">Load Dialog</button>
                     </div>
                 </div>
@@ -186,14 +193,6 @@
                         <div>
                             <strong id="dialogLineCounter">Line 1 / 0</strong>
                             <div class="progress-bar"><div class="progress-fill" id="dialogProgressFill"></div></div>
-                        </div>
-                        <div class="flex gap-8 items-center">
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" id="dialogAutoSpeak"> Auto-speak</label>
-                            <select id="dialogLangSelect" class="p-4 border rounded-4" style="width:auto;margin:0;">
-                                <option value="pol">Polish</option>
-                                <option value="tur">Turkish</option>
-                                <option value="both">Both</option>
-                            </select>
                         </div>
                     </div>
 
