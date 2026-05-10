@@ -780,6 +780,12 @@ const app = {
                 alert('Please select a date or topic.'); return;
             }
             if (!lines || lines.length === 0) { alert('No dialog found for that selection.'); return; }
+            if (document.getElementById('dialogRandomize').checked) {
+                for (let i = lines.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [lines[i], lines[j]] = [lines[j], lines[i]];
+                }
+            }
             this._lines = lines;
             this._loadNotes();
 
