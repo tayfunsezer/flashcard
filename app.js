@@ -687,10 +687,12 @@ const app = {
             const map = {};
             app.cards.forEach(c => {
                 const date = c.date || '';
-                const group = (c.groups && c.groups[0]) || c.group || '';
-                const key = date + '||' + group;
-                if (!map[key]) map[key] = { date, group, lines: [] };
-                map[key].lines.push(c);
+                const cardGroups = (c.groups && c.groups.length > 0) ? c.groups : [c.group || ''];
+                cardGroups.forEach(group => {
+                    const key = date + '||' + group;
+                    if (!map[key]) map[key] = { date, group, lines: [] };
+                    map[key].lines.push(c);
+                });
             });
             return Object.values(map).filter(d => d.lines.length > 1);
         },
