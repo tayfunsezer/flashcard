@@ -689,12 +689,13 @@ const app = {
                 const date = c.date || '';
                 const cardGroups = (c.groups && c.groups.length > 0) ? c.groups : [c.group || ''];
                 cardGroups.forEach(group => {
-                    const key = date + '||' + group;
-                    if (!map[key]) map[key] = { date, group, lines: [] };
+                    if (!group) return;
+                    const key = group;
+                    if (!map[key]) map[key] = { date: '', group, lines: [] };
                     map[key].lines.push(c);
                 });
             });
-            return Object.values(map).filter(d => d.lines.length > 1);
+            return Object.values(map).filter(d => d.lines.length > 0);
         },
 
         _populate() {
@@ -721,7 +722,7 @@ const app = {
             if (dateRaw) {
                 const [y, m, d] = dateRaw.split('-');
                 const date = `${d}-${m}-${y}`;
-                const topics = [...new Set(dialogs.filter(x => x.date === date).map(x => x.group))].filter(Boolean).sort();
+                const topics = [...new Set(dialogs.filter(x => x.lines.some(l => l.date === date)).map(x => x.group))].filter(Boolean).sort();
                 dateHint.textContent = topics.length ? `Topics: ${topics.join(', ')}` : 'No topics on this date';
             } else {
                 dateHint.textContent = '';
@@ -730,14 +731,19 @@ const app = {
             // Topic → Dates badge
             const btn = document.getElementById('dialogTopicDatesBtn');
             if (topic) {
-                const dates = [...new Set(dialogs.filter(x => x.group === topic).map(x => x.date))].filter(Boolean);
+                const match = dialogs.find(x => x.group === topic);
+                const dates = match ? [...new Set(match.lines.map(l => l.date).filter(Boolean))] : [];
                 dates.sort((a, b) => {
                     const parse = s => { const [dd,mm,yy] = s.split('-'); return new Date(yy,mm-1,dd); };
                     return parse(b) - parse(a);
                 });
                 this._topicDates = dates;
-                btn.textContent = `📅 ${dates.length} date${dates.length !== 1 ? 's' : ''}`;
-                btn.style.display = 'inline-block';
+                if (dates.length > 0) {
+                    btn.textContent = `📅 ${dates.length} date${dates.length !== 1 ? 's' : ''}`;
+                    btn.style.display = 'inline-block';
+                } else {
+                    btn.style.display = 'none';
+                }
             } else {
                 btn.style.display = 'none';
                 document.getElementById('dialogDatesPopup').style.display = 'none';
@@ -756,22 +762,25 @@ const app = {
             const dateRaw = document.getElementById('dialogDatePicker').value;
             const group = document.getElementById('dialogTopicSelect').value;
             const dialogs = this._getDialogs();
-            let matches;
-            if (dateRaw && group) {
-                const [y, m, d] = dateRaw.split('-');
-                const date = `${d}-${m}-${y}`;
-                matches = dialogs.filter(d => d.date === date && d.group === group);
-            } else if (group) {
-                matches = dialogs.filter(d => d.group === group);
+            let lines;
+            if (group) {
+                const match = dialogs.find(d => d.group === group);
+                if (!match) { alert('No dialog found for that selection.'); return; }
+                lines = match.lines;
+                if (dateRaw) {
+                    const [y, m, d] = dateRaw.split('-');
+                    const date = `${d}-${m}-${y}`;
+                    lines = lines.filter(l => l.date === date);
+                }
             } else if (dateRaw) {
                 const [y, m, d] = dateRaw.split('-');
                 const date = `${d}-${m}-${y}`;
-                matches = dialogs.filter(d => d.date === date);
+                lines = dialogs.flatMap(d => d.lines).filter(l => l.date === date);
             } else {
                 alert('Please select a date or topic.'); return;
             }
-            if (!matches || matches.length === 0) { alert('No dialog found for that selection.'); return; }
-            this._lines = matches.flatMap(d => d.lines);
+            if (!lines || lines.length === 0) { alert('No dialog found for that selection.'); return; }
+            this._lines = lines;
             this._loadNotes();
 
             this._index = 0;
