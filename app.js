@@ -775,7 +775,14 @@ const app = {
             } else if (dateRaw) {
                 const [y, m, d] = dateRaw.split('-');
                 const date = `${d}-${m}-${y}`;
-                lines = dialogs.flatMap(d => d.lines).filter(l => l.date === date);
+                const seen = new Set();
+                lines = dialogs.flatMap(d => d.lines).filter(l => {
+                    if (l.date !== date) return false;
+                    const key = l.pol + '\0' + l.tur;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
             } else {
                 alert('Please select a date or topic.'); return;
             }
