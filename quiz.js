@@ -23,6 +23,7 @@ const quiz = {
                 hard: true,
                 unmarked: true,
                 noDateOnly: false,
+                noGroupOnly: false,
                 group: '',
                 groups: [],
                 dateFrom: '',
@@ -306,6 +307,7 @@ const quiz = {
             hard: document.getElementById('quizChkHard').checked,
             unmarked: document.getElementById('quizChkUnmarked').checked,
             noDateOnly: document.getElementById('quizFilterNoDateOnly').checked,
+            noGroupOnly: document.getElementById('quizFilterNoGroupOnly').checked,
             groups: this._getCheckedQuizGroups(),
             dateFrom: filterDateFromStr,
             dateTo: filterDateToStr
@@ -367,6 +369,11 @@ const quiz = {
                 const filterDateTo = this.state.settings.filters.dateTo ? app.parseDate(this.state.settings.filters.dateTo) : null;
                 if (filterDateFrom && cardDate < filterDateFrom) return false;
                 if (filterDateTo && cardDate > filterDateTo) return false;
+            }
+
+            if (this.state.settings.filters.noGroupOnly) {
+                const cardGroups = card.groups || (card.group ? [card.group.trim()] : []);
+                if (cardGroups.length > 0) return false;
             }
             
             return true;

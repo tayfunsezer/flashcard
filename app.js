@@ -4,7 +4,7 @@ const app = {
     index: 0,
     direction: 'pol-tur',
     flipped: false,
-    filters: { easy: true, medium: true, hard: true, unmarked: true, noDateOnly: false },
+    filters: { easy: true, medium: true, hard: true, unmarked: true, noDateOnly: false, noGroupOnly: false },
     themeMode: 'light',
     inMemoryStorage: {},
     leitnerSessionCount: 0,
@@ -82,6 +82,10 @@ const app = {
         const noDateCheckbox = document.getElementById('filterNoDateOnly');
         if (noDateCheckbox) {
             noDateCheckbox.addEventListener('change', () => this.applyFilters());
+        }
+        const noGroupCheckbox = document.getElementById('filterNoGroupOnly');
+        if (noGroupCheckbox) {
+            noGroupCheckbox.addEventListener('change', () => this.applyFilters());
         }
 
         // Auto-focus search input when any group multiselect opens
@@ -478,6 +482,7 @@ const app = {
         document.getElementById('filterDateFromPicker').value = '';
         document.getElementById('filterDateToPicker').value = '';
         document.getElementById('filterNoDateOnly').checked = false;
+        document.getElementById('filterNoGroupOnly').checked = false;
         const list = document.getElementById('filterGroupList');
         if (list) list.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
         this._updateGroupSummary('filterGroupList', 'filterGroupSummary');
@@ -496,6 +501,7 @@ const app = {
         const filterDateFromStr = document.getElementById('filterDateFromPicker').value.trim();
         const filterDateToStr = document.getElementById('filterDateToPicker').value.trim();
         const filterNoDateOnly = document.getElementById('filterNoDateOnly').checked;
+        const filterNoGroupOnly = document.getElementById('filterNoGroupOnly').checked;
         const filterDateFrom = filterDateFromStr ? this.parseDate(filterDateFromStr) : null;
         const filterDateTo = filterDateToStr ? this.parseDate(filterDateToStr) : null;
         const selectedGroups = this._getCheckedGroups('filterGroupList');
@@ -513,7 +519,12 @@ const app = {
                 if (filterDateFrom && cardDate < filterDateFrom) return false;
                 if (filterDateTo && cardDate > filterDateTo) return false;
             }
-            
+
+            if (filterNoGroupOnly) {
+                const cardGroups = card.groups || (card.group ? [card.group.trim()] : []);
+                if (cardGroups.length > 0) return false;
+            }
+
             if (selectedGroups.length > 0) {
                 const cardGroups = card.groups || (card.group ? [card.group.trim()] : []);
                 if (!selectedGroups.some(g => cardGroups.includes(g))) return false;
