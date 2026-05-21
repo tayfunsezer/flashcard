@@ -4,7 +4,7 @@ const app = {
     index: 0,
     direction: 'pol-tur',
     flipped: false,
-    filters: { easy: true, medium: true, hard: true, unmarked: true },
+    filters: { easy: true, medium: true, hard: true, unmarked: true, noDateOnly: false },
     themeMode: 'light',
     inMemoryStorage: {},
     leitnerSessionCount: 0,
@@ -79,6 +79,10 @@ const app = {
         ['chkEasy', 'chkMedium', 'chkHard', 'chkUnmarked'].forEach(id => {
             document.getElementById(id).addEventListener('change', () => this.applyFilters());
         });
+        const noDateCheckbox = document.getElementById('filterNoDateOnly');
+        if (noDateCheckbox) {
+            noDateCheckbox.addEventListener('change', () => this.applyFilters());
+        }
 
         // Auto-focus search input when any group multiselect opens
         document.addEventListener('toggle', e => {
@@ -473,6 +477,7 @@ const app = {
         document.getElementById('chkUnmarked').checked = true;
         document.getElementById('filterDateFromPicker').value = '';
         document.getElementById('filterDateToPicker').value = '';
+        document.getElementById('filterNoDateOnly').checked = false;
         const list = document.getElementById('filterGroupList');
         if (list) list.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
         this._updateGroupSummary('filterGroupList', 'filterGroupSummary');
@@ -490,6 +495,7 @@ const app = {
 
         const filterDateFromStr = document.getElementById('filterDateFromPicker').value.trim();
         const filterDateToStr = document.getElementById('filterDateToPicker').value.trim();
+        const filterNoDateOnly = document.getElementById('filterNoDateOnly').checked;
         const filterDateFrom = filterDateFromStr ? this.parseDate(filterDateFromStr) : null;
         const filterDateTo = filterDateToStr ? this.parseDate(filterDateToStr) : null;
         const selectedGroups = this._getCheckedGroups('filterGroupList');
@@ -499,7 +505,9 @@ const app = {
             const diff = card.difficulty || 'unmarked';
             if (!this.filters[diff]) return false;
             
-            if (filterDateFrom || filterDateTo) {
+            if (filterNoDateOnly) {
+                if (card.date) return false;
+            } else if (filterDateFrom || filterDateTo) {
                 const cardDate = card.date ? this.parseDate(card.date) : null;
                 if (!cardDate) return false;
                 if (filterDateFrom && cardDate < filterDateFrom) return false;
