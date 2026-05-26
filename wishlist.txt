@@ -1,0 +1,3 @@
+1)Ok in the flashcard app,  during quiz I want to be able to end the session in mid quiz and then I want to be able to study and export the missed and marked questions so far.
+So basically I dont want to wait until the end of the test. 
+Exports should give the questions in the format that quiz generate button expects.
