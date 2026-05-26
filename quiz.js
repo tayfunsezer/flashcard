@@ -45,6 +45,9 @@ const quiz = {
         document.getElementById('requizSavedBtn').addEventListener('click', this.requizSaved.bind(this));
         document.getElementById('newQuizBtn').addEventListener('click', this.resetQuiz.bind(this));
         document.getElementById('resetQuizBtn').addEventListener('click', this.resetQuiz.bind(this));
+        document.getElementById('endQuizEarlyBtn')?.addEventListener('click', this.showResults.bind(this));
+        document.getElementById('exportMissedBtn')?.addEventListener('click', this.exportMissed.bind(this));
+        document.getElementById('exportSavedBtn')?.addEventListener('click', this.exportSaved.bind(this));
         document.getElementById('saveForLaterBtn').addEventListener('click', this.saveForLater.bind(this));
         
         // Add tab switching handler for the quiz tab
@@ -725,6 +728,12 @@ const quiz = {
         document.getElementById('requizSavedBtn').style.display =
             this.state.savedForLater.length > 0 ? 'inline-block' : 'none';
 
+        // Show/hide Export buttons
+        if (document.getElementById('exportMissedBtn'))
+            document.getElementById('exportMissedBtn').style.display = this.state.missedQuestions.length > 0 ? 'inline-block' : 'none';
+        if (document.getElementById('exportSavedBtn'))
+            document.getElementById('exportSavedBtn').style.display = this.state.savedForLater.length > 0 ? 'inline-block' : 'none';
+
         // Show saved for later list
         const savedContainer = document.getElementById('savedForLaterList');
         savedContainer.innerHTML = '';
@@ -823,6 +832,38 @@ const quiz = {
         // Show question, hide results
         document.getElementById('quizQuestion').style.display = 'block';
         document.getElementById('quizResults').style.display = 'none';
+    },
+
+    // Export questions in the format required by the URL generator
+    exportQuestions: function(questionList, filename) {
+        if (!questionList || questionList.length === 0) return;
+        
+        // Filter for multiple-choice only as the URL generator expects exactly 4 options
+        const exportData = questionList
+            .filter(q => q.options && q.options.length === 4)
+            .map(q => ({
+                question: q.question,
+                options: q.options,
+                correctIndex: q.options.indexOf(q.correctAnswer)
+            }));
+        
+        if (exportData.length === 0) {
+            alert('No multiple-choice questions available to export. (True/False questions are not currently supported by the export format).');
+            return;
+        }
+
+        const json = JSON.stringify(exportData, null, 2);
+        if (typeof app !== 'undefined' && app.downloadFile) {
+            app.downloadFile(json, filename, 'application/json');
+        }
+    },
+
+    exportMissed: function() {
+        this.exportQuestions(this.state.missedQuestions, 'missed_questions.json');
+    },
+
+    exportSaved: function() {
+        this.exportQuestions(this.state.savedForLater, 'saved_questions.json');
     },
 
     // Reset the quiz and go back to setup
