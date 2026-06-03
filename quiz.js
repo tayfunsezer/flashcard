@@ -54,6 +54,11 @@ const quiz = {
         document.getElementById('excludeFileInput')?.addEventListener('change', (e) => this.loadExcludeFile(e));
         document.getElementById('excludeFileInput')?.addEventListener('change', (e) => this.loadExcludeFile(e));
         document.getElementById('excludeApplyBtn')?.addEventListener('click', () => this.applyExcludeText());
+        let _excludeDebounce;
+        document.getElementById('excludeTextInput')?.addEventListener('input', () => {
+            clearTimeout(_excludeDebounce);
+            _excludeDebounce = setTimeout(() => this.applyExcludeText(), 600);
+        });
         document.getElementById('excludeClearBtn')?.addEventListener('click', () => this.clearExcluded());
         
         // Add tab switching handler for the quiz tab
@@ -375,18 +380,11 @@ const quiz = {
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) {
                 parsed.forEach(item => {
-                    if (typeof item === 'string') {
-                        words.push(item);
-                    } else if (item.options && typeof item.correctIndex === 'number') {
-                        // Extract the correct answer (card.pol in pol-tur quizzes)
-                        words.push(item.options[item.correctIndex]);
-                    } else if (item.question) {
-                        words.push(item.question);
-                    }
+                    if (typeof item === 'string') words.push(item);
+                    else if (item.question) words.push(item.question);
                 });
             }
         } catch (e) {
-            // Treat as pipe-separated
             words = raw.split('|').map(w => w.trim()).filter(w => w);
         }
         words.forEach(w => this.state.excludedWords.add(w.toLowerCase().trim()));
@@ -442,7 +440,7 @@ const quiz = {
                 if (cardGroups.length > 0) return false;
             }
 
-            // Filter excluded words (direction-aware: match only the question-side field)
+            // Filter excluded words — match only the question-side field based on direction
             if (this.state.excludedWords.size > 0) {
                 const isPolToTur = this.state.settings.direction === 'pol-tur';
                 const questionField = (isPolToTur ? (card.pol || '') : (card.tur || '')).toLowerCase().trim();

@@ -298,11 +298,12 @@
                             <textarea id="excludeTextInput" class="w-full p-10 border rounded-6 font-mono text-xs" style="min-height:70px;" placeholder="word1|word2|word3  or paste JSON array"></textarea>
                             <div class="flex gap-8 items-center mt-8 flex-wrap">
                                 <button class="button btn-secondary" id="excludeApplyBtn">Apply Text</button>
-                                <button class="button btn-secondary" id="excludeFileBtn">📂 Load JSON File</button>
+                                <button class="button btn-secondary" id="excludeFileBtn">📂 Load JSON Files</button>
                                 <input type="file" id="excludeFileInput" accept=".json" multiple style="display:none;">
                                 <button class="button btn-danger" id="excludeClearBtn">Clear Exclusions</button>
                                 <span id="excludeStatus" style="font-size:13px; color:var(--danger); font-weight:600;"></span>
                             </div>
+                            <p class="text-sm mt-8" style="color:var(--text-light);">JSON file format: <code>[{"question":"..."}]</code> — only the <code>question</code> field is used; all other fields are ignored.</p>
                         </div>
                     </details>
 
