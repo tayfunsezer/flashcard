@@ -13,6 +13,7 @@ const quiz = {
         quizInProgress: false,
         missedQuestions: [],
         savedForLater: [],
+        excludedWords: new Set(),
         settings: {
             type: 'multiple-choice',
             direction: 'pol-tur',
@@ -49,6 +50,11 @@ const quiz = {
         document.getElementById('exportMissedBtn')?.addEventListener('click', this.exportMissed.bind(this));
         document.getElementById('exportSavedBtn')?.addEventListener('click', this.exportSaved.bind(this));
         document.getElementById('saveForLaterBtn').addEventListener('click', this.saveForLater.bind(this));
+        document.getElementById('excludeFileBtn')?.addEventListener('click', () => document.getElementById('excludeFileInput').click());
+        document.getElementById('excludeFileInput')?.addEventListener('change', (e) => this.loadExcludeFile(e));
+        document.getElementById('excludeFileInput')?.addEventListener('change', (e) => this.loadExcludeFile(e));
+        document.getElementById('excludeApplyBtn')?.addEventListener('click', () => this.applyExcludeText());
+        document.getElementById('excludeClearBtn')?.addEventListener('click', () => this.clearExcluded());
         
         // Add tab switching handler for the quiz tab
         const tabButtons = document.querySelectorAll('.tab-btn');
@@ -342,6 +348,63 @@ const quiz = {
         document.getElementById('quizResults').style.display = 'none';
     },
 
+    // Parse and apply excluded words from text (pipe-separated or JSON)
+    applyExcludeText: function() {
+        const raw = document.getElementById('excludeTextInput').value.trim();
+        if (!raw) return;
+        this._parseAndAddExclusions(raw);
+    },
+
+    loadExcludeFile: function(e) {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+        let pending = files.length;
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                this._parseAndAddExclusions(ev.target.result.trim());
+                if (--pending === 0) e.target.value = '';
+            };
+            reader.readAsText(file);
+        });
+    },
+
+    _parseAndAddExclusions: function(raw) {
+        let words = [];
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                parsed.forEach(item => {
+                    if (typeof item === 'string') {
+                        words.push(item);
+                    } else if (item.options && typeof item.correctIndex === 'number') {
+                        // Extract the correct answer (card.pol in pol-tur quizzes)
+                        words.push(item.options[item.correctIndex]);
+                    } else if (item.question) {
+                        words.push(item.question);
+                    }
+                });
+            }
+        } catch (e) {
+            // Treat as pipe-separated
+            words = raw.split('|').map(w => w.trim()).filter(w => w);
+        }
+        words.forEach(w => this.state.excludedWords.add(w.toLowerCase().trim()));
+        this._updateExcludeStatus();
+    },
+
+    clearExcluded: function() {
+        this.state.excludedWords.clear();
+        document.getElementById('excludeTextInput').value = '';
+        this._updateExcludeStatus();
+    },
+
+    _updateExcludeStatus: function() {
+        const count = this.state.excludedWords.size;
+        const el = document.getElementById('excludeStatus');
+        if (el) el.textContent = count > 0 ? `${count} word${count !== 1 ? 's' : ''} excluded` : '';
+    },
+
     // Generate quiz questions based on settings
     generateQuestions: function() {
         console.log("Generating quiz questions...");
@@ -377,6 +440,13 @@ const quiz = {
             if (this.state.settings.filters.noGroupOnly) {
                 const cardGroups = card.groups || (card.group ? [card.group.trim()] : []);
                 if (cardGroups.length > 0) return false;
+            }
+
+            // Filter excluded words (direction-aware: match only the question-side field)
+            if (this.state.excludedWords.size > 0) {
+                const isPolToTur = this.state.settings.direction === 'pol-tur';
+                const questionField = (isPolToTur ? (card.pol || '') : (card.tur || '')).toLowerCase().trim();
+                if (this.state.excludedWords.has(questionField)) return false;
             }
             
             return true;

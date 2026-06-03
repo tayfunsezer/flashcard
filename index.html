@@ -290,6 +290,22 @@
                         </div>
                     </div>
                     
+                    <!-- Exclude Words -->
+                    <details class="collapsible-section">
+                        <summary class="collapsible-summary">🚫 Exclude Words</summary>
+                        <div class="mt-10">
+                            <p class="text-sm mb-8">Paste pipe-separated words (<code>word1|word2</code>) or a JSON file from a previous quiz run. Matched cards will be skipped.</p>
+                            <textarea id="excludeTextInput" class="w-full p-10 border rounded-6 font-mono text-xs" style="min-height:70px;" placeholder="word1|word2|word3  or paste JSON array"></textarea>
+                            <div class="flex gap-8 items-center mt-8 flex-wrap">
+                                <button class="button btn-secondary" id="excludeApplyBtn">Apply Text</button>
+                                <button class="button btn-secondary" id="excludeFileBtn">📂 Load JSON File</button>
+                                <input type="file" id="excludeFileInput" accept=".json" multiple style="display:none;">
+                                <button class="button btn-danger" id="excludeClearBtn">Clear Exclusions</button>
+                                <span id="excludeStatus" style="font-size:13px; color:var(--danger); font-weight:600;"></span>
+                            </div>
+                        </div>
+                    </details>
+
                     <div class="button-group">
                         <button class="button btn-primary" id="startQuizBtn">Start Quiz</button>
                     </div>
