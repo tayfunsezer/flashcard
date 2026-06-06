@@ -100,17 +100,15 @@ const app = {
             const fromEl = document.getElementById(fromId);
             const toEl = document.getElementById(toId);
             if (fromEl && toEl) {
-                const handler = () => {
-                    console.log("Date range picker changed:", fromEl.value, "to", toEl.value);
+                fromEl.addEventListener('change', () => {
+                    if (fromEl.value) {
+                        const [y, m] = fromEl.value.split('-').map(Number);
+                        const lastDay = new Date(y, m, 0).getDate();
+                        toEl.value = `${y}-${String(m).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+                    }
                     this.applyFilters();
-                };
-                fromEl.addEventListener('change', handler);
-                fromEl.addEventListener('input', handler);
-                toEl.addEventListener('change', handler);
-                toEl.addEventListener('input', handler);
-                console.log("Date range pickers attached");
-            } else {
-                console.warn("Date range picker elements not found:", fromId, toId);
+                });
+                toEl.addEventListener('change', () => this.applyFilters());
             }
         };
         

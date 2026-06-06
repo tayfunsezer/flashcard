@@ -60,6 +60,18 @@ const quiz = {
             _excludeDebounce = setTimeout(() => this.applyExcludeText(), 600);
         });
         document.getElementById('excludeClearBtn')?.addEventListener('click', () => this.clearExcluded());
+
+        const quizFromPicker = document.getElementById('quizFilterDateFromPicker');
+        const quizToPicker = document.getElementById('quizFilterDateToPicker');
+        if (quizFromPicker && quizToPicker) {
+            quizFromPicker.addEventListener('change', () => {
+                if (quizFromPicker.value) {
+                    const [y, m] = quizFromPicker.value.split('-').map(Number);
+                    const lastDay = new Date(y, m, 0).getDate();
+                    quizToPicker.value = `${y}-${String(m).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+                }
+            });
+        }
         
         // Add tab switching handler for the quiz tab
         const tabButtons = document.querySelectorAll('.tab-btn');
