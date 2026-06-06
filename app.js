@@ -149,6 +149,30 @@ const app = {
         this.switchTab('study');
     },
 
+    previewQuizFiles() {
+        const files = Array.from(document.getElementById('quizJsonFile').files);
+        const preview = document.getElementById('quizJsonPreview');
+        if (!files.length) { preview.style.display = 'none'; return; }
+        let done = 0;
+        const results = new Array(files.length);
+        files.forEach((file, i) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    results[i] = `<span style="color:var(--success);">✓</span> <strong>${file.name}</strong> — ${Array.isArray(data) ? data.length : '?'} words`;
+                } catch {
+                    results[i] = `<span style="color:var(--danger);">✗</span> <strong>${file.name}</strong> — invalid JSON`;
+                }
+                if (++done === files.length) {
+                    preview.innerHTML = results.join('<br>');
+                    preview.style.display = 'block';
+                }
+            };
+            reader.readAsText(file);
+        });
+    },
+
     importQuizJSON() {
         const files = Array.from(document.getElementById('quizJsonFile').files);
         if (!files.length) {

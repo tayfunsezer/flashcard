@@ -440,13 +440,14 @@ Dobry	İyi	03-04-2026	Greeting|Basic
                 <p>Upload a quiz JSON file (e.g. <code>april-2026-001.json</code>). Words are extracted and loaded as flashcard pairs — ready for flashcard mode, Leitner sessions, and quizzes.</p>
                 <p>Each item's <strong>question</strong> becomes the front side, <strong>correct answer</strong> becomes the back side.</p>
                 <div class="flex gap-15 items-center mb-15">
-                    <label class="file-label" for="quizJsonFile">Choose File</label>
-                    <input type="file" id="quizJsonFile" accept=".json" multiple>
+                    <label class="file-label" for="quizJsonFile">Choose Files</label>
+                    <input type="file" id="quizJsonFile" accept=".json" multiple onchange="app.previewQuizFiles()">
                     <select id="quizJsonMode" class="p-4 border rounded-4">
                         <option value="replace">Replace existing cards</option>
                         <option value="add">Add to existing cards</option>
                     </select>
                 </div>
+                <div id="quizJsonPreview" style="display:none;" class="mb-12 text-sm"></div>
                 <div class="button-group">
                     <button class="button btn-primary" onclick="app.importQuizJSON()">Import</button>
                 </div>
