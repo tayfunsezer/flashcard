@@ -149,6 +149,56 @@ const app = {
         this.switchTab('study');
     },
 
+    importQuizJSON() {
+        const files = Array.from(document.getElementById('quizJsonFile').files);
+        if (!files.length) {
+            this.showMessage('quizJsonMsg', 'No file selected', 'error');
+            return;
+        }
+        const mode = document.getElementById('quizJsonMode').value;
+        let allPairs = [];
+        let pending = files.length;
+        let hasError = false;
+
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data) || data.length === 0) throw new Error(`${file.name}: invalid format`);
+                    const pairs = data.map(item => ({
+                        pol: item.question.trim(),
+                        tur: item.options[item.correctIndex].trim(),
+                        difficulty: 'unmarked'
+                    })).filter(p => p.pol && p.tur);
+                    allPairs = allPairs.concat(pairs);
+                } catch (err) {
+                    hasError = true;
+                    this.showMessage('quizJsonMsg', 'Error: ' + err.message, 'error');
+                }
+                if (--pending === 0 && !hasError) {
+                    if (allPairs.length === 0) {
+                        this.showMessage('quizJsonMsg', 'No valid pairs found', 'error');
+                        return;
+                    }
+                    if (mode === 'replace') {
+                        this.cards = allPairs;
+                    } else {
+                        this.cards = [...this.cards, ...allPairs];
+                    }
+                    this.filtered = [...this.cards];
+                    this.index = 0;
+                    this.flipped = false;
+                    this.saveData();
+                    this.updateUI();
+                    this.showMessage('quizJsonMsg', `✓ Imported ${allPairs.length} pairs from ${files.length} file${files.length > 1 ? 's' : ''}`, 'success');
+                    this.switchTab('study');
+                }
+            };
+            reader.readAsText(file);
+        });
+    },
+
     async importExcel() {
         const file = document.getElementById('excelFile').files[0];
         if (!file) {

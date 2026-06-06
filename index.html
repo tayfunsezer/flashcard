@@ -18,6 +18,7 @@
             <button class="tab-btn" data-tab="quiz">Quiz</button>
             <button class="tab-btn" data-tab="import-text">Text Import</button>
             <button class="tab-btn" data-tab="import-excel">File Import</button>
+            <button class="tab-btn" data-tab="import-quiz-json">JSON Import</button>
 
             <button class="tab-btn" data-tab="dialog">Dialog</button>
             <button class="tab-btn" data-tab="settings">Settings</button>
@@ -429,6 +430,27 @@ Dobry	İyi	03-04-2026	Greeting|Basic
                     <button class="button btn-secondary" onclick="document.getElementById('textInput').value=''">Clear</button>
                 </div>
                 <div id="textMsg"></div>
+            </div>
+        </div>
+
+        <!-- JSON IMPORT TAB -->
+        <div id="import-quiz-json" class="tab-content">
+            <div class="section">
+                <h2>Import from JSON File</h2>
+                <p>Upload a quiz JSON file (e.g. <code>april-2026-001.json</code>). Words are extracted and loaded as flashcard pairs — ready for flashcard mode, Leitner sessions, and quizzes.</p>
+                <p>Each item's <strong>question</strong> becomes the front side, <strong>correct answer</strong> becomes the back side.</p>
+                <div class="flex gap-15 items-center mb-15">
+                    <label class="file-label" for="quizJsonFile">Choose File</label>
+                    <input type="file" id="quizJsonFile" accept=".json" multiple>
+                    <select id="quizJsonMode" class="p-4 border rounded-4">
+                        <option value="replace">Replace existing cards</option>
+                        <option value="add">Add to existing cards</option>
+                    </select>
+                </div>
+                <div class="button-group">
+                    <button class="button btn-primary" onclick="app.importQuizJSON()">Import</button>
+                </div>
+                <div id="quizJsonMsg"></div>
             </div>
         </div>
 
