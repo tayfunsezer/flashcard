@@ -721,10 +721,50 @@ const app = {
             listEl.innerHTML = '<p class="text-sm text-light">No marked words yet.</p>';
             return;
         }
-        listEl.innerHTML = [...this.markedWords].map(key => {
+        listEl.innerHTML = '';
+        [...this.markedWords].forEach(key => {
             const [pol, tur] = key.split('::');
-            return `<div class="text-sm" style="padding:4px 0; border-bottom:1px solid var(--border);">${pol} → ${tur}</div>`;
-        }).join('');
+            const div = document.createElement('div');
+            div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);';
+            const span = document.createElement('span');
+            span.className = 'text-sm';
+            span.textContent = pol + ' → ' + tur;
+            const btn = document.createElement('button');
+            btn.textContent = '✕';
+            btn.title = 'Unmark';
+            btn.style.cssText = 'background:none;border:none;cursor:pointer;color:var(--danger);font-size:16px;padding:0 4px;';
+            btn.addEventListener('click', () => this.unmarkByKey(key));
+            div.appendChild(span);
+            div.appendChild(btn);
+            listEl.appendChild(div);
+        });
+    },
+
+    unmarkByKey(key) {
+        this.markedWords.delete(key);
+        this.saveMarked();
+        this.renderMarkedList();
+        this.refreshMarkButtons();
+    },
+
+    refreshMarkButtons() {
+        const flashcardBtn = document.getElementById('flashcardMarkBtn');
+        if (flashcardBtn && document.getElementById('studyContent')?.style.display !== 'none' && this.filtered.length > 0) {
+            flashcardBtn.textContent = this.isMarked(this.filtered[this.index]) ? '🔖 Marked' : '🏷️ Mark';
+        }
+        const leitnerBtn = document.getElementById('leitnerMarkBtn');
+        if (leitnerBtn && document.getElementById('leitnerSession')?.style.display !== 'none') {
+            const card = this.leitner._session.cards[this.leitner._session.index];
+            if (card) leitnerBtn.textContent = this.isMarked(card) ? '🔖 Marked' : '🏷️ Mark';
+        }
+        const quizBtn = document.getElementById('quizMarkBtn');
+        if (quizBtn && document.getElementById('quizQuestion')?.style.display !== 'none') {
+            const q = typeof quiz !== 'undefined' ? quiz.state.questions[quiz.state.currentQuestionIndex] : null;
+            if (q && q.originalCard) {
+                quizBtn.style.display = 'inline-block';
+                quizBtn.textContent = this.isMarked(q.originalCard) ? '🔖 Marked' : '🏷️ Mark';
+            }
+        }
     },
 
     exportMarked() {
