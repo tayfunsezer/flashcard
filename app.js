@@ -215,7 +215,10 @@ const app = {
                     this.flipped = false;
                     this.saveData();
                     this.updateUI();
-                    this.showMessage('quizJsonMsg', `✓ Imported ${allPairs.length} pairs from ${files.length} file${files.length > 1 ? 's' : ''}`, 'success');
+                    document.getElementById('quizJsonFile').value = '';
+                    document.getElementById('quizJsonPreview').style.display = 'none';
+                    document.getElementById('quizJsonPreview').innerHTML = '';
+                    document.getElementById('quizJsonMsg').innerHTML = '';
                     this.switchTab('study');
                 }
             };
@@ -245,7 +248,8 @@ const app = {
             this.flipped = false;
             this.saveData();
             this.updateUI();
-            this.showMessage('excelMsg', `✓ Imported ${data.length} word pairs`, 'success');
+            this.clearExcelInput();
+            document.getElementById('excelMsg').innerHTML = '';
             this.switchTab('study');
         } catch (error) {
             console.error('CSV import error:', error);
@@ -803,6 +807,9 @@ const app = {
         } else {
             document.getElementById('emptyStudy').style.display = 'none';
             document.getElementById('studyContent').style.display = 'block';
+            document.getElementById('leitnerSession').style.display = 'none';
+            document.getElementById('leitnerComplete').style.display = 'none';
+            this.leitner._session = { cards: [], index: 0, direction: 'pol-tur', flipped: false, movedUp: 0, movedDown: 0 };
             this.updateGroupDropdown();
             this.updateCardDisplay();
             this.leitner._updateSettingsPanel();
