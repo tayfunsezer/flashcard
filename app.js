@@ -31,7 +31,7 @@ const app = {
             console.warn('localStorage not available');
         }
         
-        this.themeMode = savedTheme || 'light';
+        this.themeMode = savedTheme || 'dark';
         this.applyTheme();
         
         btn.addEventListener('click', () => {
