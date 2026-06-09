@@ -1101,11 +1101,14 @@ const app = {
                 app.leitnerSessionCount--;
                 return;
             }
-            for (let i = due.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [due[i], due[j]] = [due[j], due[i]];
-            }
             const dir = document.getElementById('leitnerDirection').value;
+            const randomize = document.getElementById('leitnerRandomize').checked;
+            if (randomize) {
+                for (let i = due.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [due[i], due[j]] = [due[j], due[i]];
+                }
+            }
             this._session = { cards: due, index: 0, direction: dir, flipped: false, movedUp: 0, movedDown: 0 };
             document.getElementById('studyContent').style.display = 'none';
             document.getElementById('leitnerComplete').style.display = 'none';
