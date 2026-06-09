@@ -50,6 +50,12 @@ const quiz = {
         document.getElementById('exportMissedBtn')?.addEventListener('click', this.exportMissed.bind(this));
         document.getElementById('exportSavedBtn')?.addEventListener('click', this.exportSaved.bind(this));
         document.getElementById('saveForLaterBtn').addEventListener('click', this.saveForLater.bind(this));
+        document.getElementById('quizMarkBtn')?.addEventListener('click', () => {
+            const q = this.state.questions[this.state.currentQuestionIndex];
+            if (!q || !q.originalCard) return;
+            app.toggleMark(q.originalCard);
+            document.getElementById('quizMarkBtn').textContent = app.isMarked(q.originalCard) ? '\uD83D\uDD16 Marked' : '\uD83C\uDFF7\uFE0F Mark';
+        });
         document.getElementById('excludeFileBtn')?.addEventListener('click', () => document.getElementById('excludeFileInput').click());
         document.getElementById('excludeFileInput')?.addEventListener('change', (e) => this.loadExcludeFile(e));
         document.getElementById('excludeFileInput')?.addEventListener('change', (e) => this.loadExcludeFile(e));
@@ -300,6 +306,14 @@ const quiz = {
             items.appendChild(lbl);
         });
         this._updateQuizGroupSummary();
+    },
+
+    _updateMarkBtn: function(question) {
+        const btn = document.getElementById('quizMarkBtn');
+        if (!btn) return;
+        if (!question || !question.originalCard) { btn.style.display = 'none'; return; }
+        btn.style.display = 'inline-block';
+        btn.textContent = app.isMarked(question.originalCard) ? '\uD83D\uDD16 Marked' : '\uD83C\uDFF7\uFE0F Mark';
     },
 
     _getCheckedQuizGroups: function() {
@@ -592,6 +606,8 @@ const quiz = {
         saveBtn.textContent = alreadySaved ? '🔖 Saved!' : '🔖 Save for Later';
         saveBtn.disabled = alreadySaved;
 
+        this._updateMarkBtn(currentQuestion);
+
         // If already answered, restore feedback state
         if (currentQuestion.userAnswer !== null) {
             this.state.selectedOption = currentQuestion.options.indexOf(currentQuestion.userAnswer);
@@ -630,6 +646,7 @@ const quiz = {
         const isLast = this.state.currentQuestionIndex === this.state.questions.length - 1;
         document.getElementById('nextQuestionBtn').style.display = 'inline-block';
         document.getElementById('nextQuestionBtn').textContent = isLast ? 'Finish Quiz' : 'Next →';
+        this._updateMarkBtn(currentQuestion);
     },
 
     // Allow user to change their answer

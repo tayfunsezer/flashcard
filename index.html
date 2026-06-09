@@ -93,6 +93,7 @@
                 <div class="button-group">
                     <button class="button btn-secondary" onclick="app.shuffle()">🔀 Shuffle</button>
                     <button class="button btn-secondary" onclick="app.resetProgress()">↻ Reset</button>
+                    <button class="button btn-warning" id="flashcardMarkBtn" onclick="app.toggleMark(app.filtered[app.index]); app.updateCardDisplay();">🏷️ Mark</button>
                     <button class="button btn-danger" onclick="app.clearAll()">🗑️ Clear</button>
                 </div>
 
@@ -146,6 +147,7 @@
                 </div>
 
                 <div class="button-group">
+                    <button class="button btn-warning" id="leitnerMarkBtn" onclick="app.toggleMark(app.leitner._session.cards[app.leitner._session.index]); app.leitner._renderCard();">🏷️ Mark</button>
                     <button class="button btn-secondary" onclick="app.leitner.endSession()">End Session</button>
                 </div>
             </div>
@@ -367,6 +369,7 @@
                         <button class="button btn-secondary" id="resetQuizBtn">Reset Quiz</button>
                         <button class="button btn-danger" id="endQuizEarlyBtn">End Quiz</button>
                         <button class="button btn-secondary" id="prevQuestionBtn" style="display: none;">← Prev</button>
+                        <button class="button btn-warning" id="quizMarkBtn" style="display:none;">🏷️ Mark</button>
                         <button class="button btn-warning" id="saveForLaterBtn">🔖 Save for Later</button>
                         <button class="button btn-primary" id="nextQuestionBtn" style="display: none;">Next →</button>
                     </div>
@@ -520,6 +523,15 @@ Dziękuję	Teşekkür ederim	02-04-2026	Courtesy
                         <button class="button btn-secondary" onclick="app.exportJSON()">Export JSON</button>
                         <button class="button btn-secondary" onclick="app.exportCSV()">Export CSV</button>
                     </div>
+                </div>
+            </div>
+            <div class="section">
+                <h2>🔖 Marked Words</h2>
+                <p class="mb-12 text-sm"><strong><span id="markedCount">0</span></strong> words marked</p>
+                <div id="markedList" class="mb-12" style="max-height:200px; overflow-y:auto;"></div>
+                <div class="button-group">
+                    <button class="button btn-secondary" onclick="app.exportMarked()">📤 Export Marked</button>
+                    <button class="button btn-danger" onclick="app.clearMarked()">🗑️ Clear Marked</button>
                 </div>
             </div>
             <div class="section">

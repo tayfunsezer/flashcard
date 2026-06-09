@@ -8,11 +8,13 @@ const app = {
     themeMode: 'light',
     inMemoryStorage: {},
     leitnerSessionCount: 0,
+    markedWords: new Set(),
 
     init() {
         this.initTheme();
         this.setupTabs();
         this.loadData();
+        this.loadMarked();
         this.loadFromUrl();
         this.setupEventListeners();
         this.updateUI();
@@ -453,6 +455,10 @@ const app = {
         this.updateProgress();
         document.getElementById('directionBtn').textContent =
             this.direction === 'pol-tur' ? 'Polish → Turkish' : 'Turkish → Polish';
+        const markBtn = document.getElementById('flashcardMarkBtn');
+        if (markBtn && this.filtered.length > 0) {
+            markBtn.textContent = this.isMarked(this.filtered[this.index]) ? '🔖 Marked' : '🏷️ Mark';
+        }
         if (document.getElementById('autoSpeak').checked) this.speakCurrent();
     },
 
@@ -615,7 +621,9 @@ const app = {
         if (confirm('Delete all words and clear everything?')) {
             this.cards = [];
             this.filtered = [];
+            this.markedWords.clear();
             this.saveData();
+            this.saveMarked();
             this.updateUI();
             document.getElementById('textInput').value = '';
             document.getElementById('jsonInput').value = '';
@@ -665,6 +673,73 @@ const app = {
             csv += `"${c.pol.replace(/"/g, '""')}","${c.tur.replace(/"/g, '""')}","${c.difficulty}"\n`;
         });
         this.downloadFile(csv, 'flashcards.csv', 'text/csv');
+    },
+
+    _markKey(card) {
+        return card.pol + '::' + card.tur;
+    },
+
+    isMarked(card) {
+        return card ? this.markedWords.has(this._markKey(card)) : false;
+    },
+
+    toggleMark(card) {
+        if (!card) return;
+        const key = this._markKey(card);
+        if (this.markedWords.has(key)) {
+            this.markedWords.delete(key);
+        } else {
+            this.markedWords.add(key);
+        }
+        this.saveMarked();
+        this.renderMarkedList();
+    },
+
+    saveMarked() {
+        try {
+            localStorage.setItem('flashcard-marked', JSON.stringify([...this.markedWords]));
+        } catch (e) {}
+    },
+
+    loadMarked() {
+        try {
+            const raw = localStorage.getItem('flashcard-marked');
+            if (raw) {
+                const keys = JSON.parse(raw);
+                this.markedWords = new Set(keys);
+            }
+        } catch (e) {}
+        this.renderMarkedList();
+    },
+
+    renderMarkedList() {
+        const countEl = document.getElementById('markedCount');
+        const listEl = document.getElementById('markedList');
+        if (!countEl || !listEl) return;
+        countEl.textContent = this.markedWords.size;
+        if (this.markedWords.size === 0) {
+            listEl.innerHTML = '<p class="text-sm text-light">No marked words yet.</p>';
+            return;
+        }
+        listEl.innerHTML = [...this.markedWords].map(key => {
+            const [pol, tur] = key.split('::');
+            return `<div class="text-sm" style="padding:4px 0; border-bottom:1px solid var(--border);">${pol} → ${tur}</div>`;
+        }).join('');
+    },
+
+    exportMarked() {
+        if (this.markedWords.size === 0) { alert('No marked words to export.'); return; }
+        const data = [...this.markedWords].map(key => {
+            const [pol, tur] = key.split('::');
+            return { question: pol, options: [tur, tur, tur, tur], correctIndex: 0 };
+        });
+        this.downloadFile(JSON.stringify(data, null, 2), 'marked_words.json', 'application/json');
+    },
+
+    clearMarked() {
+        this.markedWords.clear();
+        this.saveMarked();
+        this.renderMarkedList();
     },
 
     downloadFile(content, filename, type) {
@@ -1055,6 +1130,8 @@ const app = {
             document.getElementById('leitnerCardLabel').classList.remove('flipped');
             document.getElementById('leitnerFlipBtn').style.display = 'inline-block';
             document.getElementById('leitnerAnswerBtns').style.display = 'none';
+            const markBtn = document.getElementById('leitnerMarkBtn');
+            if (markBtn) markBtn.textContent = app.isMarked(card) ? '🔖 Marked' : '🏷️ Mark';
             s.flipped = false;
         },
 
