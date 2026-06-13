@@ -701,6 +701,19 @@ const app = {
                 ? quiz.state.questions[quiz.state.currentQuestionIndex] : null;
             if (q && q.options && q.options.length === 4) {
                 this.markedExportQueue[key] = { question: q.question, options: q.options, correctIndex: q.options.indexOf(q.correctAnswer) };
+            } else {
+                // Leitner / flashcard mode: build 4 options from question pool
+                const question = card.pol;
+                const correctAnswer = card.tur;
+                const distractors = this.cards
+                    .filter(c => c !== card && c.tur !== correctAnswer)
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 3)
+                    .map(c => c.tur);
+                // Pad with unique placeholders if pool is too small
+                while (distractors.length < 3) distractors.push(`option${distractors.length + 2}`);
+                const options = [correctAnswer, ...distractors].sort(() => Math.random() - 0.5);
+                this.markedExportQueue[key] = { question, options, correctIndex: options.indexOf(correctAnswer) };
             }
         }
         this.saveMarked();
@@ -781,9 +794,21 @@ const app = {
 
     exportMarked() {
         if (this.markedWords.size === 0) { alert('No marked words to export.'); return; }
-        const data = [...this.markedWords]
-            .filter(key => this.markedExportQueue[key])
-            .map(key => this.markedExportQueue[key]);
+        const data = [...this.markedWords].map(key => {
+            if (this.markedExportQueue[key]) return this.markedExportQueue[key];
+            // Build options on the fly for words marked before queue was captured
+            const [pol, tur] = key.split('::');
+            const card = this.cards.find(c => c.pol === pol && c.tur === tur);
+            if (!card) return null;
+            const distractors = this.cards
+                .filter(c => c !== card && c.tur !== tur)
+                .sort(() => Math.random() - 0.5)
+                .slice(0, 3)
+                .map(c => c.tur);
+            while (distractors.length < 3) distractors.push(`option${distractors.length + 2}`);
+            const options = [tur, ...distractors].sort(() => Math.random() - 0.5);
+            return { question: pol, options, correctIndex: options.indexOf(tur) };
+        }).filter(Boolean);
         if (data.length === 0) { alert('No marked words with quiz options available. Mark words during a quiz.'); return; }
         this.downloadFile(JSON.stringify(data, null, 2), 'marked_words.json', 'application/json');
     },
