@@ -773,6 +773,17 @@ const app = {
 
     exportMarked() {
         if (this.markedWords.size === 0) { alert('No marked words to export.'); return; }
+
+        // In quiz mode, use actual quiz options if available
+        const inQuiz = typeof quiz !== 'undefined' && quiz.state.quizInProgress && quiz.state.questions.length > 0;
+        if (inQuiz) {
+            const markedQuestions = quiz.state.questions.filter(q => q.originalCard && this.isMarked(q.originalCard));
+            if (markedQuestions.length > 0) {
+                quiz.exportQuestions(markedQuestions, 'marked_words.json');
+                return;
+            }
+        }
+
         const data = [...this.markedWords].map(key => {
             const [pol, tur] = key.split('::');
             return { question: pol, options: [tur, tur, tur, tur], correctIndex: 0 };
