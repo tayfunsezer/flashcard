@@ -9,6 +9,7 @@ const app = {
     inMemoryStorage: {},
     leitnerSessionCount: 0,
     markedWords: new Set(),
+    markedExportQueue: {},
 
     init() {
         this.initTheme();
@@ -692,8 +693,15 @@ const app = {
         const key = this._markKey(card);
         if (this.markedWords.has(key)) {
             this.markedWords.delete(key);
+            delete this.markedExportQueue[key];
         } else {
             this.markedWords.add(key);
+            // Capture quiz options at mark time if inside an active quiz
+            const q = typeof quiz !== 'undefined' && quiz.state.questions.length > 0
+                ? quiz.state.questions[quiz.state.currentQuestionIndex] : null;
+            if (q && q.options && q.options.length === 4) {
+                this.markedExportQueue[key] = { question: q.question, options: q.options, correctIndex: q.options.indexOf(q.correctAnswer) };
+            }
         }
         this.saveMarked();
         this.renderMarkedList();
@@ -702,16 +710,16 @@ const app = {
     saveMarked() {
         try {
             localStorage.setItem('flashcard-marked', JSON.stringify([...this.markedWords]));
+            localStorage.setItem('flashcard-marked-queue', JSON.stringify(this.markedExportQueue));
         } catch (e) {}
     },
 
     loadMarked() {
         try {
             const raw = localStorage.getItem('flashcard-marked');
-            if (raw) {
-                const keys = JSON.parse(raw);
-                this.markedWords = new Set(keys);
-            }
+            if (raw) this.markedWords = new Set(JSON.parse(raw));
+            const queue = localStorage.getItem('flashcard-marked-queue');
+            if (queue) this.markedExportQueue = JSON.parse(queue);
         } catch (e) {}
         this.renderMarkedList();
     },
@@ -773,21 +781,10 @@ const app = {
 
     exportMarked() {
         if (this.markedWords.size === 0) { alert('No marked words to export.'); return; }
-
-        // In quiz mode, use actual quiz options if available
-        const inQuiz = typeof quiz !== 'undefined' && quiz.state.quizInProgress && quiz.state.questions.length > 0;
-        if (inQuiz) {
-            const markedQuestions = quiz.state.questions.filter(q => q.originalCard && this.isMarked(q.originalCard));
-            if (markedQuestions.length > 0) {
-                quiz.exportQuestions(markedQuestions, 'marked_words.json');
-                return;
-            }
-        }
-
-        const data = [...this.markedWords].map(key => {
-            const [pol, tur] = key.split('::');
-            return { question: pol, options: [tur, tur, tur, tur], correctIndex: 0 };
-        });
+        const data = [...this.markedWords]
+            .filter(key => this.markedExportQueue[key])
+            .map(key => this.markedExportQueue[key]);
+        if (data.length === 0) { alert('No marked words with quiz options available. Mark words during a quiz.'); return; }
         this.downloadFile(JSON.stringify(data, null, 2), 'marked_words.json', 'application/json');
     },
 
