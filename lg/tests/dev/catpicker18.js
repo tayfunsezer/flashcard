@@ -1,0 +1,52 @@
+// Dev-only: Task 18 category picker check with ~320 categories. Env: BASE, OUT (screenshot prefix), THEME.
+const path = require('path');
+module.exports = async (b) => {
+  const base = process.env.BASE; const out = process.env.OUT; const theme = process.env.THEME || 'light';
+  const clickText = (t) => b.eval('(()=>{const el=[...document.querySelectorAll("button")].find(x=>x.textContent.trim()===' + JSON.stringify(t) + ');if(!el)return false;el.click();return true})()');
+  const key = (k) => b.eval('(()=>{const i=document.activeElement;i.dispatchEvent(new KeyboardEvent("keydown",{key:' + JSON.stringify(k) + ',bubbles:true,cancelable:true}))})()');
+  const type = (sel, v) => b.eval('(()=>{const i=document.querySelector(' + JSON.stringify(sel) + ');i.focus();i.value=' + JSON.stringify(v) + ';i.dispatchEvent(new Event("input",{bubbles:true}))})()');
+  const games = () => b.eval('JSON.stringify([...document.querySelectorAll(".game .game-reason")].map(e=>e.textContent))');
+  await b.go(base + '?theme=' + theme); await b.wait(500);
+  b.nextFile = path.resolve('.tmp/cats18.csv'); await clickText('Choose file'); await b.wait(1500);
+  await clickText('Column 2'); await b.wait(200);
+  const setLang = (i, v) => b.eval('(()=>{const s=document.querySelectorAll("select")[' + i + '];s.value=' + JSON.stringify(v) + ';s.dispatchEvent(new Event("change"))})()');
+  await setLang(0, 'pl'); await setLang(1, 'en');
+  await clickText('Start'); await b.wait(800);
+  await b.go(base + '?theme=' + theme); await b.wait(800);
+  console.log('cats', await b.eval('LG.words.groupOptions(LG.app.ctx.items).categories.length'));
+  await b.eval('document.querySelector("details").open=true'); await b.wait(100);
+  console.log('games before', await games());
+  await type('details .cp-input', 'kat 12'); await b.wait(100);
+  console.log('rows', await b.eval('JSON.stringify([...document.querySelectorAll("details .cp-row")].map(r=>r.textContent))'));
+  await key('ArrowDown'); await key('Enter');
+  await type('details .cp-input', 'zywn'); await b.wait(100);
+  await key('Enter'); await b.wait(200);
+  console.log('filters', await b.eval('JSON.stringify(LG.app.filters.categories)'), 'games', await games());
+  console.log('chips', await b.eval('JSON.stringify([...document.querySelectorAll("details .chip")].map(r=>r.textContent))'));
+  await key('Escape');
+  console.log('after esc query', await b.eval('document.querySelector("details .cp-input").value==="" '));
+  await b.shot(out + '-home.png', true);
+  await b.eval('document.querySelector(".cp-clear").click()'); await b.wait(100);
+  console.log('after clear', await b.eval('JSON.stringify(LG.app.filters.categories)'), await b.eval('document.querySelector("details .cp-chips").textContent'), await games());
+  // study set
+  await clickText('Study set'); await b.eval('document.querySelector("input[value=study]").click()'); await b.wait(200);
+  await type('.card .cp-input', 'kat 77'); await b.wait(100);
+  await key('Enter'); await b.wait(200);
+  console.log('study value', await b.eval('document.querySelector(".card .chip").textContent'), await games());
+  await b.shot(out + '-study.png', false);
+  await b.eval('document.querySelector(".game").click()'); await b.wait(500);
+  console.log('after start', await b.eval('LG.app.current'));
+  // map
+  await b.eval('LG.app.go("map")'); await b.wait(400);
+  const tiles = () => b.eval('document.querySelectorAll(".tile").length');
+  const cnt = () => b.eval('document.querySelector(".map-toolbar [role=status]").textContent');
+  console.log('map', await tiles(), await cnt());
+  await type('.map-search', 'żywn'); await b.wait(100);
+  console.log('search', await tiles(), await cnt());
+  await type('.map-search', ''); await b.wait(100);
+  await b.eval('(()=>{const s=document.querySelector(".map-toolbar select");s.value="name";s.dispatchEvent(new Event("change"))})()');
+  console.log('first by name', await b.eval('document.querySelector(".tile-name").textContent'));
+  await clickText('Show more'); console.log('more', await tiles());
+  await b.shot(out + '-map.png', false);
+  console.log('hscroll', await b.eval('document.documentElement.scrollWidth>innerWidth'));
+};

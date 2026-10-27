@@ -1,0 +1,32 @@
+// Dev-only: Task 17 column mapping check. Env: BASE (file url of index.html), OUT (screenshot prefix).
+const path = require('path');
+module.exports = async (b) => {
+  const base = process.env.BASE; const out = process.env.OUT || '.tmp/t17/shot';
+  const clickText = (t) => b.eval('(()=>{const el=[...document.querySelectorAll("button")].find(x=>x.textContent.trim()===' + JSON.stringify(t) + ');if(!el)return false;el.click();return true})()');
+  const pick = async (f) => { b.nextFile = path.resolve(f); await clickText('Choose file'); await b.wait(1200); };
+  const state = () => b.eval('JSON.stringify({prev:[...document.querySelectorAll(".preview tbody tr")].map(r=>r.textContent),labels:[...document.querySelectorAll(".field > span")].map(s=>s.textContent),pressed:[...document.querySelectorAll(".segmented button")].map(x=>x.getAttribute("aria-pressed")),sum:[...document.querySelectorAll("dd")].slice(0,3).map(d=>d.textContent)})');
+  const setLang = (i, v) => b.eval('(()=>{const s=document.querySelectorAll("select")[' + i + '];s.value=' + JSON.stringify(v) + ';s.dispatchEvent(new Event("change"))})()');
+  await b.go(base); await b.wait(500);
+  await pick('.tmp/t17/pl1.csv');
+  console.log('pl1 default', await state());
+  await b.shot(out + '-load.png', true);
+  await setLang(0, 'pl'); await setLang(1, 'en');
+  await clickText('Start'); await b.wait(500);
+  console.log('settings', await b.eval('JSON.stringify(LG.app.state.settings)'), 'targets', await b.eval('JSON.stringify(LG.app.dataset.items.map(i=>i.target))'));
+  await b.eval('LG.app.go("load")'); await b.wait(300);
+  await pick('.tmp/t17/pl2.csv');
+  console.log('pl2 default (col1)', await state());
+  await clickText('Column 2'); await b.wait(200);
+  console.log('pl2 flipped', await state());
+  await clickText('Start'); await b.wait(500);
+  console.log('settings', await b.eval('JSON.stringify(LG.app.state.settings)'), 'targets', await b.eval('JSON.stringify(LG.app.dataset.items.map(i=>i.target))'));
+  await b.eval('LG.app.go("load")'); await b.wait(300);
+  await pick('.tmp/t17/pl2.csv');
+  console.log('next import defaults', await state());
+  await b.eval('LG.app.go("settings")'); await b.wait(300);
+  console.log('settings screen', await b.eval('[...document.querySelectorAll("p.muted")].map(p=>p.textContent).filter(t=>/Language being learned/.test(t)).join()'));
+  await b.go(base + '?sample=1'); await b.wait(800);
+  console.log('sample', await b.eval('JSON.stringify([LG.app.state.settings.langTarget, LG.app.ctx.items[0].target, LG.app.ctx.items[0].source])'));
+  await b.eval('LG.app.go("cloze")'); await b.wait(500);
+  console.log('cloze text', await b.eval('document.body.innerText.slice(0,300)'));
+};

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tests</title>
+<style>
+body { font-family: system-ui, sans-serif; margin: 16px; }
+.pass { color: #1a7f37; }
+.fail { color: #c62828; }
+li { margin: 2px 0; }
+</style>
+</head>
+<body>
+<h1 id="summary">Running...</h1>
+<ul id="results"></ul>
+<script src="tests/runner.js"></script>
+<script src="tests/manifest.js"></script>
+<script>
+  [].concat(LG_MANIFEST.lib, LG_MANIFEST.src, LG_MANIFEST.tests).forEach(function (p) {
+    document.write('<script src="' + p + '"><\/script>');
+  });
+  document.write('<script>(' + function () {
+    var r = T.run();
+    document.getElementById('summary').textContent = r.passed + ' passed, ' + r.failed + ' failed';
+    var ul = document.getElementById('results');
+    r.results.forEach(function (x) {
+      var li = document.createElement('li');
+      li.className = x.error ? 'fail' : 'pass';
+      li.textContent = (x.error ? 'fail: ' : 'pass: ') + x.name + (x.error ? ' - ' + x.error.message : '');
+      ul.appendChild(li);
+    });
+  }.toString() + ')()<\/script>');
+</script>
+</body>
+</html>
