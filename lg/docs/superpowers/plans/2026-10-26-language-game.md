@@ -1663,3 +1663,66 @@ Add one pure helper with a test if it simplifies the UI, for example `LG.play.st
 - Take screenshots of Home, Match (board with sentence tiles, light and dark at 390px) and the summary with both practice buttons. Read them and fix only clear defects.
 
 **Commit:** `feat: uncapped shuffled rounds; cloze and match on every item; practise in the same game`, with a plain message and no attribution trailers.
+
+---
+
+### Task 25: Practise missed + marked words; a lasting "Marked words" mode
+
+**Why (user):** "In cloze mode, when I pick words to study later … when that round ends and a new round starts, all words are presented again, but I want to focus only on the marked ones. A button like 'study failed ones + new marked ones'." The user also approved a lasting "Marked words" mode on Home.
+
+**Definitions (controller rulings — binding):**
+- An item is **marked** when its progress entry has a non-null `pin`, either a string or a string array. Marking happens in Cloze feedback (`togglePinWord`). ✕ on the pin row unmarks it.
+- **Marked this round** = ids whose pin went from null/absent to non-null at any point in this round and are still marked when the round ends.
+
+**Core (`js/core/play.js`, tests in `tests/play.test.js`):**
+- `LG.play.isMarked(entry) → boolean`
+- `LG.play.markedIds(ids, progress) → id[]`, keeping input order.
+- `LG.play.practiceIds(missed: id[], marked: id[]) → id[]`: the union, missed first, then marked, with no duplicates.
+- `LG.play.practiceLabel(missedCount, markedCount, total) → string`:
+  - Missed only: "Practice the N words you missed". Use singular "word" when N = 1.
+  - Marked only: "Practice the N words you marked".
+  - Both: "Practice N words — X missed, Y marked". Here N = total, the size of the union, and the X/Y counts may overlap.
+
+```js
+T.test('marked helpers', () => {
+  const p = { a: { pin: 'x' }, b: { pin: ['x', 'y'] }, c: { pin: null }, d: { box: 1 } };
+  T.ok(LG.play.isMarked(p.a) && LG.play.isMarked(p.b) && !LG.play.isMarked(p.c) && !LG.play.isMarked(p.d) && !LG.play.isMarked(undefined));
+  T.eq(LG.play.markedIds(['d', 'b', 'c', 'a', 'e'], p), ['b', 'a']);
+  T.eq(LG.play.practiceIds(['a', 'b'], ['b', 'c']), ['a', 'b', 'c']);
+  T.eq(LG.play.practiceLabel(1, 0, 1), 'Practice the 1 word you missed');
+  T.eq(LG.play.practiceLabel(0, 2, 2), 'Practice the 2 words you marked');
+  T.eq(LG.play.practiceLabel(3, 2, 4), 'Practice 4 words — 3 missed, 2 marked');
+});
+```
+
+**Summary (`js/ui/screens/summary.js`) and Cloze (`js/ui/screens/cloze.js`):**
+- Cloze tracks "marked this round" from pin toggles and passes `marked: id[]` in the summary params. The other games pass `marked: []`, since they have no marking UI.
+- The summary computes `ids = practiceIds(missed, marked)`. When it isn't empty, the primary button is `practiceLabel(...)`.
+  - It opens the same game with `{ ids, mode: 'review' }`, using the Task 23 fallback to Flashcards if the game can't run them.
+  - The secondary button reads "Practice them as Flashcards".
+
+**Home "Marked words" mode (`js/ui/screens/home.js`, `js/ui/app.js`):**
+- A fourth Mode radio, **Marked words**, sits after Revenge pile.
+- Mode note: "Marked words: words you marked in Cloze — N right now. Unmark one with ✕ on its pin row." N is the count under the current filters.
+- Each game card uses that game's eligible ids filtered to marked ones. The count reads "N marked". A disabled card reason reads "No marked words for this game".
+- Empty state: when nothing is marked under the filters, replace the cards (like the empty revenge pile) with "No marked words yet. In Cloze, click words in the answer sentence to mark them for later." plus a "Switch to Review" button.
+- Starting a game uses all marked eligible ids, shuffled with `LG.play.startRound` and no cap, in mode `'marked'`.
+  - Walk them like Review, using the Task 21 round tracker for in-round relearning.
+  - `app.roundIds(game, 'marked')` supports "Play again".
+  - The study set is never touched.
+- Stats row: add "Marked N" (whole file) next to Revenge.
+- In Cloze, a marked item blanks its pinned words as it already does.
+
+**README:** a short paragraph on marking words and the Marked words mode.
+
+**Verification (CDP; `b.mouse`/`b.key`; fresh profiles under `.tmp/`):**
+- `?sample=1` Cloze:
+  - Mark words on 2 items (one answered right, one wrong) and miss one other item.
+  - The summary's primary button reads "Practice 3 words — 2 missed, 2 marked" (adjust the numbers to what you did). It opens Cloze with exactly those ids.
+- Home → Marked words shows N = 2 with "Marked 2" in the stats. Start Cloze, and only marked items appear, with their pinned words blanked.
+- Unmark one (✕) and Home shows N = 1. Unmark all and the empty state shows. "Switch to Review" works.
+- Flashcards in Marked mode runs on the marked items.
+- `node tests/run-node.js` must be all green, with RED first.
+- Take screenshots of Home in Marked mode (with items, and empty) and the summary with the combined button, light and dark. Read them.
+
+**Commit:** `feat: practise missed and marked words; marked words mode`, with a plain message and no attribution trailers.

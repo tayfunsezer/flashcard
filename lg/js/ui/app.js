@@ -112,6 +112,7 @@
     const f = app.filters;
     const pool = LG.words.filterItems(app.ctx.items, { dateFrom: f.dateFrom || null, dateTo: f.dateTo || null, categories: f.categories });
     const ids = LG.play.eligibleIds(pool, game, app.ctx.langTarget, app.ctx.mcIds);
+    if (mode === 'marked') return LG.play.startRound(LG.play.markedIds(ids, app.state.progress));
     if (mode === 'revenge') return LG.play.startRound(LG.schedule.revengeIds(ids, app.state.progress));
     return LG.play.startRound(LG.schedule.buildReviewRound(ids, app.state.progress, Date.now(), Infinity));
   }

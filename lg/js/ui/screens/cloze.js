@@ -93,7 +93,7 @@
       const mode = params.mode || 'review';
       const ids = (params.ids || []).filter((id) => app.ctx.itemsById.has(id));
       const letters = LG.words.specialLetters(app.ctx.items, lang);
-      const round = { combo: 0, xp: 0, correct: 0, almost: 0, wrong: 0, from: new Map(), touched: [] };
+      const round = { combo: 0, xp: 0, correct: 0, almost: 0, wrong: 0, from: new Map(), touched: [], unmarked: new Set() };
       const track = roundTracker(mode, ids);
       const screen = h('div', { class: 'screen' });
       root.append(screen);
@@ -139,6 +139,7 @@
           .filter((m) => m.from !== m.to);
         app.go('summary', {
           game: 'cloze', mode, xp: round.xp, correct: round.correct, almost: round.almost, wrong: round.wrong, moved, missed: track.missed(),
+          marked: LG.play.markedIds(Array.from(round.unmarked), app.state.progress),
           again: () => app.go('cloze', { ids: app.roundIds('cloze', mode), mode }),
         });
       }
@@ -228,6 +229,8 @@
           const next = h('button', { class: 'btn btn-primary enter-target', type: 'button', onclick: () => prompt() }, 'Next');
           const pinBox = h('div', { class: 'pin-row small' });
           const answered = h('p', { class: 'sentence', lang });
+          // Remembers an item that was unmarked before this change: if it ends marked, it was marked this round.
+          const noteUnmarked = () => { if (!LG.play.isMarked(app.state.progress[id])) round.unmarked.add(id); };
           const drawSentence = () => {
             const pin = LG.words.pinWords(app.state.progress[id] && app.state.progress[id].pin);
             const pinKeys = new Set(pin.map((w) => LG.text.lower(w, lang)));
@@ -237,7 +240,7 @@
               if (blanks.some((b) => b.index === t.index)) cls.push('word-answer');
               if (pinKeys.has(LG.text.lower(t.text, lang))) cls.push('word-pinned');
               return h('button', { class: cls.join(' '), type: 'button', title: 'Blank this word next time (click more words to blank an expression)',
-                onclick: () => { app.setState(LG.play.togglePinWord(app.state, id, t.text, tokens, lang)); drawSentence(); } }, t.text);
+                onclick: () => { noteUnmarked(); app.setState(LG.play.togglePinWord(app.state, id, t.text, tokens, lang)); drawSentence(); } }, t.text);
             }));
             clear(pinBox).append(...(pin.length
               ? [h('span', null, 'Pinned: ', h('strong', { lang }, pinLabel(pin, tokens))),

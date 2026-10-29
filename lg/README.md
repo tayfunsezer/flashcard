@@ -17,6 +17,8 @@ Every game shares one Leitner schedule: a right answer moves a card to the next 
 
 Rounds have no size limit: a Review round takes every word that matches your filters (due words first), a Revenge round the whole revenge pile, and a study set is walked in one go. Every round starts in a fresh random order, so you cannot learn the order by heart. Cloze and Pair Match work with every item, single words and sentences alike: a one-word item is blanked whole with the translation as the clue. Pair Match plays boards of up to six pairs, one after another, and needs only one item.
 
+Marking words: after an answer in Cloze, click words in the answer sentence to mark them; the item then blanks those words every time. The round summary offers to practise the words you missed plus the ones you marked in that round. The Marked words mode on Home plays every marked item (under your filters) in any game, and ✕ on the pin row unmarks one.
+
 Words you miss come back at the end of the round until you get them right (only your first answer moves the word between boxes). After a round you can practise just the words you missed, in the same game or as Flashcards.
 
 ### File format

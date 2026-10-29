@@ -26,11 +26,13 @@
     const ids = LG.play.eligibleIds(pool, game, app.ctx.langTarget, app.ctx.mcIds);
     if (game === 'mc' && app.ctx.mcIds.size < LG.play.MC_OPTIONS) return { ids, reason: 'Needs at least 4 terms, or sentences with 4 different words, in the file' };
     if (ui.mode === 'study') return { ids, reason: null };
-    const usable = ui.mode === 'revenge' ? LG.schedule.revengeIds(ids, app.state.progress) : ids;
+    const usable = ui.mode === 'revenge' ? LG.schedule.revengeIds(ids, app.state.progress)
+      : ui.mode === 'marked' ? LG.play.markedIds(ids, app.state.progress) : ids;
     let reason = null;
     if (game === 'mc' && ids.length < 4) reason = 'Needs at least 4 items in the filters';
     else if (ids.length < 1) reason = 'No items match the filters';
     else if (ui.mode === 'revenge' && usable.length < 1) reason = 'Revenge pile is empty for this game';
+    else if (ui.mode === 'marked' && usable.length < 1) reason = 'No marked words for this game';
     return { ids: usable, reason };
   }
 
@@ -48,7 +50,7 @@
     }
     const { ids } = availability(game, filteredItems());
     // No cap: every usable id, due words included first, in a fresh random order each Start.
-    const round = ui.mode === 'revenge' ? ids : LG.schedule.buildReviewRound(ids, app.state.progress, Date.now(), Infinity);
+    const round = ui.mode === 'revenge' || ui.mode === 'marked' ? ids : LG.schedule.buildReviewRound(ids, app.state.progress, Date.now(), Infinity);
     app.go(game, { ids: LG.play.startRound(round), mode: ui.mode });
   }
 
@@ -56,7 +58,9 @@
     const app = LG.app;
     const st = app.state;
     const lv = LG.rewards.levelInfo(st.xp);
-    const revenge = LG.schedule.revengeIds(app.ctx.items.map((it) => it.id), st.progress).length;
+    const allIds = app.ctx.items.map((it) => it.id);
+    const revenge = LG.schedule.revengeIds(allIds, st.progress).length;
+    const marked = LG.play.markedIds(allIds, st.progress).length;
     return h('div', { class: 'stats card' },
       h('div', { class: 'stat-level' },
         h('strong', null, 'Level ' + lv.level),
@@ -64,7 +68,8 @@
           h('span', { style: 'width:' + (lv.progress * 100).toFixed(1) + '%' })),
         h('span', { class: 'muted small' }, st.xp + ' / ' + lv.nextXp + ' XP')),
       h('span', null, 'Streak ' + st.streak.current, h('span', { class: 'muted' }, ' (best ' + st.streak.best + ')')),
-      h('span', null, 'Revenge ' + revenge));
+      h('span', null, 'Revenge ' + revenge),
+      h('span', null, 'Marked ' + marked));
   }
 
   function dailyCard() {
@@ -129,12 +134,17 @@
       const revengeIdsFor = (g) => LG.schedule.revengeIds(LG.play.eligibleIds(pool, g, app.ctx.langTarget, app.ctx.mcIds), app.state.progress);
       const revengeTotal = ui.mode === 'revenge'
         ? LG.schedule.revengeIds(pool.map((it) => it.id), app.state.progress).length : 0;
+      const markedTotal = ui.mode === 'marked'
+        ? LG.play.markedIds(pool.map((it) => it.id), app.state.progress).length : 0;
       const modeNote = {
         review: 'Review: every word that matches your filters — due words first, shuffled.',
         revenge: 'Revenge pile: words you answered wrong — ' + revengeTotal + ' right now. Answer them right to clear them.',
+        marked: 'Marked words: words you marked in Cloze — ' + markedTotal + ' right now. Unmark one with ✕ on its pin row.',
         study: 'Study set: every word in one category or date, until you get each one right.',
       }[ui.mode];
       const revengeEmpty = ui.mode === 'revenge' && app.GAMES.every((g) => revengeIdsFor(g).length === 0);
+
+      const markedEmpty = ui.mode === 'marked' && markedTotal === 0;
 
       const studyLine = ui.mode === 'study' && ui.value
         ? h('p', { class: 'study-line' },
@@ -142,14 +152,17 @@
           ' (' + pool.length + (pool.length === 1 ? ' word' : ' words') + ')')
         : null;
 
-      const games = revengeEmpty
+      const games = revengeEmpty || markedEmpty
         ? h('div', { class: 'empty-pile' },
-          h('p', { class: 'muted' }, 'Your revenge pile is empty. Words you miss in any game land here.'),
+          h('p', { class: 'muted' }, revengeEmpty
+            ? 'Your revenge pile is empty. Words you miss in any game land here.'
+            : 'No marked words yet. In Cloze, click words in the answer sentence to mark them for later.'),
           h('button', { class: 'btn btn-small', type: 'button', onclick: setMode('review') }, 'Switch to Review'))
         : h('div', { class: 'grid games' }, app.GAMES.map((g) => {
           const info = GAME_INFO[g];
           const a = availability(g, pool);
-          const count = ui.mode === 'revenge' ? a.ids.length + ' in revenge pile' : a.ids.length + ' ' + info.unit[a.ids.length === 1 ? 0 : 1];
+          const count = ui.mode === 'revenge' ? a.ids.length + ' in revenge pile'
+            : ui.mode === 'marked' ? a.ids.length + ' marked' : a.ids.length + ' ' + info.unit[a.ids.length === 1 ? 0 : 1];
           return h('button', { class: 'btn game', type: 'button', disabled: !!a.reason, onclick: () => start(g, msgBox) },
             h('strong', null, info.name),
             h('span', { class: 'muted' }, info.desc),
@@ -164,7 +177,8 @@
           h('div', { class: 'row' },
             radio('mode', 'review', 'Review', ui.mode === 'review', setMode('review')),
             radio('mode', 'revenge', 'Revenge pile', ui.mode === 'revenge', setMode('revenge')),
-            radio('mode', 'study', 'Study set', ui.mode === 'study', setMode('study'))),
+            radio('mode', 'study', 'Study set', ui.mode === 'study', setMode('study')),
+            radio('mode', 'marked', 'Marked words', ui.mode === 'marked', setMode('marked'))),
           h('p', { class: 'muted small mode-note' }, modeNote),
           studyControls),
         studyLine || '', games, msgBox);

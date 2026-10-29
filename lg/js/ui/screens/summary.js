@@ -8,7 +8,7 @@
   }
 
   LG.screens.summary = {
-    // params: { game, mode, xp, correct, almost, wrong, moved: [{ id, from, to }], missed: id[], again }
+    // params: { game, mode, xp, correct, almost, wrong, moved: [{ id, from, to }], missed: id[], marked?: id[], again }
     render(root, p) {
       const app = LG.app;
       const set = app.state.studySet;
@@ -16,12 +16,14 @@
       const lv = LG.rewards.levelInfo(app.state.xp);
       const moved = (p.moved || []).filter((m) => app.ctx.itemsById.has(m.id));
       const missed = (p.missed || []).filter((id) => app.ctx.itemsById.has(id));
-      // With missed words, practising them is the primary action and the usual buttons step back.
-      const mainCls = missed.length ? 'btn' : 'btn btn-primary';
-      // Practise the missed words in the same game; a game that cannot run on them (e.g. Multiple Choice
+      // Missed and marked words are practised together (missed first); with any, that is the primary action
+      // and the usual buttons step back. Practise in the same game; a game that cannot run on them (e.g. Multiple Choice
       // without four options) falls back to Flashcards.
-      const practiceGame = playable(p.game, missed) ? p.game : 'flashcards';
-      const practice = (game) => () => app.go(game, { ids: LG.play.startRound(missed), mode: 'review' });
+      const marked = (p.marked || []).filter((id) => app.ctx.itemsById.has(id));
+      const practiceList = LG.play.practiceIds(missed, marked);
+      const mainCls = practiceList.length ? 'btn' : 'btn btn-primary';
+      const practiceGame = playable(p.game, practiceList) ? p.game : 'flashcards';
+      const practice = (game) => () => app.go(game, { ids: LG.play.startRound(practiceList), mode: 'review' });
       const count = (label, n, cls) => h('div', { class: 'count ' + cls }, h('strong', null, String(n)), h('span', null, label));
 
       root.append(h('div', { class: 'screen' },
@@ -35,11 +37,11 @@
           p.mode === 'study' && !studyOpen ? h('p', { class: 'muted' }, 'Study set finished.') : null),
         // Actions sit above the moved list: an uncapped round can move many words.
         h('div', { class: 'btn-row summary-actions' },
-          missed.length
+          practiceList.length
             ? h('button', { class: 'btn btn-primary', type: 'button', onclick: practice(practiceGame) },
-              'Practice the ' + missed.length + (missed.length === 1 ? ' word' : ' words') + ' you missed')
+              LG.play.practiceLabel(missed.length, marked.length, practiceList.length))
             : null,
-          missed.length && practiceGame !== 'flashcards'
+          practiceList.length && practiceGame !== 'flashcards'
             ? h('button', { class: 'btn', type: 'button', onclick: practice('flashcards') }, 'Practice them as Flashcards')
             : null,
           p.mode === 'leitner'

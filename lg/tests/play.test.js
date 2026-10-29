@@ -108,4 +108,13 @@
     T.eq(LG.play.setPin(s0, 'a', 'kedi').progress.a.pin, ['kedi']);
     T.eq(LG.play.setPin(s0, 'a', []).progress.a.pin, null);
   });
+  T.test('marked helpers', () => {
+    const p = { a: { pin: 'x' }, b: { pin: ['x', 'y'] }, c: { pin: null }, d: { box: 1 } };
+    T.ok(LG.play.isMarked(p.a) && LG.play.isMarked(p.b) && !LG.play.isMarked(p.c) && !LG.play.isMarked(p.d) && !LG.play.isMarked(undefined));
+    T.eq(LG.play.markedIds(['d', 'b', 'c', 'a', 'e'], p), ['b', 'a']);
+    T.eq(LG.play.practiceIds(['a', 'b'], ['b', 'c']), ['a', 'b', 'c']);
+    T.eq(LG.play.practiceLabel(1, 0, 1), 'Practice the 1 word you missed');
+    T.eq(LG.play.practiceLabel(0, 2, 2), 'Practice the 2 words you marked');
+    T.eq(LG.play.practiceLabel(3, 2, 4), 'Practice 4 words — 3 missed, 2 marked');
+  });
 })();

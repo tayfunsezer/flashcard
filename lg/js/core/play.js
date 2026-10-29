@@ -123,5 +123,26 @@
     return items.filter(it => ok.has(it.id)).map(it => it.id);
   }
 
-  LG.play = { answerPrompt, matchBoard, completeRound, finishDaily, setPin, togglePinWord, advanceRotation, eligibleIds, startRound, boards, mcEligibleIds, MC_OPTIONS: OPTIONS };
+  // Marked = the item has pinned words (set in Cloze feedback).
+  function isMarked(entry) {
+    return !!entry && entry.pin != null;
+  }
+
+  function markedIds(ids, progress) {
+    return ids.filter((id) => isMarked(progress[id]));
+  }
+
+  // Missed first, then marked, no duplicates.
+  function practiceIds(missed, marked) {
+    return Array.from(new Set(missed.concat(marked)));
+  }
+
+  function practiceLabel(missedCount, markedCount, total) {
+    const words = (n) => n + (n === 1 ? ' word' : ' words');
+    if (!markedCount) return 'Practice the ' + words(missedCount) + ' you missed';
+    if (!missedCount) return 'Practice the ' + words(markedCount) + ' you marked';
+    return 'Practice ' + words(total) + ' — ' + missedCount + ' missed, ' + markedCount + ' marked';
+  }
+
+  LG.play = { isMarked, markedIds, practiceIds, practiceLabel, answerPrompt, matchBoard, completeRound, finishDaily, setPin, togglePinWord, advanceRotation, eligibleIds, startRound, boards, mcEligibleIds, MC_OPTIONS: OPTIONS };
 })(globalThis.LG = globalThis.LG || {});
