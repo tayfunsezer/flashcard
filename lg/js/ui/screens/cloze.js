@@ -1,6 +1,5 @@
 (function (LG) {
   const { h, clear } = LG.dom;
-  const ROUND_SIZE = 10;
   const MAX_HINTS = 3;
   const MESSAGES = { correct: 'Correct', almost: 'Almost — mind the accents: ', wrong: 'Answer: ' };
   const FB_CLASS = { correct: 'fb-ok', almost: 'fb-almost', wrong: 'fb-bad' };
@@ -71,6 +70,21 @@
     return show ? h('p', { class: 'again-tag muted small' }, 'Again — you missed this one') : '';
   }
 
+  // "boję … się": pinned words in sentence order, joined by a space when adjacent, " … " otherwise.
+  function pinLabel(pin, tokens) {
+    const hits = LG.words.resolvePins(pin, tokens, LG.app.ctx.langTarget);
+    if (!hits) return pin.join(' … ');
+    let out = '';
+    hits.forEach((hit, i) => {
+      if (i) {
+        const prev = tokens.findIndex((t) => t.index === hits[i - 1].index);
+        out += tokens[prev + 1] && tokens[prev + 1].index === hit.index ? ' ' : ' … ';
+      }
+      out += hit.text;
+    });
+    return out;
+  }
+
   LG.screens.cloze = {
     gameHeader, sentence, roundTracker, againTag,
     render(root, params) {
@@ -79,11 +93,12 @@
       const mode = params.mode || 'review';
       const ids = (params.ids || []).filter((id) => app.ctx.itemsById.has(id));
       const letters = LG.words.specialLetters(app.ctx.items, lang);
-      const round = { played: 0, combo: 0, xp: 0, correct: 0, almost: 0, wrong: 0, from: new Map(), touched: [] };
+      const round = { combo: 0, xp: 0, correct: 0, almost: 0, wrong: 0, from: new Map(), touched: [] };
       const track = roundTracker(mode, ids);
       const screen = h('div', { class: 'screen' });
       root.append(screen);
       let onEnter = null;
+      const skipped = new Set();
 
       if (mode === 'study' ? !app.state.studySet : !ids.length) {
         app.banner('Nothing to play in this round.', 'info');
@@ -102,8 +117,8 @@
       function nextId() {
         if (mode === 'study') {
           const set = app.state.studySet;
-          if (!set || LG.study.isFinished(set) || round.played >= ROUND_SIZE) return null;
-          return LG.study.nextIds(set)[0];
+          if (!set || LG.study.isFinished(set)) return null;
+          return set.queue.find((x) => !skipped.has(x)) || null;
         }
         return track.current();
       }
@@ -129,20 +144,27 @@
       }
 
       function prompt() {
-        const id = nextId();
-        if (!id) return finish();
-        const item = app.ctx.itemsById.get(id);
-        const blank = track.keep(id, () => LG.words.pickBlank(item, app.state.progress[id], app.ctx.rarity, lang));
+        let id, item, blanks;
+        for (;;) {
+          id = nextId();
+          if (!id) return finish();
+          item = app.ctx.itemsById.get(id);
+          blanks = track.keep(id, () => LG.words.pickBlanks(item, app.state.progress[id], app.ctx.rarity, lang));
+          if (blanks.length) break;
+          skipped.add(id); // no word to blank (e.g. punctuation only): leave this item out of the round
+          track.skip(id);
+        }
         const repeat = track.isRepeat(id);
-        const len = LG.text.charLength(blank.text);
+        const expected = blanks.map((b) => b.text).join(' ');
+        const multi = blanks.length > 1;
         let hints = 0;
 
         const input = h('input', { type: 'text', class: 'cloze-input', lang, autocomplete: 'off', autocapitalize: 'off',
-          spellcheck: 'false', 'aria-label': 'Missing word' });
+          spellcheck: 'false', 'aria-label': multi ? 'Missing words' : 'Missing word' });
         const hintLine = h('p', { class: 'hint muted', 'aria-live': 'polite' });
         const hintBtn = h('button', { class: 'btn', type: 'button', onclick: () => {
           hints = Math.min(MAX_HINTS, hints + 1);
-          hintLine.textContent = LG.words.hintText(blank.text, hints);
+          hintLine.textContent = LG.words.hintText(expected, hints);
           hintBtn.textContent = hints < MAX_HINTS ? 'Hint (' + (MAX_HINTS - hints) + ' left)' : 'No hints left';
           hintBtn.disabled = hints >= MAX_HINTS;
           input.focus();
@@ -157,9 +179,12 @@
           letters.map((ch) => h('button', { class: 'btn btn-small letter', type: 'button', lang,
             onmousedown: (e) => e.preventDefault(), onclick: () => insert(ch) }, ch))) : null;
 
-        const answerLine = h('p', { class: 'sentence', lang }, sentence(item.target, lang, (t) => (t.index === blank.index
-          ? h('span', { class: 'blank', style: 'width:' + (len + 1) + 'ch', 'aria-label': 'blank, ' + len + ' letters' }, ' ')
-          : t.text)));
+        const answerLine = h('p', { class: 'sentence', lang }, sentence(item.target, lang, (t) => {
+          const b = blanks.find((x) => x.index === t.index);
+          if (!b) return t.text;
+          const len = LG.text.charLength(b.text);
+          return h('span', { class: 'blank', style: 'width:' + (len + 1) + 'ch', 'aria-label': 'blank, ' + len + ' letters' }, ' ');
+        }));
         const card = h('div', { class: 'card fb cloze' },
           h('p', { class: 'clue muted', lang: app.ctx.langSource }, item.source),
           answerLine);
@@ -168,6 +193,7 @@
             h('button', { class: 'btn btn-primary enter-target', type: 'button', onclick: () => submit() }, 'Submit'),
             hintBtn,
             h('button', { class: 'btn btn-link', type: 'button', onclick: () => submit(true) }, 'Show answer')),
+          multi ? h('p', { class: 'muted small multi-note' }, 'Type all ' + blanks.length + ' missing words in order') : null,
           letterRow, hintLine);
 
         const label = progressLabel();
@@ -177,7 +203,7 @@
 
         function submit(giveUp) {
           if (!giveUp && !input.value.trim()) { input.focus(); return; }
-          const result = giveUp ? 'wrong' : LG.answer.checkAnswer(input.value, blank.text, lang);
+          const result = giveUp ? 'wrong' : LG.answer.checkAnswer(input.value, expected, lang);
           let st = app.state;
           let xp = 0;
           if (track.counts(id)) {
@@ -195,27 +221,27 @@
           // Repeats blank the same word: rotation moves on once the word has left the round.
           if (track.record(id, result)) st = LG.play.advanceRotation(st, id);
           app.setState(st);
-          round.played += 1;
-          feedback(result, xp);
+          feedback(result, xp, giveUp ? '' : input.value.trim());
         }
 
-        function feedback(result, xp) {
+        function feedback(result, xp, typed) {
           const next = h('button', { class: 'btn btn-primary enter-target', type: 'button', onclick: () => prompt() }, 'Next');
           const pinBox = h('div', { class: 'pin-row small' });
           const answered = h('p', { class: 'sentence', lang });
           const drawSentence = () => {
-            const pin = app.state.progress[id] && app.state.progress[id].pin;
-            const pinKey = pin && LG.text.lower(pin, lang);
+            const pin = LG.words.pinWords(app.state.progress[id] && app.state.progress[id].pin);
+            const pinKeys = new Set(pin.map((w) => LG.text.lower(w, lang)));
+            const tokens = LG.text.tokenize(item.target, lang);
             clear(answered).append(...sentence(item.target, lang, (t) => {
               const cls = ['word'];
-              if (t.index === blank.index) cls.push('word-answer');
-              if (pinKey && LG.text.lower(t.text, lang) === pinKey) cls.push('word-pinned');
-              return h('button', { class: cls.join(' '), type: 'button', title: 'Blank this word next time',
-                onclick: () => { app.setState(LG.play.setPin(app.state, id, t.text)); drawSentence(); } }, t.text);
+              if (blanks.some((b) => b.index === t.index)) cls.push('word-answer');
+              if (pinKeys.has(LG.text.lower(t.text, lang))) cls.push('word-pinned');
+              return h('button', { class: cls.join(' '), type: 'button', title: 'Blank this word next time (click more words to blank an expression)',
+                onclick: () => { app.setState(LG.play.togglePinWord(app.state, id, t.text, tokens, lang)); drawSentence(); } }, t.text);
             }));
-            clear(pinBox).append(...(pin
-              ? [h('span', null, 'Pinned: ', h('strong', { lang }, pin)),
-                h('button', { class: 'btn btn-small', type: 'button', 'aria-label': 'Clear pinned word',
+            clear(pinBox).append(...(pin.length
+              ? [h('span', null, 'Pinned: ', h('strong', { lang }, pinLabel(pin, tokens))),
+                h('button', { class: 'btn btn-small', type: 'button', 'aria-label': 'Clear pinned words',
                   onclick: () => { app.setState(LG.play.setPin(app.state, id, null)); drawSentence(); } }, '✕')]
               : [h('span', { class: 'muted' }, 'Click a word to blank it in this sentence next time.')]));
           };
@@ -223,9 +249,11 @@
           answerLine.replaceWith(answered);
           card.classList.add(FB_CLASS[result]);
           const msg = h('p', { class: 'fb-msg fb-text-' + result, role: 'status' },
-            MESSAGES[result], result === 'correct' ? null : h('strong', { lang }, blank.text),
+            MESSAGES[result], result === 'correct' ? null : h('strong', { lang }, expected),
             xp ? h('span', { class: 'muted' }, '  +' + xp + ' XP') : null);
-          clear(controls).append(msg, pinBox, h('div', { class: 'btn-row' }, next));
+          const typedLine = typed && result !== 'correct'
+            ? h('p', { class: 'typed small muted' }, 'You typed: ', h('span', { class: 'typed-' + result, lang }, typed)) : null;
+          clear(controls).append(msg, typedLine || '', pinBox, h('div', { class: 'btn-row' }, next));
           screen.firstChild.replaceWith(gameHeader('Cloze', Object.assign({}, mode === 'study' ? label : progressLabel(), { combo: round.combo, xp: round.xp })));
           next.focus();
           onEnter = () => prompt();

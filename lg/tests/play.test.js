@@ -39,17 +39,32 @@
   });
   T.test('pins and rotation', () => {
     let st = P.setPin(S.defaultState(), 'a', 'kedi');
-    T.eq(st.progress.a.pin, 'kedi');
+    T.eq(st.progress.a.pin, ['kedi']);
     st = P.advanceRotation(st, 'a');
     T.eq(st.progress.a.rot, 1);
     T.eq(P.setPin(st, 'a', null).progress.a.pin, null);
   });
-  T.test('eligibleIds', () => {
-    const its = [{ id: 's', target: 'Bugün hava çok güzel' }, { id: 't', target: 'kedi' }];
-    T.eq(P.eligibleIds(its, 'cloze', 'tr'), ['s']);
-    T.eq(P.eligibleIds(its, 'match', 'tr'), ['t']);
-    T.eq(P.eligibleIds(its, 'mc', 'tr'), ['s', 't']);
-    T.eq(P.eligibleIds(its, 'flashcards', 'tr'), ['s', 't']);
+  T.test('eligibleIds: cloze, match, flashcards take every item', () => {
+    const its = [{ id: 's', target: 'Bugün hava çok güzel' }, { id: 't', target: 'kedi' }, { id: 'u', target: 'nie sprawiedliwe' }];
+    T.eq(LG.play.eligibleIds(its, 'cloze', 'pl'), ['s', 't', 'u']);
+    T.eq(LG.play.eligibleIds(its, 'match', 'pl'), ['s', 't', 'u']);
+    T.eq(LG.play.eligibleIds(its, 'flashcards', 'pl'), ['s', 't', 'u']);
+    T.eq(LG.play.eligibleIds(its, 'mc', 'pl'), ['s', 't', 'u']);
+  });
+  T.test('startRound returns a shuffled copy with every id', () => {
+    const ids = Array.from({ length: 25 }, (_, i) => 'i' + i);
+    const out = P.startRound(ids, LG.rng.seeded(3));
+    T.eq(out.length, 25);
+    T.eq(out.slice().sort(), ids.slice().sort());
+    T.ok(out.join() !== ids.join(), 'order changed');
+    T.eq(ids[0], 'i0');
+  });
+  T.test('boards splits ids into consecutive boards of up to 6', () => {
+    const ids = Array.from({ length: 14 }, (_, i) => 'i' + i);
+    T.eq(P.boards(ids, 6).map((b) => b.length), [6, 6, 2]);
+    T.eq(P.boards(ids, 6)[2], ['i12', 'i13']);
+    T.eq(P.boards(['a', 'b', 'c'], 6), [['a', 'b', 'c']]);
+    T.eq(P.boards([], 6), []);
   });
   T.test('mcEligibleIds: terms need 4 terms; sentences need 4 distinct cloze words', () => {
     const term = (id, w) => ({ id, target: w, categories: ['A'] });
@@ -70,12 +85,27 @@
   T.test('eligibleIds restricts mc to the given set', () => {
     const its = [{ id: 's', target: 'Bugün hava çok güzel' }, { id: 't', target: 'kedi' }];
     T.eq(P.eligibleIds(its, 'mc', 'tr', new Set(['t'])), ['t']);
-    T.eq(P.eligibleIds(its, 'cloze', 'tr', new Set(['t'])), ['s']);
+    T.eq(P.eligibleIds(its, 'cloze', 'tr', new Set(['t'])), ['s', 't']);
   });
   T.test('mcEligibleIds: a sentence with its own options counts without cloze words', () => {
     const s = { id: 's', target: 'jedno dwa trzy cztery pięć', categories: ['A'], options: ['x y z w', 'a b c d', 'e f g h'] };
     const bare = { id: 'b', target: 'jedno dwa trzy cztery pięć', categories: ['A'] };
     const its = [s, bare];
     T.eq(P.mcEligibleIds(its, LG.words.buildRarity(its, 'pl'), 'pl'), ['s']);
+  });
+  T.test('togglePinWord keeps sentence order and removes on second click', () => {
+    const toks = LG.text.tokenize('Nie boję się ciemności', 'pl');
+    let st = LG.play.togglePinWord(LG.state.defaultState(), 'x', 'się', toks, 'pl');
+    st = LG.play.togglePinWord(st, 'x', 'boję', toks, 'pl');
+    T.eq(st.progress.x.pin, ['boję', 'się']);
+    st = LG.play.togglePinWord(st, 'x', 'Się', toks, 'pl');
+    T.eq(st.progress.x.pin, ['boję']);
+    st = LG.play.togglePinWord(st, 'x', 'boję', toks, 'pl');
+    T.eq(st.progress.x.pin, null);
+  });
+  T.test('setPin normalises to array or null', () => {
+    const s0 = LG.state.defaultState();
+    T.eq(LG.play.setPin(s0, 'a', 'kedi').progress.a.pin, ['kedi']);
+    T.eq(LG.play.setPin(s0, 'a', []).progress.a.pin, null);
   });
 })();

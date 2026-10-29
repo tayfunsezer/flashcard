@@ -96,6 +96,7 @@ Calls marked **[builder call]** were made by the designer, not the user, and may
 - **Sentence item**: Target has **4 or more** word tokens. **[builder call]**
 - **Term item**: Target has 1–3 word tokens (covers single words and short phrases like "ice cream").
 - Sentence items feed Cloze. Term items feed Multiple Choice, Pair Match and Daily Word. Cloze blanks also count as items for Multiple Choice (see §8.2).
+- **Amended 2026-10-29 (user bug report):** Cloze, Pair Match and Flashcards accept **every** item regardless of length (a one-word item is fully blanked in Cloze; Pair Match tiles may hold sentences). The sentence/term split now only shapes Multiple Choice's cloze variant, the Daily Word pool and import counts. Rounds have **no size cap** (a round is every item matching the filters/mode; quit anytime), every started round is **shuffled**, Pair Match has **no minimum** and plays consecutive boards of up to 6, and "practise the words you missed" opens the same game (with Flashcards as a secondary option).
 
 ## 7. Choosing the Cloze blank (no NLP)
 

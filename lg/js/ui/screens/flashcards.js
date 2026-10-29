@@ -1,6 +1,5 @@
 (function (LG) {
   const { h, clear } = LG.dom;
-  const ROUND_SIZE = 10;
 
   LG.screens.flashcards = {
     render(root, params) {
@@ -10,7 +9,7 @@
       const langT = app.ctx.langTarget;
       const mode = params.mode || 'review';
       const ids = (params.ids || []).filter((id) => app.ctx.itemsById.has(id));
-      const round = { played: 0, combo: 0, xp: 0, correct: 0, wrong: 0, from: new Map(), touched: [] };
+      const round = { combo: 0, xp: 0, correct: 0, wrong: 0, from: new Map(), touched: [] };
       const track = roundTracker(mode, ids);
       const screen = h('div', { class: 'screen' });
       root.append(screen);
@@ -42,7 +41,7 @@
       function nextId() {
         if (mode === 'study') {
           const set = app.state.studySet;
-          if (!set || LG.study.isFinished(set) || round.played >= ROUND_SIZE) return null;
+          if (!set || LG.study.isFinished(set)) return null;
           return LG.study.nextIds(set)[0];
         }
         return track.current();
@@ -121,7 +120,6 @@
             round[result] += 1;
           }
           track.record(id, result);
-          round.played += 1;
           prompt();
         }
       }

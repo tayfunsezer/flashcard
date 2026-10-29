@@ -58,8 +58,29 @@
     return Object.assign({}, state, { progress: setProgress(state, id, Object.assign({}, e, patch(e))) });
   }
 
-  function setPin(state, itemId, word) {
-    return patchEntry(state, itemId, () => ({ pin: word }));
+  // words: string | string[] | null; stored as a non-empty array or null.
+  function setPin(state, itemId, words) {
+    const list = LG.words.pinWords(words);
+    return patchEntry(state, itemId, () => ({ pin: list.length ? list : null }));
+  }
+
+  // Adds or removes one word of the item's pin set, keeping it in sentence order.
+  function togglePinWord(state, itemId, word, sentenceTokens, lang) {
+    const cur = LG.words.pinWords((state.progress[itemId] || {}).pin);
+    const key = LG.text.lower(word, lang);
+    const at = cur.findIndex((w) => LG.text.lower(w, lang) === key);
+    if (at >= 0) return setPin(state, itemId, cur.filter((_, i) => i !== at));
+    const used = new Set();
+    const pos = (w) => {
+      const k = LG.text.lower(w, lang);
+      const t = sentenceTokens.find((x) => !used.has(x.index) && LG.text.lower(x.text, lang) === k);
+      if (!t) return Infinity;
+      used.add(t.index);
+      return t.index;
+    };
+    const order = cur.concat(word).map((w) => ({ w, p: pos(w) }));
+    order.sort((a, b) => a.p - b.p);
+    return setPin(state, itemId, order.map((o) => o.w));
   }
 
   function advanceRotation(state, itemId) {
@@ -67,14 +88,22 @@
   }
 
   // mcIds (optional Set, see mcEligibleIds) restricts Multiple Choice to items that can show four options.
-  // Flashcards take every item, terms and sentences alike.
+  // Cloze, Pair Match and Flashcards take every item, words and sentences alike.
   function eligibleIds(items, game, lang, mcIds) {
-    if (game === 'flashcards') return items.map(it => it.id);
-    return items
-      .filter(it => game === 'mc'
-        ? !mcIds || mcIds.has(it.id)
-        : LG.words.kindOf(it.target, lang) === (game === 'cloze' ? 'sentence' : 'term'))
-      .map(it => it.id);
+    if (game !== 'mc' || !mcIds) return items.map(it => it.id);
+    return items.filter(it => mcIds.has(it.id)).map(it => it.id);
+  }
+
+  // Every round starts in a fresh random order (a shuffled copy; the input is left alone).
+  function startRound(ids, rand = Math.random) {
+    return LG.rng.shuffle(ids, rand);
+  }
+
+  // Consecutive Pair Match boards of up to `size` ids each.
+  function boards(ids, size) {
+    const out = [];
+    for (let i = 0; i < ids.length; i += size) out.push(ids.slice(i, i + size));
+    return out;
   }
 
   // Ids Multiple Choice can ask about: terms when the file has >= 4 terms, sentences when its
@@ -94,5 +123,5 @@
     return items.filter(it => ok.has(it.id)).map(it => it.id);
   }
 
-  LG.play = { answerPrompt, matchBoard, completeRound, finishDaily, setPin, advanceRotation, eligibleIds, mcEligibleIds, MC_OPTIONS: OPTIONS };
+  LG.play = { answerPrompt, matchBoard, completeRound, finishDaily, setPin, togglePinWord, advanceRotation, eligibleIds, startRound, boards, mcEligibleIds, MC_OPTIONS: OPTIONS };
 })(globalThis.LG = globalThis.LG || {});

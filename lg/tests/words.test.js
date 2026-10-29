@@ -26,6 +26,13 @@
     T.eq(w.pickBlank(its[0], undefined, rar, 'tr').text, 'kedi');
     T.eq(w.pickBlank(its[0], { rot: 1 }, rar, 'tr').text, 'geldi');
   });
+  T.test('pickBlank on short items: one word fully, two words one of them, punctuation-only none', () => {
+    const its = [{ id: 'a', target: 'kedi' }, { id: 'b', target: 'trafik kazası' }, { id: 'c', target: '...' }];
+    const rar = w.buildRarity(its, 'tr');
+    T.eq(w.pickBlank(its[0], undefined, rar, 'tr'), { text: 'kedi', index: 0 });
+    T.ok(['trafik', 'kazası'].includes(w.pickBlank(its[1], undefined, rar, 'tr').text));
+    T.ok(!w.pickBlank(its[2], undefined, rar, 'tr'), 'no blank for punctuation-only');
+  });
   T.test('pickBlank returns a single occurrence index', () => {
     const its = items(['kedi kedi kedi geldi']);
     const b = w.pickBlank(its[0], { pin: 'kedi', rot: 0 }, w.buildRarity(its, 'tr'), 'tr');
@@ -65,5 +72,20 @@
     T.eq(LG.words.searchCategories(o, 'praca', 'pl').map(c => c.name), ['Praca', 'Współpraca']);
     T.eq(LG.words.searchCategories(o, 'zyw', 'pl').map(c => c.name), ['Żywność']);
     T.eq(LG.words.searchCategories(o, '', 'pl', 2).length, 2);
+  });
+  T.test('pickBlanks: multi-word pin in sentence order; falls back when unresolved', () => {
+    const it = { id: 'x', target: 'Nie boję się ciemności', categories: ['A'], date: null };
+    const rar = LG.words.buildRarity([it], 'pl');
+    T.eq(LG.words.pickBlanks(it, { pin: ['boję', 'się'] }, rar, 'pl').map(b => b.text), ['boję', 'się']);
+    T.eq(LG.words.pickBlanks(it, { pin: ['się', 'boję'] }, rar, 'pl').map(b => b.text), ['boję', 'się']);
+    T.eq(LG.words.pickBlanks(it, { pin: 'ciemności' }, rar, 'pl').map(b => b.text), ['ciemności']);
+    T.eq(LG.words.pickBlanks(it, { pin: ['boję', 'kot'] }, rar, 'pl').length, 1);
+  });
+  T.test('pickBlanks: repeated pinned word matches successive occurrences; pickBlank takes one-word array pins', () => {
+    const it = { id: 'y', target: 'ona ona śpi dobrze', categories: ['A'], date: null };
+    const rar = LG.words.buildRarity([it], 'pl');
+    T.eq(LG.words.pickBlanks(it, { pin: ['ona', 'ona'] }, rar, 'pl').map(b => b.index), [0, 4]);
+    T.eq(LG.words.pickBlank(it, { pin: ['dobrze'] }, rar, 'pl').text, 'dobrze');
+    T.eq(LG.words.pickBlank(it, { pin: ['ona', 'śpi'], rot: 0 }, rar, 'pl').text !== undefined, true);
   });
 })();

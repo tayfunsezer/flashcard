@@ -1568,3 +1568,98 @@ Add a `T.test` in `tests/play.test.js` showing that a sentence item with `option
 - `node tests/run-node.js` must be all green, with RED first.
 
 **Commit:** `feat: import json quiz files`, with a plain message and no attribution trailers.
+
+---
+
+### Task 23: No round caps, shuffle every round, Cloze and Pair Match accept every item, practise in the same game
+
+**Why (user bug report):**
+- "0) flashcard and quiz modes are limiting me to 10 questions — I don't want it, there are already other filtering options; that 10 is an arbitrary limitation."
+- "2) On cloze mode I should be able to work with words too."
+- "6) the word `trafik kazası` does not appear — you don't need to check whether it is a sentence."
+- "7) why are `nie sprawiedliwe` or `I admire her enthusiasm` not appearing?"
+- "3) On match mode the minimum 6 items requirement should be removed."
+- "4) On match mode I should be able to match regardless of whether it is a word or a sentence."
+- "8) every start button should randomize — I kind of memorise the order."
+- "NEW: rework mode always redirects me to flashcards. It needs to at least also work for cloze mode."
+
+**Root causes:**
+- `LG.play.eligibleIds` limits Cloze to `kindOf === 'sentence'` (4 or more tokens) and Pair Match to `'term'`.
+- Rounds are capped at 10: `app.js:102,114,115`, `home.js:53-54`, `ROUND_SIZE` in cloze/mc/flashcards (study chunks).
+- The Leitner board caps at 20 (`leitner.js` `CAP`).
+- Pair Match plays a single board, and Home requires at least 6 terms.
+- `buildReviewRound` orders due items deterministically.
+- The summary's practice button always starts Flashcards.
+
+**Changes (controller rulings — binding):**
+
+1. **Eligibility.**
+   - `LG.play.eligibleIds(items, game, lang, mcIds)`:
+     - `cloze`, `match` and `flashcards` → **every** item.
+     - `mc` → unchanged (`mcIds`).
+   - Update the tests that asserted the old sentence/term split.
+   - `kindOf` stays. It still drives MC's cloze variant, the Daily Word pool and the import summary counts.
+2. **Cloze on short items.**
+   - The blank comes from `LG.words.pickBlank` as before. `clozeCandidates` already falls back to the longest token.
+   - A one-word item is therefore fully blanked, with the Source as the clue. That's typed recall.
+   - A 2–3 word item blanks one word, chosen by the same rarity rules.
+   - No change to `words.js` is needed unless a test shows otherwise.
+   - Check that `tokenize` returning nothing (punctuation-only target) is skipped safely, not thrown.
+3. **No round caps.**
+   - A Review round is **all** eligible ids under the current filters, ordered by `buildReviewRound` with `n = Infinity`, then shuffled (see 4).
+   - A Revenge round is all revenge ids.
+   - Leitner "Study due cards" is all due ids. A box round is all ids in the box.
+   - Remove the `(N)` cap wording. Show the true count, e.g. "Study due cards (37)".
+   - Study sets are no longer chunked at 10 per round: one round walks the whole remaining set.
+   - Remove `ROUND_SIZE` / `CAP`.
+   - The header counter already shows `done / total done`, and Quit keeps all progress.
+4. **Shuffle every start.**
+   - Every round started from Home, the Leitner board, "Play again" or the practice button is shuffled with `LG.rng.shuffle` before play.
+   - Due items are still *included* first (`buildReviewRound` decides membership and priority), but since there's no cap now, the final order is fully shuffled.
+   - Study sets are shuffled at creation (unchanged). Resuming keeps their order.
+   - The in-round "again" requeue is unchanged.
+5. **Pair Match.**
+   - Eligible = every item, words or sentences.
+   - **Minimum 1 item.** Remove the "needs at least 6" gate on Home and on the Leitner chooser.
+   - A Match round plays **consecutive boards of up to 6 pairs** over all its ids. Between boards, show a compact "Board k of K done — Next board" step (Enter works).
+   - The summary appears after the last board, with totals across boards.
+   - The timer runs per board. XP uses `matchBoard` per board as now.
+   - Study mode walks the set in boards of 6 until it's finished.
+   - Long sentences in tiles: wrap the text, keep the tile height flexible, no overflow. Check at 390px.
+6. **Practice missed in the same game.**
+   - The summary's primary button becomes **"Practice the N words you missed"**. It starts **the same game** (`p.game`) with `{ ids: missed, mode: 'review' }`.
+   - If that game can't run on those ids, for example MC with too few options, it falls back to Flashcards.
+   - A secondary button, **"Practice them as Flashcards"**, is shown when `p.game !== 'flashcards'`.
+   - This works for cloze, mc, match and flashcards.
+7. **Home copy.**
+   - Game-card counts and reasons reflect the new rules. Cloze shows "N items", not "sentences".
+   - Mode note for Review: "Review: every word that matches your filters — due words first, shuffled."
+   - Leitner legend unchanged.
+8. **Spec/README:** README mentions no round limit, the shuffle, and Cloze/Match on all items. The controller updates the spec.
+
+**Tests (adapt and add in `tests/play.test.js`, `tests/schedule.test.js`):**
+```js
+T.test('eligibleIds: cloze, match, flashcards take every item', () => {
+  const its = [{ id: 's', target: 'Bugün hava çok güzel' }, { id: 't', target: 'kedi' }, { id: 'u', target: 'nie sprawiedliwe' }];
+  T.eq(LG.play.eligibleIds(its, 'cloze', 'pl'), ['s', 't', 'u']);
+  T.eq(LG.play.eligibleIds(its, 'match', 'pl'), ['s', 't', 'u']);
+  T.eq(LG.play.eligibleIds(its, 'flashcards', 'pl'), ['s', 't', 'u']);
+});
+T.test('buildReviewRound with n = Infinity returns every id', () => {
+  const ids = Array.from({ length: 25 }, (_, i) => 'i' + i);
+  T.eq(LG.schedule.buildReviewRound(ids, {}, 0, Infinity, LG.rng.seeded(2)).length, 25);
+});
+```
+Add one pure helper with a test if it simplifies the UI, for example `LG.play.startRound(ids, rand) → shuffled copy`. It is optional.
+
+**Verification (CDP; `b.mouse`/`b.key` in `tests/dev/cdp.js`; fresh profiles under `.tmp/`):**
+- On `?sample=1`, Review Flashcards runs all 40 sample items (the header shows `0 / 40 done`). Quit mid-round, and progress is kept.
+- Two consecutive Starts of the same game show a different first-card order. Check the first 5 ids differ in at least one of 3 tries.
+- Cloze includes single words and 2–3 word items. A one-word item shows the whole word blanked with the Source clue.
+- On a filter with 3 items, Pair Match is enabled and plays one board of 3. With all items, it plays consecutive boards ("Board 1 of 7 done — Next board") and ends in one summary. Sentence tiles wrap at 390px.
+- Leitner "Study due cards" shows the true due count and runs all of them.
+- Summary after Cloze with misses: "Practice the N words you missed" opens **Cloze**, and "Practice them as Flashcards" opens Flashcards.
+- `node tests/run-node.js` must be all green.
+- Take screenshots of Home, Match (board with sentence tiles, light and dark at 390px) and the summary with both practice buttons. Read them and fix only clear defects.
+
+**Commit:** `feat: uncapped shuffled rounds; cloze and match on every item; practise in the same game`, with a plain message and no attribution trailers.

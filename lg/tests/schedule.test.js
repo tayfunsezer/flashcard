@@ -15,6 +15,11 @@
     T.eq(s.buildReviewRound(['a', 'b', 'c', 'd'], p, 100, 4, LG.rng.seeded(1)), ['b', 'a', 'c', 'd']);
     T.eq(s.buildReviewRound(['a', 'b', 'c', 'd'], p, 100, 2, LG.rng.seeded(1)), ['b', 'a']);
   });
+  T.test('buildReviewRound with n = Infinity returns every id', () => {
+    const ids = Array.from({ length: 25 }, (_, i) => 'i' + i);
+    T.eq(LG.schedule.buildReviewRound(ids, {}, 0, Infinity, LG.rng.seeded(2)).length, 25);
+    T.eq(LG.schedule.buildReviewRound(ids, {}, 0, undefined, LG.rng.seeded(2)).length, 25);
+  });
   T.test('buildReviewRound treats entry without seen as unseen', () => {
     const p = { a: { pin: 'x', rot: 0 }, b: { box: 1, due: 0, seen: true } };
     T.eq(s.buildReviewRound(['a', 'b'], p, 100, 2, LG.rng.seeded(1)), ['b', 'a']);

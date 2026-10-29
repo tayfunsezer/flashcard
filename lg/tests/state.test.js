@@ -65,4 +65,8 @@
     T.eq(LG.state.withDefaults({ settings: { learnColumn: 3 } }).settings.learnColumn, 1);
     T.eq(LG.state.withDefaults({ settings: { learnColumn: '2' } }).settings.learnColumn, 1);
   });
+  T.test('withDefaults keeps array pins, drops bad ones', () => {
+    const s = LG.state.withDefaults({ progress: { a: { pin: ['boję', 'się'] }, b: { pin: [1] }, c: { pin: 'x' } } });
+    T.eq([s.progress.a.pin, s.progress.b.pin, s.progress.c.pin], [['boję', 'się'], null, 'x']);
+  });
 })();

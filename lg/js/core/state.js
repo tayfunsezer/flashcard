@@ -41,7 +41,14 @@
     const da = isObj(o.daily) ? o.daily : {};
     const progress = {};
     if (isObj(o.progress)) {
-      for (const id of Object.keys(o.progress)) if (isObj(o.progress[id])) progress[id] = clone(o.progress[id]);
+      for (const id of Object.keys(o.progress)) if (isObj(o.progress[id])) {
+          const e = clone(o.progress[id]);
+          if (e.pin !== undefined) {
+            if (Array.isArray(e.pin)) e.pin = e.pin.length && e.pin.every((w) => typeof w === 'string' && w) ? e.pin : null;
+            else if (typeof e.pin !== 'string' || !e.pin) e.pin = null;
+          }
+          progress[id] = e;
+        }
     }
     return {
       version: VERSION,

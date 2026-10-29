@@ -29,4 +29,10 @@
     T.eq(k.slice(0, 26).join(''), 'abcdefghijklmnopqrstuvwxyz');
     T.ok(k.includes('ç'));
   });
+  T.test('dailyPool uses array pins only when single', () => {
+    const its = [{ id: 'p', source: 's', target: 'Nie lubię ciemnych kotów', date: null, categories: ['A'] }];
+    const rar = LG.words.buildRarity(its, 'pl');
+    T.eq(LG.daily.dailyPool(its, rar, 'pl', { p: ['kotów'] }).map(e => e.word), ['kotów']);
+    T.eq(LG.daily.dailyPool(its, rar, 'pl', { p: ['lubię', 'kotów'] }).map(e => e.word).includes('kotów'), false);
+  });
 })();

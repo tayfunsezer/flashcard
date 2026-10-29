@@ -18,4 +18,8 @@
     T.eq(c('köpek', 'kedi', 'tr'), 'wrong');
     T.eq(c('', 'kedi', 'tr'), 'wrong');
   });
+  T.test('multi-word answers', () => {
+    T.eq(c('boje sie', 'boję się', 'pl'), 'almost');
+    T.eq(c('boję  się', 'boję się', 'pl'), 'correct');
+  });
 })();

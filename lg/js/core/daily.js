@@ -14,7 +14,8 @@
     for (const item of items) {
       if (LG.words.kindOf(item.target, lang) === 'sentence') {
         const cands = LG.words.clozeCandidates(item.target, rarity, lang);
-        const word = pins[item.id] || (cands[0] && cands[0].text);
+        const pin = pins[item.id];
+        const word = (Array.isArray(pin) ? (pin.length === 1 ? pin[0] : null) : pin) || (cands[0] && cands[0].text);
         if (word) add(word, item);
       } else {
         const tokens = LG.text.tokenize(item.target, lang);

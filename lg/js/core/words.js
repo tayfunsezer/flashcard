@@ -43,23 +43,56 @@
     return eligible.slice(0, MAX_CANDIDATES).map((c) => ({ text: c.text, index: c.index }));
   }
 
+  // A stored pin (string, array or null) as an array of words.
+  function pinWords(pin) {
+    if (Array.isArray(pin)) return pin.filter((w) => typeof w === 'string' && w);
+    return typeof pin === 'string' && pin ? [pin] : [];
+  }
+
+  // Each pinned word takes its first unused occurrence; null when one cannot be found.
+  function resolvePins(words, tokens, lang) {
+    const used = new Set();
+    const hits = [];
+    for (const w of words) {
+      const key = LG.text.lower(w, lang);
+      const hit = tokens.find((t) => !used.has(t.index) && LG.text.lower(t.text, lang) === key);
+      if (!hit) return null;
+      used.add(hit.index);
+      hits.push({ text: hit.text, index: hit.index });
+    }
+    return hits.sort((a, b) => a.index - b.index);
+  }
+
   function pickBlank(item, entry, rarity, lang) {
     const e = entry || {};
-    if (e.pin) {
-      const pin = LG.text.lower(e.pin, lang);
-      const hit = LG.text.tokenize(item.target, lang).find((t) => LG.text.lower(t.text, lang) === pin);
-      if (hit) return { text: hit.text, index: hit.index };
+    const words = pinWords(e.pin);
+    if (words.length === 1) {
+      const hits = resolvePins(words, LG.text.tokenize(item.target, lang), lang);
+      if (hits) return hits[0];
     }
     const cands = clozeCandidates(item.target, rarity, lang);
     return cands[(e.rot || 0) % cands.length];
+  }
+
+  // Every blank for an item, in sentence order: all pinned words, or the one normal blank.
+  function pickBlanks(item, entry, rarity, lang) {
+    const words = pinWords((entry || {}).pin);
+    if (words.length) {
+      const hits = resolvePins(words, LG.text.tokenize(item.target, lang), lang);
+      if (hits) return hits;
+    }
+    const one = pickBlank(item, entry, rarity, lang);
+    return one ? [one] : [];
   }
 
   function hintText(word, level) {
     const chars = Array.from(word);
     if (level <= 0 || !chars.length) return '';
     if (level === 1) return chars[0] + '…';
-    if (level === 2) return chars[0] + ' _'.repeat(chars.length - 1);
-    return chars.map((c, i) => (i % 2 === 0 ? c : '_')).join(' ');
+    // Spaces between words of a multi-word answer stay visible as a wider gap.
+    const GAP = ' ';
+    if (level === 2) return chars.map((c, i) => (c === ' ' ? GAP : i === 0 ? c : '_')).join(' ');
+    return chars.map((c, i) => (c === ' ' ? GAP : i % 2 === 0 ? c : '_')).join(' ');
   }
 
   function specialLetters(items, lang) {
@@ -116,5 +149,5 @@
     return starts.sort(byCount).concat(contains.sort(byCount)).slice(0, limit);
   }
 
-  LG.words = { MIN_SENTENCE_TOKENS, kindOf, buildRarity, clozeCandidates, pickBlank, hintText, specialLetters, filterItems, groupOptions, itemsInCategory, searchCategories };
+  LG.words = { MIN_SENTENCE_TOKENS, kindOf, buildRarity, clozeCandidates, pickBlank, pickBlanks, pinWords, resolvePins, hintText, specialLetters, filterItems, groupOptions, itemsInCategory, searchCategories };
 })(globalThis.LG = globalThis.LG || {});

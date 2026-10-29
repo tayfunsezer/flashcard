@@ -1,6 +1,5 @@
 (function (LG) {
   const { h, clear } = LG.dom;
-  const ROUND_SIZE = 10;
   const OPTIONS = LG.play.MC_OPTIONS;
 
   LG.screens.mc = {
@@ -11,7 +10,7 @@
       const langT = app.ctx.langTarget;
       const mode = params.mode || 'review';
       const ids = (params.ids || []).filter((id) => app.ctx.itemsById.has(id));
-      const round = { played: 0, combo: 0, xp: 0, correct: 0, wrong: 0, from: new Map(), touched: [] };
+      const round = { combo: 0, xp: 0, correct: 0, wrong: 0, from: new Map(), touched: [] };
       const track = roundTracker(mode, ids);
       const screen = h('div', { class: 'screen' });
       root.append(screen);
@@ -41,7 +40,7 @@
       function nextId() {
         if (mode === 'study') {
           const set = app.state.studySet;
-          if (!set || LG.study.isFinished(set) || round.played >= ROUND_SIZE) return null;
+          if (!set || LG.study.isFinished(set)) return null;
           return set.queue.find((id) => !skipped.has(id)) || null;
         }
         return track.current();
@@ -148,7 +147,6 @@
           }
           if (track.record(id, result) && q.sentence) st = LG.play.advanceRotation(st, id);
           app.setState(st);
-          round.played += 1;
 
           buttons.forEach((b, k) => {
             b.disabled = true;

@@ -17,7 +17,7 @@
     };
   }
 
-  function buildReviewRound(ids, progress, nowMs, n = 10, rand) {
+  function buildReviewRound(ids, progress, nowMs, n = Infinity, rand) {
     const seen = id => !!(progress[id] && progress[id].seen);
     const due = ids.filter(id => seen(id) && progress[id].due <= nowMs)
       .sort((a, b) => (progress[a].box || 0) - (progress[b].box || 0) || progress[a].due - progress[b].due);

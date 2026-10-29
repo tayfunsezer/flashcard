@@ -1,12 +1,12 @@
 (function (LG) {
   const { h } = LG.dom;
   const GAME_INFO = {
-    cloze: { name: 'Cloze', desc: 'Type the missing word in a sentence.', unit: ['sentence', 'sentences'] },
+    cloze: { name: 'Cloze', desc: 'Type the missing word.', unit: ['item', 'items'] },
     mc: { name: 'Multiple Choice', desc: 'Pick the right translation from four.', unit: ['item', 'items'] },
-    match: { name: 'Pair Match', desc: 'Match six pairs against the clock.', unit: ['term', 'terms'] },
+    match: { name: 'Pair Match', desc: 'Match pairs against the clock, six at a time.', unit: ['item', 'items'] },
     flashcards: { name: 'Flashcards', desc: 'Flip a card, then say if you knew it.', unit: ['card', 'cards'] },
   };
-  const SUGGEST = { cloze: 'No sentences in this set — try Multiple Choice', mc: 'No items in this set', match: 'No terms in this set — try Cloze', flashcards: 'No items in this set' };
+  const SUGGEST = { cloze: 'No items in this set', mc: 'No items in this set', match: 'No items in this set', flashcards: 'No items in this set' };
   // Session-only choices on this screen.
   const ui = { mode: 'review', by: 'category', value: '' };
 
@@ -28,10 +28,8 @@
     if (ui.mode === 'study') return { ids, reason: null };
     const usable = ui.mode === 'revenge' ? LG.schedule.revengeIds(ids, app.state.progress) : ids;
     let reason = null;
-    if (game === 'cloze' && ids.length < 1) reason = 'No sentences match the filters';
-    else if (game === 'mc' && ids.length < 4) reason = 'Needs at least 4 items in the filters';
-    else if (game === 'match' && ids.length < 6) reason = 'Needs at least 6 terms in the filters';
-    else if (game === 'flashcards' && ids.length < 1) reason = 'No items match the filters';
+    if (game === 'mc' && ids.length < 4) reason = 'Needs at least 4 items in the filters';
+    else if (ids.length < 1) reason = 'No items match the filters';
     else if (ui.mode === 'revenge' && usable.length < 1) reason = 'Revenge pile is empty for this game';
     return { ids: usable, reason };
   }
@@ -49,10 +47,9 @@
       return app.go(game, { ids: set.queue.slice(), mode: 'study' });
     }
     const { ids } = availability(game, filteredItems());
-    const round = ui.mode === 'revenge'
-      ? ids.slice(0, 10)
-      : LG.schedule.buildReviewRound(ids, app.state.progress, Date.now(), 10);
-    app.go(game, { ids: round, mode: ui.mode });
+    // No cap: every usable id, due words included first, in a fresh random order each Start.
+    const round = ui.mode === 'revenge' ? ids : LG.schedule.buildReviewRound(ids, app.state.progress, Date.now(), Infinity);
+    app.go(game, { ids: LG.play.startRound(round), mode: ui.mode });
   }
 
   function statsRow() {
@@ -133,7 +130,7 @@
       const revengeTotal = ui.mode === 'revenge'
         ? LG.schedule.revengeIds(pool.map((it) => it.id), app.state.progress).length : 0;
       const modeNote = {
-        review: 'Review: a 10-word round of the words due now, then new words.',
+        review: 'Review: every word that matches your filters — due words first, shuffled.',
         revenge: 'Revenge pile: words you answered wrong — ' + revengeTotal + ' right now. Answer them right to clear them.',
         study: 'Study set: every word in one category or date, until you get each one right.',
       }[ui.mode];

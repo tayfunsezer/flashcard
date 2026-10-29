@@ -97,9 +97,10 @@
     go(app.current || 'home');
   }
 
+  // A shuffled Review round of every id `game` can play (due words are included first, then shuffled: no cap).
   function reviewRound(game, ids) {
     const eligible = LG.play.eligibleIds(ids.map((id) => app.ctx.itemsById.get(id)), game, app.ctx.langTarget, app.ctx.mcIds);
-    return LG.schedule.buildReviewRound(eligible, app.state.progress, Date.now(), 10);
+    return LG.play.startRound(LG.schedule.buildReviewRound(eligible, app.state.progress, Date.now(), Infinity));
   }
 
   // Ids for a fresh round of `game` in `mode`, honouring the current filters (used by "Play again").
@@ -111,8 +112,8 @@
     const f = app.filters;
     const pool = LG.words.filterItems(app.ctx.items, { dateFrom: f.dateFrom || null, dateTo: f.dateTo || null, categories: f.categories });
     const ids = LG.play.eligibleIds(pool, game, app.ctx.langTarget, app.ctx.mcIds);
-    if (mode === 'revenge') return LG.schedule.revengeIds(ids, app.state.progress).slice(0, 10);
-    return LG.schedule.buildReviewRound(ids, app.state.progress, Date.now(), 10);
+    if (mode === 'revenge') return LG.play.startRound(LG.schedule.revengeIds(ids, app.state.progress));
+    return LG.play.startRound(LG.schedule.buildReviewRound(ids, app.state.progress, Date.now(), Infinity));
   }
 
   // Datasets stored before multi-category support carry `category`; convert and re-save.
