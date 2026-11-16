@@ -28,3 +28,18 @@
     T.eq(s.revengeIds(['a', 'b'], { a: { revenge: true }, b: { revenge: false } }), ['a']);
   });
 })();
+(function () {
+  T.test('applyResult keeps the star and other fields it does not own', () => {
+    for (const res of ['correct', 'almost', 'wrong']) {
+      const e = LG.schedule.applyResult({ box: 2, due: 0, revenge: false, seen: true, pin: ['się'], rot: 3, star: true }, res, 1000);
+      T.eq([e.star, e.pin, e.rot], [true, ['się'], 3]);
+    }
+  });
+  T.test('answerPrompt and matchBoard keep a star set before answering', () => {
+    let st = LG.play.toggleStar(LG.state.defaultState(), 'a');
+    st = LG.play.answerPrompt(st, 'a', 'correct', { hints: 0 }, 0, 0).state;
+    T.ok(LG.play.isMarked(st.progress.a));
+    st = LG.play.matchBoard(st, { ids: ['a'], missedIds: ['a'], seconds: 30 }, 0).state;
+    T.ok(LG.play.isMarked(st.progress.a));
+  });
+})();

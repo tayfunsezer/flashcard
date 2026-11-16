@@ -7,14 +7,15 @@
     const prev = e.box || 0;
     const ok = result === 'correct' || result === 'almost';
     const box = ok ? Math.min(5, prev + 1) : 0;
-    return {
+    // Fields this function does not own (e.g. the star) are carried over unchanged.
+    return Object.assign({}, e, {
       box,
       due: nowMs + INTERVAL_DAYS[box] * DAY_MS,
       revenge: !ok,
       seen: true,
       pin: e.pin === undefined ? null : e.pin,
       rot: e.rot || 0,
-    };
+    });
   }
 
   function buildReviewRound(ids, progress, nowMs, n = Infinity, rand) {
