@@ -373,7 +373,12 @@ input.cloze-input { font-size: 1.125rem; width: 14rem; min-height: 40px; }
 .fc-rule { width: 64px; border: 0; border-top: 1px solid var(--border); margin: 20px auto; animation: fc-fade 150ms ease-out; }
 @keyframes fc-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .fc-back, .fc-rule { animation: none; } }
-.fc-controls { display: flex; justify-content: center; }
+.fc-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.star-btn { min-height: 36px; }
+.words-card summary { cursor: pointer; font-weight: 600; }
+.words-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.words-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; padding: 6px 0; border-top: 1px solid var(--border); }
+.words-list li:first-child { border-top: 0; }
 .fc-controls > .btn { min-width: 200px; min-height: 44px; }
 .key-hint { font-size: 0.75rem; font-weight: 500; opacity: 0.8; border: 1px solid currentColor; border-radius: 4px; padding: 0 5px; }
 .fc-grades { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; max-width: 480px; }
@@ -405,3 +410,4 @@ input.cloze-input { font-size: 1.125rem; width: 14rem; min-height: 40px; }
   .lb-stack { height: 44px; }
 }
 .summary-actions { margin-bottom: 16px; }
+.ask-toggle { align-items: center; gap: 6px; }

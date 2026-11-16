@@ -15,8 +15,17 @@
   T.test('parseProgressFile errors', () => {
     T.eq(S.parseProgressFile('{nope').error, 'Not a valid JSON file.');
     T.eq(S.parseProgressFile('{"format":"x","version":1}').error, 'This is not a Language Game progress file.');
-    T.eq(S.parseProgressFile('{"format":"language-game-progress","version":2,"state":{}}').error,
-      'This file was made by a newer version (v2) and cannot be imported.');
+    T.eq(S.parseProgressFile('{"format":"language-game-progress","version":3,"state":{}}').error,
+      'This file was made by a newer version (v3) and cannot be imported.');
+  });
+  T.test('withDefaults v1 pin -> star; v2 keeps unstarred', () => {
+    const v1 = S.withDefaults({ version: 1, progress: { a: { pin: ['się'] }, b: { pin: null } } });
+    T.eq([v1.version, v1.progress.a.star, !!v1.progress.b.star], [2, true, false]);
+    const v2 = S.withDefaults({ version: 2, progress: { a: { pin: ['się'] } } });
+    T.eq(!!v2.progress.a.star, false);
+    T.eq(S.withDefaults({}).settings.ask, 'word');
+    T.eq(S.withDefaults({ settings: { ask: 'whole' } }).settings.ask, 'whole');
+    T.eq(S.withDefaults({ settings: { ask: 'bogus' } }).settings.ask, 'word');
   });
   T.test('exportFileName', () => T.eq(S.exportFileName('2025-12-13'), 'language-game-progress-2025-12-13.json'));
   T.test('loadState: missing, corrupt, blocked, partial', () => {
@@ -31,7 +40,7 @@
   T.test('saveState writes JSON', () => {
     const f = fake(null);
     T.eq(LG.storage.saveState(S.defaultState(), f), true);
-    T.eq(JSON.parse(f.saved).version, 1);
+    T.eq(JSON.parse(f.saved).version, 2);
   });
   T.test('loadState/saveState survive a throwing default localStorage', () => {
     const had = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');

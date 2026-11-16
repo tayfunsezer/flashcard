@@ -82,6 +82,16 @@
     its = [term('a', 'cat'), term('b', 'dog'), term('c', 'bird'), term('d', 'fish'), s1];
     T.eq(P.mcEligibleIds(its, rarity(its), 'en'), ['a', 'b', 'c', 'd']);
   });
+  T.test('mcEligibleIds whole needs 4 distinct targets', () => {
+    const it = (id, t, extra) => Object.assign({ id, target: t, categories: ['A'] }, extra);
+    const rarity = (its) => LG.words.buildRarity(its, 'en');
+    let its = [it('a', 'the quick brown foxes jumped'), it('b', 'lazy sleepy dogs rested quietly'), it('c', 'a very long walk home'), it('d', 'The Quick Brown Foxes Jumped')];
+    T.eq(P.mcEligibleIds(its, rarity(its), 'en', 'whole'), []);
+    its = [its[0], its[1], its[2], it('d', 'we ate dinner late tonight')];
+    T.eq(P.mcEligibleIds(its, rarity(its), 'en', 'whole'), ['a', 'b', 'c', 'd']);
+    const own = [it('a', 'one two three four five', { options: ['x', 'y', 'z'] }), it('b', 'one two three four five')];
+    T.eq(P.mcEligibleIds(own, rarity(own), 'en', 'whole'), ['a']);
+  });
   T.test('eligibleIds restricts mc to the given set', () => {
     const its = [{ id: 's', target: 'Bugün hava çok güzel' }, { id: 't', target: 'kedi' }];
     T.eq(P.eligibleIds(its, 'mc', 'tr', new Set(['t'])), ['t']);
@@ -109,12 +119,27 @@
     T.eq(LG.play.setPin(s0, 'a', []).progress.a.pin, null);
   });
   T.test('marked helpers', () => {
-    const p = { a: { pin: 'x' }, b: { pin: ['x', 'y'] }, c: { pin: null }, d: { box: 1 } };
+    const p = { a: { star: true }, b: { star: true, pin: ['x', 'y'] }, c: { pin: ['x'] }, d: { box: 1 } };
     T.ok(LG.play.isMarked(p.a) && LG.play.isMarked(p.b) && !LG.play.isMarked(p.c) && !LG.play.isMarked(p.d) && !LG.play.isMarked(undefined));
     T.eq(LG.play.markedIds(['d', 'b', 'c', 'a', 'e'], p), ['b', 'a']);
     T.eq(LG.play.practiceIds(['a', 'b'], ['b', 'c']), ['a', 'b', 'c']);
     T.eq(LG.play.practiceLabel(1, 0, 1), 'Practice the 1 word you missed');
     T.eq(LG.play.practiceLabel(0, 2, 2), 'Practice the 2 words you marked');
     T.eq(LG.play.practiceLabel(3, 2, 4), 'Practice 4 words — 3 missed, 2 marked');
+  });
+  T.test('stars', () => {
+    const S = LG.state;
+    let st = S.defaultState();
+    st = LG.play.toggleStar(st, 'a');
+    T.ok(LG.play.isMarked(st.progress.a));
+    st = LG.play.setPin(st, 'a', ['się']);
+    st = LG.play.toggleStar(st, 'a');
+    T.ok(!LG.play.isMarked(st.progress.a));
+    T.eq(st.progress.a.pin, ['się']);
+    const toks = LG.text.tokenize('boję się', 'pl');
+    st = LG.play.togglePinWord(S.defaultState(), 'b', 'boję', toks, 'pl');
+    T.ok(LG.play.isMarked(st.progress.b));
+    st = LG.play.clearStars(st, ['b']);
+    T.ok(!LG.play.isMarked(st.progress.b));
   });
 })();

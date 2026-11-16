@@ -22,4 +22,14 @@
     T.eq(c('boje sie', 'boję się', 'pl'), 'almost');
     T.eq(c('boję  się', 'boję się', 'pl'), 'correct');
   });
+  T.test('checkWhole', () => {
+    const A = LG.answer;
+    T.eq(A.checkWhole('orać zaorać pole', 'orać & zaorać pole', 'pl'), 'correct');
+    T.eq(A.checkWhole('  Orać & zaorać   pole. ', 'orać & zaorać pole', 'pl'), 'correct');
+    T.eq(A.checkWhole('orac zaorac pole', 'orać & zaorać pole', 'pl'), 'almost');
+    T.eq(A.checkWhole('zaorać pole', 'orać & zaorać pole', 'pl'), 'wrong');
+    T.eq(A.checkWhole('orać zaorać pole pole', 'orać & zaorać pole', 'pl'), 'wrong');
+    T.eq(A.checkWhole('', 'boję się', 'pl'), 'wrong');
+    T.eq(A.checkWhole('İstanbul', 'istanbul', 'tr'), 'correct');
+  });
 })();

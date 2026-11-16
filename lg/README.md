@@ -17,9 +17,15 @@ Every game shares one Leitner schedule: a right answer moves a card to the next 
 
 Rounds have no size limit: a Review round takes every word that matches your filters (due words first), a Revenge round the whole revenge pile, and a study set is walked in one go. Every round starts in a fresh random order, so you cannot learn the order by heart. Cloze and Pair Match work with every item, single words and sentences alike: a one-word item is blanked whole with the translation as the clue. Pair Match plays boards of up to six pairs, one after another, and needs only one item.
 
-Marking words: after an answer in Cloze, click words in the answer sentence to mark them; the item then blanks those words every time. The round summary offers to practise the words you missed plus the ones you marked in that round. The Marked words mode on Home plays every marked item (under your filters) in any game, and ✕ on the pin row unmarks one.
+Marking words: after an answer in Cloze, click words in the answer sentence to mark them; the item then blanks those words every time. The round summary offers to practise the words you missed plus the ones you marked in that round. The Marked words mode on Home plays every marked item (under your filters) in any game, and ☆/★ marks or unmarks an item. ✕ on the pin row clears its pinned words only.
 
 Words you miss come back at the end of the round until you get them right (only your first answer moves the word between boxes). After a round you can practise just the words you missed, in the same game or as Flashcards.
+
+### Ask for, stars and refreshing the file
+
+Ask for (on Home) sets what Cloze and Multiple Choice quiz: One word blanks a single word of a sentence, Whole expression asks for the full item. Star an item with ☆ in any game to keep it; the Marked words mode plays every starred item, Export marked saves them as a `.json` quiz file you can load again, and Clear all marks removes every star.
+
+After editing your word list, click ↻ Refresh file next to the file name on Home (or ↻ in a game header) to re-read it without going through the import again: your progress is kept and a banner shows how many items are new or gone. Edge and Chrome remember the file and only ask for permission to read it again; Safari and Firefox open the file picker, and you pick the same file. Picking a file with a different name starts a normal import.
 
 ### File format
 
