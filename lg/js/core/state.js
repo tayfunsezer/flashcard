@@ -1,11 +1,11 @@
 (function (LG) {
   const FORMAT = 'language-game-progress';
-  const VERSION = 1;
+  const VERSION = 2;
 
   function defaultState() {
     return {
       version: VERSION,
-      settings: { theme: 'system', langSource: '', langTarget: '', direction: 's2t', learnColumn: 1 },
+      settings: { theme: 'system', langSource: '', langTarget: '', direction: 's2t', learnColumn: 1, ask: 'word' },
       progress: {},
       xp: 0,
       streak: { current: 0, best: 0, lastDay: null },
@@ -47,6 +47,8 @@
             if (Array.isArray(e.pin)) e.pin = e.pin.length && e.pin.every((w) => typeof w === 'string' && w) ? e.pin : null;
             else if (typeof e.pin !== 'string' || !e.pin) e.pin = null;
           }
+          if (e.star !== true) delete e.star;
+          if (!(o.version >= 2) && e.pin != null) e.star = true;
           progress[id] = e;
         }
     }
@@ -58,6 +60,7 @@
         langTarget: pick(isStr, se.langTarget, d.settings.langTarget),
         direction: oneOf(['s2t', 't2s'], se.direction, d.settings.direction),
         learnColumn: oneOf([1, 2], se.learnColumn, d.settings.learnColumn),
+        ask: oneOf(['word', 'whole'], se.ask, d.settings.ask),
       },
       progress,
       xp: pick(isNum, o.xp, d.xp),

@@ -70,6 +70,7 @@
     const key = LG.text.lower(word, lang);
     const at = cur.findIndex((w) => LG.text.lower(w, lang) === key);
     if (at >= 0) return setPin(state, itemId, cur.filter((_, i) => i !== at));
+    const starred = (s) => patchEntry(s, itemId, () => ({ star: true }));
     const used = new Set();
     const pos = (w) => {
       const k = LG.text.lower(w, lang);
@@ -80,7 +81,19 @@
     };
     const order = cur.concat(word).map((w) => ({ w, p: pos(w) }));
     order.sort((a, b) => a.p - b.p);
-    return setPin(state, itemId, order.map((o) => o.w));
+    return starred(setPin(state, itemId, order.map((o) => o.w)));
+  }
+
+  function setStar(state, itemId, on) {
+    return patchEntry(state, itemId, () => ({ star: !!on }));
+  }
+
+  function toggleStar(state, itemId) {
+    return setStar(state, itemId, !isMarked(state.progress[itemId]));
+  }
+
+  function clearStars(state, ids) {
+    return ids.reduce((s, id) => (isMarked(s.progress[id]) ? setStar(s, id, false) : s), state);
   }
 
   function advanceRotation(state, itemId) {
@@ -108,7 +121,13 @@
 
   // Ids Multiple Choice can ask about: terms when the file has >= 4 terms, sentences when its
   // sentences offer >= 4 distinct cloze words (the distractor pools used by the MC screen).
-  function mcEligibleIds(items, rarity, lang) {
+  // ask 'whole': every item can be asked as a whole expression once there are 4 distinct targets;
+  // fewer than that leaves only items that carry their own options.
+  function mcEligibleIds(items, rarity, lang, ask = 'word') {
+    if (ask === 'whole') {
+      const distinct = new Set(items.map(it => LG.text.lower(it.target, lang)));
+      return items.filter(it => distinct.size >= OPTIONS || (it.options && it.options.length)).map(it => it.id);
+    }
     const terms = [];
     const sentences = [];
     const withOptions = [];
@@ -123,9 +142,9 @@
     return items.filter(it => ok.has(it.id)).map(it => it.id);
   }
 
-  // Marked = the item has pinned words (set in Cloze feedback).
+  // Marked = the item is starred.
   function isMarked(entry) {
-    return !!entry && entry.pin != null;
+    return !!entry && entry.star === true;
   }
 
   function markedIds(ids, progress) {
@@ -144,5 +163,5 @@
     return 'Practice ' + words(total) + ' — ' + missedCount + ' missed, ' + markedCount + ' marked';
   }
 
-  LG.play = { isMarked, markedIds, practiceIds, practiceLabel, answerPrompt, matchBoard, completeRound, finishDaily, setPin, togglePinWord, advanceRotation, eligibleIds, startRound, boards, mcEligibleIds, MC_OPTIONS: OPTIONS };
+  LG.play = { isMarked, markedIds, practiceIds, practiceLabel, answerPrompt, matchBoard, completeRound, finishDaily, setPin, togglePinWord, setStar, toggleStar, clearStars, advanceRotation, eligibleIds, startRound, boards, mcEligibleIds, MC_OPTIONS: OPTIONS };
 })(globalThis.LG = globalThis.LG || {});

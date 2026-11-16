@@ -34,7 +34,7 @@
         return app.go('home');
       }
 
-      const total = { xp: 0, correct: 0, wrong: 0, missed: [], boxBefore: new Map(), touched: [] };
+      const total = { xp: 0, correct: 0, wrong: 0, missed: [], boxBefore: new Map(), touched: [], seen: [] };
       let onEnter = null;
       const keydown = (e) => {
         if (!screen.isConnected) { document.removeEventListener('keydown', keydown); return; }
@@ -59,6 +59,7 @@
       function playBoard(k) {
         const ids = boardIds(k);
         onEnter = null;
+        for (const id of ids) if (!total.seen.includes(id)) total.seen.push(id);
         for (const id of ids) {
           if (total.boxBefore.has(id)) continue;
           total.boxBefore.set(id, (app.state.progress[id] && app.state.progress[id].box) || 0);
@@ -88,7 +89,7 @@
         const boardLabel = study ? 'Board ' + (k + 1) : plan.length > 1 ? 'Board ' + (k + 1) + ' of ' + plan.length : null;
         clear(screen).append(
           h('div', { class: 'topbar game-head' }, h('h1', null, 'Pair Match'),
-            h('div', { class: 'btn-row' }, boardLabel ? h('span', { class: 'muted' }, boardLabel) : null, countEl, timeEl, quit)),
+            h('div', { class: 'btn-row' }, boardLabel ? h('span', { class: 'muted' }, boardLabel) : null, countEl, timeEl, LG.app.refreshButton(), quit)),
           h('p', { class: 'muted small' }, 'Pick one tile from each column to make a pair.'),
           h('div', { class: 'match-board' }, colEls));
 
@@ -182,7 +183,7 @@
           + (set ? ' · set ' + set.done.length + '/' + set.total : '');
         clear(screen).append(
           h('div', { class: 'topbar game-head' }, h('h1', null, 'Pair Match'),
-            h('div', { class: 'btn-row' }, h('span', { class: 'pill' }, '+' + total.xp + ' XP'),
+            h('div', { class: 'btn-row' }, h('span', { class: 'pill' }, '+' + total.xp + ' XP'), LG.app.refreshButton(),
               h('button', { class: 'btn btn-small', type: 'button', onclick: home }, 'Quit'))),
           h('div', { class: 'card spread match-between', role: 'status' },
             h('div', { class: 'stack-tight' }, h('strong', null, title), h('span', { class: 'muted small' }, detail)),
@@ -198,7 +199,7 @@
           .map((id) => ({ id, from: total.boxBefore.get(id), to: app.state.progress[id].box }))
           .filter((m) => m.from !== m.to);
         app.go('summary', {
-          game: 'match', mode, xp: total.xp, correct: total.correct, almost: 0, wrong: total.wrong, moved, missed: total.missed.slice(),
+          game: 'match', mode, xp: total.xp, correct: total.correct, almost: 0, wrong: total.wrong, moved, missed: total.missed.slice(), marked: [], seen: total.seen.slice(),
           again: () => app.go('match', { ids: app.roundIds('match', mode), mode }),
         });
       }

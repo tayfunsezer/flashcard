@@ -4,12 +4,12 @@
   LG.screens.flashcards = {
     render(root, params) {
       const app = LG.app;
-      const { gameHeader, roundTracker, againTag } = LG.screens.cloze;
+      const { gameHeader, roundTracker, againTag, starButton } = LG.screens.cloze;
       const langS = app.ctx.langSource;
       const langT = app.ctx.langTarget;
       const mode = params.mode || 'review';
       const ids = (params.ids || []).filter((id) => app.ctx.itemsById.has(id));
-      const round = { combo: 0, xp: 0, correct: 0, wrong: 0, from: new Map(), touched: [] };
+      const round = { combo: 0, xp: 0, correct: 0, wrong: 0, from: new Map(), touched: [], unmarked: new Set(), seen: new Set() };
       const track = roundTracker(mode, ids);
       const screen = h('div', { class: 'screen' });
       root.append(screen);
@@ -28,7 +28,7 @@
         if (t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return;
         if (e.key === ' ') {
           // Buttons outside the card area (Quit) keep their native Space behaviour.
-          if (t && t.tagName === 'BUTTON' && !t.closest('.fc-area')) return;
+          if (t && t.tagName === 'BUTTON' && (!t.closest('.fc-area') || t.classList.contains('star-btn'))) return;
           e.preventDefault();
           if (onFlip) onFlip();
         } else if (onGrade && (e.key === '1' || e.key === '2')) {
@@ -63,6 +63,7 @@
           .filter((m) => m.from !== m.to);
         app.go('summary', {
           game: 'flashcards', mode, xp: round.xp, correct: round.correct, almost: 0, wrong: round.wrong, moved, missed: track.missed(),
+          marked: LG.play.markedIds(Array.from(round.unmarked), app.state.progress), seen: Array.from(round.seen),
           again: () => app.go('flashcards', { ids: app.roundIds('flashcards', mode), mode }),
         });
       }
@@ -70,6 +71,7 @@
       function prompt() {
         const id = nextId();
         if (!id) return finish();
+        round.seen.add(id);
         const item = app.ctx.itemsById.get(id);
         const s2t = app.state.settings.direction !== 't2s';
         const side = (text, lang, cls) => h('p', { class: 'fc-text ' + cls, lang }, text);
@@ -101,7 +103,8 @@
             h('span', { class: 'choice-key', 'aria-hidden': 'true' }, '2'), 'Knew it');
           const missed = h('button', { class: 'btn fc-grade fc-missed', type: 'button', onclick: () => grade('wrong') },
             h('span', { class: 'choice-key', 'aria-hidden': 'true' }, '1'), "Didn't know");
-          clear(controls).append(h('div', { class: 'fc-grades', role: 'group', 'aria-label': 'Did you know it?' }, missed, knew));
+          clear(controls).append(h('div', { class: 'fc-grades', role: 'group', 'aria-label': 'Did you know it?' }, missed, knew),
+            starButton(id, (_, now) => { if (now) round.unmarked.add(id); }));
           knew.focus();
           onGrade = grade;
         }

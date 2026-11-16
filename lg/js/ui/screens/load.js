@@ -58,8 +58,9 @@
       h('p', { class: 'muted small' }, 'Columns: 1 and 2 are the language you are learning and its translation (you choose which is which next), 3 Date, 4 Category (separate several with |, e.g. Food|Travel). A .json quiz file is a list of { question, options, correctIndex } entries.'),
       h('div', { class: 'btn-row', style: 'justify-content:center' },
         h('button', { class: 'btn btn-primary', type: 'button', onclick: async () => {
-          const f = await LG.dom.pickFile(LG.importer.ACCEPT);
-          if (f) readAndShow(root, f);
+          // The plain file input: the File System Access picker can stay silent on file:// pages in Edge.
+          const file = await LG.dom.pickFile(LG.importer.ACCEPT);
+          if (file) readAndShow(root, file, null);
         } }, 'Choose file'),
         h('button', { class: 'btn', type: 'button', onclick: () => {
           const res = LG.importer.rowsToDataset(LG.sampleRows, { learnColumn: 1 });
@@ -70,8 +71,14 @@
     zone.addEventListener('drop', (e) => {
       e.preventDefault();
       zone.classList.remove('over');
-      const f = e.dataTransfer && e.dataTransfer.files[0];
-      if (f) readAndShow(root, f);
+      const dt = e.dataTransfer;
+      const f = dt && dt.files[0];
+      if (!f) return;
+      // Ask for the handle now: the data transfer items are emptied once this handler returns.
+      const item = dt.items && dt.items[0];
+      const handlePromise = item && typeof item.getAsFileSystemHandle === 'function'
+        ? item.getAsFileSystemHandle().catch(() => null) : Promise.resolve(null);
+      LG.dom.withTimeout(handlePromise, 1500, null).then((handle) => readAndShow(root, f, handle && handle.kind === 'file' ? handle : null));
     });
     LG.dom.clear(root).append(h('div', { class: 'screen' },
       h('div', { class: 'topbar' }, h('h1', null, 'Load a word list'),
@@ -80,18 +87,18 @@
       zone));
   }
 
-  async function readAndShow(root, file) {
+  async function readAndShow(root, file, handle = null) {
     if (!/\.xlsx$/i.test(file.name) && !LG.importer.isTextTable(file.name) && !LG.importer.isJson(file.name)) return renderPick(root, file.name + ' is not an .xlsx, .csv, .tsv or .json file.');
     try {
       const { rows, json, encoding } = await LG.importer.readFile(file);
       if (json !== undefined) {
         const res = LG.importer.jsonToDataset(json, file.name);
         if (!res.items.length) return renderPick(root, 'no valid quiz entries were found.');
-        return renderLanguages(root, { res, fileName: file.name, encoding });
+        return renderLanguages(root, { res, fileName: file.name, encoding, handle });
       }
       const res = LG.importer.rowsToDataset(rows, { learnColumn: LG.app.state.settings.learnColumn });
       if (!res.items.length) return renderPick(root, 'no rows with both a Source and a Target were found.');
-      renderLanguages(root, { res, rows, fileName: file.name, encoding });
+      renderLanguages(root, { res, rows, fileName: file.name, encoding, handle });
     } catch (e) {
       renderPick(root, (e && e.message) || String(e));
     }
@@ -179,12 +186,16 @@
     startBtn.addEventListener('click', async () => {
       startBtn.disabled = true;
       const ds = fresh
-        ? { items: items(), fileName: opts.fileName, importedAt: Date.now(), encoding: opts.encoding }
+        ? { items: items(), fileName: opts.fileName, importedAt: Date.now(), encoding: opts.encoding, learnColumn }
         : opts.dataset;
       try {
         if (fresh) await LG.storage.saveDataset(ds);
       } catch (e) {
         app.banner('The word list could not be stored; it will need loading again next time.', 'warn');
+      }
+      if (fresh) {
+        // The sample has no file behind it; a file picked without a handle clears any older one.
+        try { await LG.storage.saveHandle(opts.fileName === 'Sample data' ? null : opts.handle || null); } catch (e) { /* Refresh file re-picks */ }
       }
       app.setSettings({ langSource: src.value, langTarget: tgt.value, learnColumn });
       app.setDataset(ds);
@@ -211,8 +222,10 @@
   LG.screens.load = {
     LANGS,
     langPicker,
+    importFile: readAndShow,
     render(root, params = {}) {
-      if (params.dataset) renderLanguages(root, { dataset: params.dataset });
+      if (params.file) readAndShow(root, params.file, params.handle || null);
+      else if (params.dataset) renderLanguages(root, { dataset: params.dataset });
       else renderPick(root);
     },
   };

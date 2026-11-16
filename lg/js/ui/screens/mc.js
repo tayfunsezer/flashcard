@@ -10,7 +10,7 @@
       const langT = app.ctx.langTarget;
       const mode = params.mode || 'review';
       const ids = (params.ids || []).filter((id) => app.ctx.itemsById.has(id));
-      const round = { combo: 0, xp: 0, correct: 0, wrong: 0, from: new Map(), touched: [] };
+      const round = { combo: 0, xp: 0, correct: 0, wrong: 0, from: new Map(), touched: [], unmarked: new Set(), seen: new Set() };
       const track = roundTracker(mode, ids);
       const screen = h('div', { class: 'screen' });
       root.append(screen);
@@ -62,6 +62,7 @@
           .filter((m) => m.from !== m.to);
         app.go('summary', {
           game: 'mc', mode, xp: round.xp, correct: round.correct, almost: 0, wrong: round.wrong, moved, missed: track.missed(),
+          marked: LG.play.markedIds(Array.from(round.unmarked), app.state.progress), seen: Array.from(round.seen),
           again: () => app.go('mc', { ids: app.roundIds('mc', mode), mode }),
         });
       }
@@ -69,8 +70,9 @@
       // Question description for one item: answer, answer language, distractor pool, prompt nodes.
       function build(item, id) {
         const s2t = app.state.settings.direction !== 't2s';
+        const whole = app.state.settings.ask === 'whole';
         const own = s2t && item.options && item.options.length ? item.options : null;
-        if (app.ctx.kinds.get(id) === 'sentence' && !own) {
+        if (!whole && app.ctx.kinds.get(id) === 'sentence' && !own) {
           const blank = track.keep(id, () => LG.words.pickBlank(item, app.state.progress[id], app.ctx.rarity, langT));
           const pool = [];
           for (const it of app.ctx.items) {
@@ -93,7 +95,7 @@
         }
         return {
           own, answer: s2t ? item.target : item.source, lang: s2t ? langT : langS, categories: item.categories, sentence: false,
-          pool: app.ctx.items.filter((it) => app.ctx.kinds.get(it.id) !== 'sentence')
+          pool: app.ctx.items.filter((it) => it.id !== id && (whole || app.ctx.kinds.get(it.id) !== 'sentence'))
             .map((it) => ({ text: s2t ? it.target : it.source, categories: it.categories })),
           body: h('p', { class: 'sentence', lang: s2t ? langS : langT }, s2t ? item.source : item.target),
         };
@@ -113,6 +115,7 @@
           skipped.add(id); // fewer than four distinct options: leave this item out of the round
           track.skip(id);
         }
+        round.seen.add(id);
         const repeat = track.isRepeat(id);
         // A repeat gets fresh distractors and a fresh shuffle; the answer (and a sentence's blank) stay the same.
         const options = LG.rng.shuffle([q.answer].concat(wrong), Math.random);
@@ -160,7 +163,8 @@
             h('p', { class: 'fb-msg fb-text-' + result, role: 'status' },
               result === 'correct' ? 'Correct' : ['Answer: ', h('strong', { lang: q.lang }, q.answer)],
               xp ? h('span', { class: 'muted' }, '  +' + xp + ' XP') : null),
-            h('div', { class: 'btn-row' }, next));
+            h('div', { class: 'btn-row' }, next,
+              LG.screens.cloze.starButton(id, (_, now) => { if (now) round.unmarked.add(id); })));
           screen.firstChild.replaceWith(gameHeader('Multiple Choice', Object.assign({}, mode === 'study' ? label : progressLabel(), { combo: round.combo, xp: round.xp })));
           next.focus();
           onEnter = () => prompt();

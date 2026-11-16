@@ -25,7 +25,7 @@
       itemsById.set(it.id, it);
     }
     const rarity = LG.words.buildRarity(items, langTarget);
-    const mcIds = new Set(LG.play.mcEligibleIds(items, rarity, langTarget));
+    const mcIds = new Set(LG.play.mcEligibleIds(items, rarity, langTarget, app.state.settings.ask));
     app.ctx = { items, langSource, langTarget, rarity, kinds, itemsById, mcIds };
     pruneStudySet(itemsById);
     return app.ctx;
@@ -58,7 +58,7 @@
     app.state = next;
     save();
     if (next.settings.theme !== prev.theme) applyTheme();
-    if (next.settings.langSource !== prev.langSource || next.settings.langTarget !== prev.langTarget) rebuildCtx();
+    if (next.settings.langSource !== prev.langSource || next.settings.langTarget !== prev.langTarget || next.settings.ask !== prev.ask) rebuildCtx();
   }
 
   function setSettings(patch) {
@@ -162,6 +162,89 @@
     return true;
   }
 
+  // Re-read the loaded file: its stored handle where the browser kept one, else a banner whose button re-picks it.
+  // Nothing opens a picker after an await here (the click's user gesture may be gone), so a missing, denied or
+  // unreadable handle always goes through the banner button, which is a fresh gesture.
+  async function refreshFile({ inGame = false } = {}) {
+    if (!app.dataset) return;
+    if (inGame && !window.confirm('Refresh the file? This round ends; answers so far are kept.')) return;
+    let file = null;
+    try {
+      const handle = await LG.storage.loadHandle();
+      if (handle) {
+        // Bounded: a stuck permission prompt or read falls through to the pick-again banner.
+        file = await LG.dom.withTimeout((async () => {
+          let perm = await handle.queryPermission({ mode: 'read' });
+          if (perm !== 'granted') perm = await handle.requestPermission({ mode: 'read' });
+          return perm === 'granted' ? handle.getFile() : null;
+        })(), 15000, null);
+      }
+    } catch (e) {
+      file = null;
+    }
+    if (file) return finishRefresh(file);
+    clearRefreshBanners();
+    const el = banner(PICK_AGAIN, 'info');
+    if (!el.querySelector('.choose-file')) {
+      el.insertBefore(h('button', { class: 'btn btn-small choose-file', type: 'button', onclick: () => { el.remove(); pickAndRefresh(); } }, 'Choose file'), el.lastChild);
+    }
+  }
+
+  // Runs straight from a click (no await before the picker).
+  async function pickAndRefresh() {
+    // The plain file input (see the load screen): no handle, so the next Refresh asks to pick again.
+    const file = await LG.dom.pickFile(LG.importer.ACCEPT);
+    if (!file) return;
+    const picked = { file, handle: null };
+    // A different file is a fresh import: column mapping, languages and summary on the load screen.
+    if (picked.file.name.toLowerCase() !== app.dataset.fileName.toLowerCase()) return go('load', { file: picked.file, handle: picked.handle });
+    if (picked.handle) {
+      try { await LG.storage.saveHandle(picked.handle); } catch (e) { /* next refresh re-picks */ }
+    }
+    return finishRefresh(picked.file);
+  }
+
+  async function finishRefresh(file) {
+    let res;
+    try {
+      res = LG.reload.reparse(await LG.importer.readFile(file), file.name, app.dataset.learnColumn || app.state.settings.learnColumn);
+    } catch (e) {
+      res = { ok: false, error: (e && e.message) || String(e) };
+    }
+    clearRefreshBanners();
+    if (!res.ok) {
+      const el = banner('Could not refresh: ' + res.error, 'error');
+      if (!el.querySelector('.load-file')) {
+        el.insertBefore(h('button', { class: 'btn btn-small load-file', type: 'button', onclick: () => { el.remove(); go('load'); } }, 'Load file…'), el.lastChild);
+      }
+      return;
+    }
+    const d = LG.reload.diff(app.dataset.items, res.dataset.items);
+    try {
+      await LG.storage.saveDataset(res.dataset);
+    } catch (e) {
+      banner('The word list could not be stored; it will need loading again next time.', 'warn');
+    }
+    setDataset(res.dataset);
+    go('home');
+    banner(LG.reload.bannerText(file.name, d), 'info');
+  }
+
+  const PICK_AGAIN = 'Pick the file again to refresh it.';
+
+  function clearRefreshBanners() {
+    for (const b of Array.from(document.getElementById('banners').children)) {
+      if (/^(Refreshed |Could not refresh: |Pick the file again)/.test(b.dataset.text || '')) b.remove();
+    }
+  }
+
+  // Small ↻ for game headers; none for the built-in sample, which has no file to re-read.
+  function refreshButton() {
+    if (!app.dataset || app.dataset.fileName === 'Sample data') return null;
+    return h('button', { class: 'btn btn-small refresh-file', type: 'button', title: 'Refresh file', 'aria-label': 'Refresh file',
+      onclick: () => refreshFile({ inGame: true }) }, '↻');
+  }
+
   function sampleDataset() {
     const { items } = LG.importer.rowsToDataset(LG.sampleRows, { learnColumn: 1 });
     return { items, fileName: 'Sample data', importedAt: Date.now(), encoding: 'utf-8' };
@@ -185,7 +268,7 @@
     }
     if (!ds && params.get('sample') === '1') {
       ds = sampleDataset();
-      try { await LG.storage.saveDataset(ds); } catch (e) { /* sample still usable for this page load */ }
+      try { await LG.storage.saveDataset(ds); await LG.storage.saveHandle(null); } catch (e) { /* sample still usable for this page load */ }
       setSettings({ langSource: 'en', langTarget: 'pl', learnColumn: 1 });
     }
     if (!ds) return go('load');
@@ -203,7 +286,7 @@
 
   Object.assign(app, {
     GAMES, TITLES, go, refresh, save, setState, setSettings, applyTheme, rebuildCtx, setDataset,
-    banner, reviewRound, roundIds, lastExportText, exportNow, importFromFile, boot,
+    banner, reviewRound, roundIds, lastExportText, exportNow, importFromFile, refreshFile, refreshButton, boot,
   });
   LG.app = app;
 

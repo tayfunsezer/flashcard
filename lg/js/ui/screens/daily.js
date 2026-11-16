@@ -16,7 +16,7 @@
 
       const header = () => h('div', { class: 'topbar game-head' },
         h('h1', null, 'Daily Word'),
-        h('div', { class: 'btn-row' }, h('button', { class: 'btn btn-small', type: 'button', onclick: () => app.go('home') }, 'Home')));
+        h('div', { class: 'btn-row' }, app.refreshButton(), h('button', { class: 'btn btn-small', type: 'button', onclick: () => app.go('home') }, 'Home')));
 
       if (app.state.daily.date !== today) {
         app.setState(Object.assign({}, app.state, { daily: { date: today, guesses: [], done: false, won: false } }));

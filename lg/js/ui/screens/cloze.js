@@ -29,6 +29,7 @@
           : h('span', { class: 'muted', 'aria-label': 'Prompt ' + pos + ' of ' + total }, pos + ' / ' + total),
         mult > 1 ? h('span', { class: 'pill pill-accent', title: combo + ' in a row' }, '×' + mult) : null,
         h('span', { class: 'pill' }, '+' + xp + ' XP'),
+        LG.app.refreshButton(),
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => {
           if (window.confirm('Leave this round? Answers so far are kept.')) LG.app.go('home');
         } }, 'Quit')));
@@ -85,15 +86,36 @@
     return out;
   }
 
+  // "☆ Mark" / "★ Marked" toggle for one item; `onToggle(id, nowMarked)` runs after each click.
+  function starButton(id, onToggle) {
+    const app = LG.app;
+    const on = () => LG.play.isMarked(app.state.progress[id]);
+    const btn = h('button', { class: 'btn btn-small star-btn', type: 'button' });
+    const paint = () => {
+      const m = on();
+      btn.textContent = m ? '★ Marked' : '☆ Mark';
+      btn.setAttribute('aria-pressed', String(m));
+    };
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      app.setState(LG.play.toggleStar(app.state, id));
+      paint();
+      if (onToggle) onToggle(id, on());
+    });
+    btn.sync = paint;
+    paint();
+    return btn;
+  }
+
   LG.screens.cloze = {
-    gameHeader, sentence, roundTracker, againTag,
+    gameHeader, sentence, roundTracker, againTag, starButton,
     render(root, params) {
       const app = LG.app;
       const lang = app.ctx.langTarget;
       const mode = params.mode || 'review';
       const ids = (params.ids || []).filter((id) => app.ctx.itemsById.has(id));
       const letters = LG.words.specialLetters(app.ctx.items, lang);
-      const round = { combo: 0, xp: 0, correct: 0, almost: 0, wrong: 0, from: new Map(), touched: [], unmarked: new Set() };
+      const round = { combo: 0, xp: 0, correct: 0, almost: 0, wrong: 0, from: new Map(), touched: [], unmarked: new Set(), seen: new Set() };
       const track = roundTracker(mode, ids);
       const screen = h('div', { class: 'screen' });
       root.append(screen);
@@ -139,29 +161,34 @@
           .filter((m) => m.from !== m.to);
         app.go('summary', {
           game: 'cloze', mode, xp: round.xp, correct: round.correct, almost: round.almost, wrong: round.wrong, moved, missed: track.missed(),
-          marked: LG.play.markedIds(Array.from(round.unmarked), app.state.progress),
+          marked: LG.play.markedIds(Array.from(round.unmarked), app.state.progress), seen: Array.from(round.seen),
           again: () => app.go('cloze', { ids: app.roundIds('cloze', mode), mode }),
         });
       }
 
       function prompt() {
         let id, item, blanks;
+        const whole = app.state.settings.ask === 'whole';
         for (;;) {
           id = nextId();
           if (!id) return finish();
           item = app.ctx.itemsById.get(id);
+          if (whole) break;
           blanks = track.keep(id, () => LG.words.pickBlanks(item, app.state.progress[id], app.ctx.rarity, lang));
           if (blanks.length) break;
           skipped.add(id); // no word to blank (e.g. punctuation only): leave this item out of the round
           track.skip(id);
         }
+        round.seen.add(id);
         const repeat = track.isRepeat(id);
-        const expected = blanks.map((b) => b.text).join(' ');
+        const wholeMulti = whole && LG.text.tokenize(item.target, lang).length > 1;
+        if (whole) blanks = [];
+        const expected = whole ? item.target : blanks.map((b) => b.text).join(' ');
         const multi = blanks.length > 1;
         let hints = 0;
 
         const input = h('input', { type: 'text', class: 'cloze-input', lang, autocomplete: 'off', autocapitalize: 'off',
-          spellcheck: 'false', 'aria-label': multi ? 'Missing words' : 'Missing word' });
+          spellcheck: 'false', 'aria-label': multi || wholeMulti ? 'Missing words' : 'Missing word' });
         const hintLine = h('p', { class: 'hint muted', 'aria-live': 'polite' });
         const hintBtn = h('button', { class: 'btn', type: 'button', onclick: () => {
           hints = Math.min(MAX_HINTS, hints + 1);
@@ -180,12 +207,15 @@
           letters.map((ch) => h('button', { class: 'btn btn-small letter', type: 'button', lang,
             onmousedown: (e) => e.preventDefault(), onclick: () => insert(ch) }, ch))) : null;
 
-        const answerLine = h('p', { class: 'sentence', lang }, sentence(item.target, lang, (t) => {
-          const b = blanks.find((x) => x.index === t.index);
-          if (!b) return t.text;
-          const len = LG.text.charLength(b.text);
-          return h('span', { class: 'blank', style: 'width:' + (len + 1) + 'ch', 'aria-label': 'blank, ' + len + ' letters' }, ' ');
-        }));
+        const answerLine = whole
+          ? h('p', { class: 'sentence', lang }, h('span', { class: 'blank',
+            style: 'width:' + Math.min(LG.text.charLength(item.target) + 1, 40) + 'ch', 'aria-label': 'blank, whole expression' }, ' '))
+          : h('p', { class: 'sentence', lang }, sentence(item.target, lang, (t) => {
+            const b = blanks.find((x) => x.index === t.index);
+            if (!b) return t.text;
+            const len = LG.text.charLength(b.text);
+            return h('span', { class: 'blank', style: 'width:' + (len + 1) + 'ch', 'aria-label': 'blank, ' + len + ' letters' }, ' ');
+          }));
         const card = h('div', { class: 'card fb cloze' },
           h('p', { class: 'clue muted', lang: app.ctx.langSource }, item.source),
           answerLine);
@@ -194,7 +224,8 @@
             h('button', { class: 'btn btn-primary enter-target', type: 'button', onclick: () => submit() }, 'Submit'),
             hintBtn,
             h('button', { class: 'btn btn-link', type: 'button', onclick: () => submit(true) }, 'Show answer')),
-          multi ? h('p', { class: 'muted small multi-note' }, 'Type all ' + blanks.length + ' missing words in order') : null,
+          wholeMulti ? h('p', { class: 'muted small multi-note' }, 'Type the whole expression')
+            : multi ? h('p', { class: 'muted small multi-note' }, 'Type all ' + blanks.length + ' missing words in order') : null,
           letterRow, hintLine);
 
         const label = progressLabel();
@@ -204,7 +235,7 @@
 
         function submit(giveUp) {
           if (!giveUp && !input.value.trim()) { input.focus(); return; }
-          const result = giveUp ? 'wrong' : LG.answer.checkAnswer(input.value, expected, lang);
+          const result = giveUp ? 'wrong' : whole ? LG.answer.checkWhole(input.value, expected, lang) : LG.answer.checkAnswer(input.value, expected, lang);
           let st = app.state;
           let xp = 0;
           if (track.counts(id)) {
@@ -220,7 +251,7 @@
             round[result] += 1;
           }
           // Repeats blank the same word: rotation moves on once the word has left the round.
-          if (track.record(id, result)) st = LG.play.advanceRotation(st, id);
+          if (track.record(id, result) && !whole) st = LG.play.advanceRotation(st, id);
           app.setState(st);
           feedback(result, xp, giveUp ? '' : input.value.trim());
         }
@@ -228,6 +259,7 @@
         function feedback(result, xp, typed) {
           const next = h('button', { class: 'btn btn-primary enter-target', type: 'button', onclick: () => prompt() }, 'Next');
           const pinBox = h('div', { class: 'pin-row small' });
+          const star = starButton(id, (_, now) => { if (now) round.unmarked.add(id); });
           const answered = h('p', { class: 'sentence', lang });
           // Remembers an item that was unmarked before this change: if it ends marked, it was marked this round.
           const noteUnmarked = () => { if (!LG.play.isMarked(app.state.progress[id])) round.unmarked.add(id); };
@@ -240,12 +272,12 @@
               if (blanks.some((b) => b.index === t.index)) cls.push('word-answer');
               if (pinKeys.has(LG.text.lower(t.text, lang))) cls.push('word-pinned');
               return h('button', { class: cls.join(' '), type: 'button', title: 'Blank this word next time (click more words to blank an expression)',
-                onclick: () => { noteUnmarked(); app.setState(LG.play.togglePinWord(app.state, id, t.text, tokens, lang)); drawSentence(); } }, t.text);
+                onclick: () => { noteUnmarked(); app.setState(LG.play.togglePinWord(app.state, id, t.text, tokens, lang)); drawSentence(); star.sync(); } }, t.text);
             }));
             clear(pinBox).append(...(pin.length
               ? [h('span', null, 'Pinned: ', h('strong', { lang }, pinLabel(pin, tokens))),
                 h('button', { class: 'btn btn-small', type: 'button', 'aria-label': 'Clear pinned words',
-                  onclick: () => { app.setState(LG.play.setPin(app.state, id, null)); drawSentence(); } }, '✕')]
+                  onclick: () => { app.setState(LG.play.setPin(app.state, id, null)); drawSentence(); star.sync(); } }, '✕')]
               : [h('span', { class: 'muted' }, 'Click a word to blank it in this sentence next time.')]));
           };
           drawSentence();
@@ -256,7 +288,7 @@
             xp ? h('span', { class: 'muted' }, '  +' + xp + ' XP') : null);
           const typedLine = typed && result !== 'correct'
             ? h('p', { class: 'typed small muted' }, 'You typed: ', h('span', { class: 'typed-' + result, lang }, typed)) : null;
-          clear(controls).append(msg, typedLine || '', pinBox, h('div', { class: 'btn-row' }, next));
+          clear(controls).append(msg, typedLine || '', h('div', { class: 'pin-row small' }, pinBox, star), h('div', { class: 'btn-row' }, next));
           screen.firstChild.replaceWith(gameHeader('Cloze', Object.assign({}, mode === 'study' ? label : progressLabel(), { combo: round.combo, xp: round.xp })));
           next.focus();
           onEnter = () => prompt();

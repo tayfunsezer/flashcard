@@ -24,7 +24,7 @@
   function availability(game, pool) {
     const app = LG.app;
     const ids = LG.play.eligibleIds(pool, game, app.ctx.langTarget, app.ctx.mcIds);
-    if (game === 'mc' && app.ctx.mcIds.size < LG.play.MC_OPTIONS) return { ids, reason: 'Needs at least 4 terms, or sentences with 4 different words, in the file' };
+    if (game === 'mc' && app.ctx.mcIds.size < LG.play.MC_OPTIONS) return { ids, reason: app.state.settings.ask === 'whole' ? 'Needs at least 4 different answers in the file' : 'Needs at least 4 terms, or sentences with 4 different words, in the file' };
     if (ui.mode === 'study') return { ids, reason: null };
     const usable = ui.mode === 'revenge' ? LG.schedule.revengeIds(ids, app.state.progress)
       : ui.mode === 'marked' ? LG.play.markedIds(ids, app.state.progress) : ids;
@@ -32,7 +32,7 @@
     if (game === 'mc' && ids.length < 4) reason = 'Needs at least 4 items in the filters';
     else if (ids.length < 1) reason = 'No items match the filters';
     else if (ui.mode === 'revenge' && usable.length < 1) reason = 'Revenge pile is empty for this game';
-    else if (ui.mode === 'marked' && usable.length < 1) reason = 'No marked words for this game';
+    else if (ui.mode === 'marked' && usable.length < 1) reason = 'No marked items for this game';
     return { ids: usable, reason };
   }
 
@@ -52,6 +52,33 @@
     // No cap: every usable id, due words included first, in a fresh random order each Start.
     const round = ui.mode === 'revenge' || ui.mode === 'marked' ? ids : LG.schedule.buildReviewRound(ids, app.state.progress, Date.now(), Infinity);
     app.go(game, { ids: LG.play.startRound(round), mode: ui.mode });
+  }
+
+  function markedCount() {
+    const app = LG.app;
+    return LG.play.markedIds(app.ctx.items.map((it) => it.id), app.state.progress).length;
+  }
+
+  function exportMarked() {
+    const app = LG.app;
+    const quiz = LG.marked.markedQuiz(app.ctx.items, app.state.progress, app.ctx.langTarget, Math.random);
+    LG.dom.download(LG.marked.exportFileName(app.dataset.fileName, LG.dates.todayISO()), JSON.stringify(quiz, null, 2));
+  }
+
+  function clearMarks() {
+    const app = LG.app;
+    const n = markedCount();
+    if (!n || !window.confirm('Remove the star from all ' + n + ' marked items?')) return;
+    app.setState(LG.play.clearStars(app.state, app.ctx.items.map((it) => it.id)));
+    app.refresh();
+  }
+
+  function markedButtons() {
+    const n = markedCount();
+    return [
+      h('button', { class: 'btn btn-small export-marked', type: 'button', disabled: n === 0, onclick: exportMarked }, 'Export marked (' + n + ')'),
+      h('button', { class: 'btn btn-small clear-marks', type: 'button', disabled: n === 0, onclick: clearMarks }, 'Clear all marks'),
+    ];
   }
 
   function statsRow() {
@@ -139,7 +166,7 @@
       const modeNote = {
         review: 'Review: every word that matches your filters — due words first, shuffled.',
         revenge: 'Revenge pile: words you answered wrong — ' + revengeTotal + ' right now. Answer them right to clear them.',
-        marked: 'Marked words: words you marked in Cloze — ' + markedTotal + ' right now. Unmark one with ✕ on its pin row.',
+        marked: 'Marked words: items you starred — ' + markedTotal + ' right now.',
         study: 'Study set: every word in one category or date, until you get each one right.',
       }[ui.mode];
       const revengeEmpty = ui.mode === 'revenge' && app.GAMES.every((g) => revengeIdsFor(g).length === 0);
@@ -156,7 +183,7 @@
         ? h('div', { class: 'empty-pile' },
           h('p', { class: 'muted' }, revengeEmpty
             ? 'Your revenge pile is empty. Words you miss in any game land here.'
-            : 'No marked words yet. In Cloze, click words in the answer sentence to mark them for later.'),
+            : 'No marked words yet. Star items with ☆ in any game.'),
           h('button', { class: 'btn btn-small', type: 'button', onclick: setMode('review') }, 'Switch to Review'))
         : h('div', { class: 'grid games' }, app.GAMES.map((g) => {
           const info = GAME_INFO[g];
@@ -171,7 +198,8 @@
         }));
 
       LG.dom.clear(card).append(
-        h('div', { class: 'spread' }, h('h2', { style: 'margin:0' }, 'Play'), directionToggle()),
+        h('div', { class: 'spread' }, h('h2', { style: 'margin:0' }, 'Play'),
+          h('div', { class: 'row' }, askToggle(), directionToggle())),
         h('fieldset', { style: 'margin:12px 0' },
           h('legend', { class: 'small' }, 'Mode'),
           h('div', { class: 'row' },
@@ -180,12 +208,23 @@
             radio('mode', 'study', 'Study set', ui.mode === 'study', setMode('study')),
             radio('mode', 'marked', 'Marked words', ui.mode === 'marked', setMode('marked'))),
           h('p', { class: 'muted small mode-note' }, modeNote),
+          ui.mode === 'marked' ? h('div', { class: 'btn-row' }, markedButtons()) : null,
           studyControls),
         studyLine || '', games, msgBox);
     };
     card.refresh = render;
     render();
     return card;
+  }
+
+  function askToggle() {
+    const app = LG.app;
+    const ask = app.state.settings.ask;
+    const btn = (value, label) => h('button', { class: 'btn', type: 'button', 'aria-pressed': String(ask === value),
+      onclick: () => { app.setSettings({ ask: value }); app.refresh(); } }, label);
+    return h('div', { class: 'ask-toggle row' }, h('span', { class: 'small muted' }, 'Ask for:'),
+      h('div', { class: 'segmented', role: 'group', 'aria-label': 'Ask for (Cloze and Multiple Choice)' },
+        btn('word', 'One word'), btn('whole', 'Whole expression')));
   }
 
   function directionToggle() {
@@ -233,6 +272,7 @@
         } }, 'Load new file')),
       h('div', { class: 'btn-row' },
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => { app.exportNow(); app.refresh(); } }, 'Export progress'),
+        h('button', { class: 'btn btn-small', type: 'button', disabled: markedCount() === 0, onclick: exportMarked }, 'Export marked (' + markedCount() + ')'),
         h('button', { class: 'btn btn-small', type: 'button', onclick: async () => { if (await app.importFromFile()) app.refresh(); } }, 'Import progress'),
         h('span', { class: 'muted small' }, 'Last exported: ' + app.lastExportText())));
   }
@@ -243,7 +283,10 @@
       const play = playCard();
       root.append(h('div', { class: 'screen' },
         h('div', { class: 'topbar' }, h('h1', null, 'Language Game'),
-          h('span', { class: 'muted small' }, app.dataset.fileName + ' · ' + app.ctx.items.length + ' items')),
+          h('div', { class: 'row' },
+            h('span', { class: 'muted small file-info' }, app.dataset.fileName + ' · ' + app.ctx.items.length + ' items'),
+            app.dataset.fileName === 'Sample data' ? null
+              : h('button', { class: 'btn btn-small refresh-file', type: 'button', onclick: () => app.refreshFile({ inGame: false }) }, '↻ Refresh file'))),
         statsRow(), dailyCard(), studyResume(), play, filtersCard(() => play.refresh()), footer()));
     },
   };

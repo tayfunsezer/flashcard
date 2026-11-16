@@ -24,6 +24,32 @@
       const mainCls = practiceList.length ? 'btn' : 'btn btn-primary';
       const practiceGame = playable(p.game, practiceList) ? p.game : 'flashcards';
       const practice = (game) => () => app.go(game, { ids: LG.play.startRound(practiceList), mode: 'review' });
+      const eligibleMarked = () => {
+        const f = app.filters;
+        const pool = LG.words.filterItems(app.ctx.items, { dateFrom: f.dateFrom || null, dateTo: f.dateTo || null, categories: f.categories });
+        return LG.play.markedIds(LG.play.eligibleIds(pool, p.game, app.ctx.langTarget, app.ctx.mcIds), app.state.progress);
+      };
+      const markedBtn = h('button', { class: 'btn hidden', type: 'button', onclick: () => {
+        const ids = app.roundIds(p.game, 'marked');
+        app.go(playable(p.game, ids) ? p.game : 'flashcards', { ids, mode: 'marked' });
+      } });
+      const refreshMarked = () => {
+        const n = eligibleMarked().length;
+        markedBtn.textContent = 'Play all marked (' + n + ')';
+        markedBtn.classList.toggle('hidden', n === 0);
+      };
+      refreshMarked();
+      const seen = (p.seen || []).filter((id) => app.ctx.itemsById.has(id));
+      const wordList = seen.length
+        ? h('details', { class: 'card words-card' },
+          h('summary', null, 'Words in this round (' + seen.length + ')'),
+          h('ul', { class: 'words-list' }, seen.map((id) => {
+            const it = app.ctx.itemsById.get(id);
+            return h('li', null,
+              h('span', { class: 'moved-text' }, h('span', { lang: app.ctx.langSource }, it.source), ' → ', h('span', { lang: app.ctx.langTarget }, it.target)),
+              LG.screens.cloze.starButton(id, refreshMarked));
+          })))
+        : null;
       const count = (label, n, cls) => h('div', { class: 'count ' + cls }, h('strong', null, String(n)), h('span', null, label));
 
       root.append(h('div', { class: 'screen' },
@@ -49,7 +75,9 @@
             : studyOpen
             ? h('button', { class: mainCls, type: 'button', onclick: p.again }, 'Continue set (' + set.done.length + '/' + set.total + ')')
             : p.mode === 'study' ? null : h('button', { class: mainCls, type: 'button', onclick: p.again }, 'Play again'),
+          markedBtn,
           h('button', { class: 'btn', type: 'button', onclick: () => app.go('home') }, 'Home')),
+        wordList,
         h('div', { class: 'card' },
           h('h2', null, 'Moved boxes'),
           moved.length

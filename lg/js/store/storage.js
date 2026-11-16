@@ -4,6 +4,7 @@
   const DB_NAME = 'lg';
   const STORE = 'dataset';
   const KEY = 'current';
+  const HANDLE_KEY = 'handle';
 
   function loadState(store) {
     try {
@@ -55,6 +56,9 @@
   async function saveDataset(ds) { await run('readwrite', (s) => s.put(ds, KEY)); }
   async function loadDataset() { const v = await run('readonly', (s) => s.get(KEY)); return v === undefined ? null : v; }
   async function clearDataset() { await run('readwrite', (s) => s.delete(KEY)); }
+  // The loaded file's FileSystemFileHandle (browsers that have one), kept beside the dataset for Refresh file.
+  async function saveHandle(handle) { await run('readwrite', (s) => (handle ? s.put(handle, HANDLE_KEY) : s.delete(HANDLE_KEY))); }
+  async function loadHandle() { const v = await run('readonly', (s) => s.get(HANDLE_KEY)); return v || null; }
 
-  LG.storage = { STATE_KEY, loadState, saveState, saveDataset, loadDataset, clearDataset };
+  LG.storage = { STATE_KEY, loadState, saveState, saveDataset, loadDataset, clearDataset, saveHandle, loadHandle };
 })(globalThis.LG = globalThis.LG || {});

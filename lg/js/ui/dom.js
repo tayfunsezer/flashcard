@@ -50,5 +50,44 @@
     });
   }
 
-  LG.dom = { h, clear, download, pickFile };
+  // { file, handle } from the File System Access picker where it exists (handle allows Refresh file later),
+  // otherwise from the plain file input with handle null. null when the user cancels.
+  async function pickFileWithHandle(accept) {
+    if (typeof globalThis.showOpenFilePicker !== 'function') {
+      const file = await pickFile(accept);
+      return file ? { file, handle: null } : null;
+    }
+    const exts = String(accept).split(',').map((e) => e.trim()).filter(Boolean);
+    let handles;
+    try {
+      handles = await globalThis.showOpenFilePicker({
+        types: [{ description: 'Word lists', accept: { 'application/octet-stream': exts } }],
+        excludeAcceptAllOption: false,
+        multiple: false,
+      });
+    } catch (e) {
+      if (e && e.name === 'AbortError') return null;
+      // After an await the click no longer counts as a user action, so a second picker may be blocked: let the user retry.
+      const err = new Error('The browser could not open its file picker (' + ((e && e.name) || 'error') + '). Choose the file again with the button below.');
+      err.retryPlain = true;
+      throw err;
+    }
+    const handle = handles && handles[0];
+    if (!handle) return null;
+    try {
+      return { file: await handle.getFile(), handle };
+    } catch (e) {
+      // The browser picked a file but would not let the page read it through the handle.
+      const err = new Error('The browser did not allow reading the picked file (' + ((e && e.name) || 'error') + '). Choose it again with the button below.');
+      err.retryPlain = true;
+      throw err;
+    }
+  }
+
+  // Resolves to `fallback` when `promise` has not settled within `ms` (or rejects): some file-access calls can hang.
+  function withTimeout(promise, ms, fallback) {
+    return Promise.race([Promise.resolve(promise).catch(() => fallback), new Promise((r) => setTimeout(() => r(fallback), ms))]);
+  }
+
+  LG.dom = { h, clear, download, pickFile, pickFileWithHandle, withTimeout };
 })(globalThis.LG = globalThis.LG || {});
