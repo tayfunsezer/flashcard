@@ -420,3 +420,10 @@ input.cloze-input { font-size: 1.125rem; width: 100%; max-width: 100%; min-heigh
 }
 .summary-actions { margin-bottom: 16px; }
 .ask-toggle { align-items: center; gap: 6px; }
+
+/* Manage marked */
+.mm-row { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 8px 4px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.mm-row:last-child { border-bottom: 0; }
+.mm-row input { margin-top: 3px; flex: none; }
+.mm-text { min-width: 0; overflow-wrap: anywhere; }
+.mm-text .muted { display: block; }

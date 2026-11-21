@@ -77,6 +77,7 @@
     const n = markedCount();
     return [
       h('button', { class: 'btn btn-small export-marked', type: 'button', disabled: n === 0, onclick: exportMarked }, 'Export marked (' + n + ')'),
+      h('button', { class: 'btn btn-small manage-marked', type: 'button', disabled: n === 0, onclick: () => LG.app.go('marked') }, 'Manage marked (' + n + ')'),
       h('button', { class: 'btn btn-small clear-marks', type: 'button', disabled: n === 0, onclick: clearMarks }, 'Clear all marks'),
     ];
   }

@@ -31,13 +31,13 @@ js/core/      pure logic, no DOM; unit-tested
   daily.js       Wordle-style daily word (deterministic per day, whole dataset)
   state.js       State shape, withDefaults (validation + v1→v2 migration), progress export/import
   play.js        state transitions used by screens: answerPrompt, matchBoard, completeRound, stars/pins, eligibleIds, mcEligibleIds
-  marked.js      markedQuiz (starred items → quiz JSON), export file name
+  marked.js      markedQuiz (starred items → quiz JSON), markedItems (starred items in file order), export file name
   reload.js      reparse/diff/bannerText for Refresh file
 js/store/storage.js  localStorage 'lg.state'; IndexedDB db 'lg' store 'dataset' keys 'current' (dataset) and 'handle' (FileSystemFileHandle)
 js/ui/dom.js         h(tag, attrs, ...children) element builder, clear, download, pickFile, pickFileWithHandle, withTimeout
 js/ui/app.js         LG.app: state holder, router go(name, params), banners, ctx, filters, refreshFile, boot
 js/ui/catpicker.js, sample.js (built-in Polish/English sample rows)
-js/ui/screens/       load, home, settings, summary, cloze, mc, match, flashcards, daily, map, leitner
+js/ui/screens/       load, home, settings, marked (Manage marked: tick several, unmark via play.clearStars), summary, cloze, mc, match, flashcards, daily, map, leitner
 tests/               *.test.js (core only), runner.js (T.test/T.eq/T.ok/T.throws), manifest.js, run-node.js
 tests/dev/           headless-Edge CDP scripts for screenshots/UI checks (cdp.js hard-codes a Windows Edge path)
 ```
@@ -71,7 +71,7 @@ Item = { id: 'i…' /* cyrb53(normSource \u0001 normTarget) */, source, target, 
 
 ## Working on lg
 1. Put logic in `js/core` as pure functions taking `(state, …, nowMs, rand)`; inject time and randomness so tests are deterministic (`LG.rng.seeded(n)`).
-2. Write or extend `tests/<module>.test.js` first. Run `tests.html` in the browser or `node tests/run-node.js` (139 passing as of 2026-11-21; `T.run()` is async, so tests may be `async`). On this Mac, Node comes from nvm (`nvm install <major>`), not Homebrew.
+2. Write or extend `tests/<module>.test.js` first. Run `tests.html` in the browser or `node tests/run-node.js` (143 passing as of 2026-11-21; `T.run()` is async, so tests may be `async`). On this Mac, Node comes from nvm (`nvm install <major>`), not Homebrew.
 3. Wire the UI in `js/ui/screens/*` with `h()`. Use `app.banner(text, kind)` for messages, never `alert`; a `window.confirm` is used only for destructive actions.
 4. Changing the State shape: bump `LG.state.VERSION`, then migrate in `withDefaults` (which also covers imported progress files) and add a state test.
 5. Changing the import/export JSON: keep it readable by the root app or document the break (see `../CLAUDE.md`). Keep `markedQuiz` → `jsonToDataset` ids round-tripping (`marked.test.js`).

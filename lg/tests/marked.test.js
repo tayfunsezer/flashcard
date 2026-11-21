@@ -15,6 +15,12 @@
     const q = LG.marked.markedQuiz(own, { b: { star: true } }, 'en', LG.rng.seeded(1))[0];
     T.eq([q.options.slice().sort(), q.options[q.correctIndex]], [['A', 'B', 'C'], 'A']);
   });
+  T.test('markedItems returns the starred items in file order', () => {
+    const items = LG.importer.rowsToDataset([['a', 'A'], ['b', 'B'], ['c', 'C']], { learnColumn: 1 }).items;
+    const progress = { [items[2].id]: { star: true }, [items[0].id]: { star: true }, [items[1].id]: { star: false } };
+    T.eq(LG.marked.markedItems(items, progress).map((it) => it.target), ['a', 'c']);
+    T.eq(LG.marked.markedItems(items, {}), []);
+  });
   T.test('exportFileName', () => {
     T.eq(LG.marked.exportFileName('polish.xlsx', '2026-11-16'), 'marked-polish-2026-11-16.json');
     T.eq(LG.marked.exportFileName('marked-polish-2026-11-10.json', '2026-11-16'), 'marked-polish-2026-11-16.json');

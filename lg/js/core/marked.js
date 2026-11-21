@@ -10,11 +10,16 @@
     });
   }
 
+  // The starred items, in file order (what the Manage marked screen lists).
+  function markedItems(items, progress) {
+    return items.filter((it) => LG.play.isMarked(progress[it.id]));
+  }
+
   function exportFileName(datasetName, iso) {
     let name = String(datasetName || '').trim().replace(/\.[^./\\]*$/, '').replace(/^marked-/i, '').replace(/-\d{4}-\d{2}-\d{2}$/, '').trim();
     if (!name || /^sample data$/i.test(name)) name = 'sample';
     return 'marked-' + name + '-' + iso + '.json';
   }
 
-  LG.marked = { markedQuiz, exportFileName };
+  LG.marked = { markedQuiz, markedItems, exportFileName };
 })(globalThis.LG = globalThis.LG || {});

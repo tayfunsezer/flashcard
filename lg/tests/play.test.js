@@ -142,4 +142,10 @@
     st = LG.play.clearStars(st, ['b']);
     T.ok(!LG.play.isMarked(st.progress.b));
   });
+  T.test('clearStars on a subset keeps the other marks, pins and progress', () => {
+    const base = { progress: { a: { star: true, pin: ['x'], box: 3, seen: 5 }, b: { star: true }, c: { star: true, box: 2 } } };
+    const st = LG.play.clearStars(LG.state.withDefaults(base), ['a', 'c']);
+    T.eq([st.progress.a.star, st.progress.a.pin, st.progress.a.box, st.progress.a.seen], [false, ['x'], 3, 5]);
+    T.eq([st.progress.b.star, st.progress.c.star, st.progress.c.box], [true, false, 2]);
+  });
 })();
