@@ -12,6 +12,7 @@
       let date = days.length ? days[0].date : '';
       let dirHandle = null;
       let exists = false;
+      let shown = null; // the element this screen last drew; if Home replaced it, stop redrawing
 
       const build = () => {
         const parts = LG.dayexport.relPath(date);
@@ -28,6 +29,7 @@
       const chooseFolder = async () => {
         try {
           dirHandle = await globalThis.showDirectoryPicker({ mode: 'readwrite' });
+          exists = false; // a new folder has not been checked yet
           try { await LG.storage.saveDirHandle(dirHandle); } catch (e) { /* chosen again next visit */ }
         } catch (e) {
           if (!e || e.name !== 'AbortError') app.banner('The folder could not be opened: ' + ((e && e.message) || e), 'error');
@@ -45,17 +47,18 @@
           const res = await LG.dayexport.writeToRepo(dirHandle, b.parts, b.text, overwrite);
           exists = res === 'exists';
           draw();
-          if (!exists) app.banner('Saved ' + b.parts.join('/') + ' (' + b.count + ' words).', 'info');
+          if (!exists) app.banner((overwrite ? 'Overwrote ' : 'Saved ') + b.parts.join('/') + ' (' + b.count + ' words).', 'info');
         } catch (e) {
           download('Could not write to the folder (' + ((e && (e.message || e.name)) || e) + ').');
         }
       };
 
       const draw = () => {
+        if (shown && root.firstChild !== shown) return;
         const parts = date ? LG.dayexport.relPath(date) : [];
         const select = h('select', { 'aria-label': 'Day to export', onchange: (e) => { date = e.target.value; exists = false; draw(); } },
           days.map((d) => h('option', { value: d.date, selected: d.date === date }, LG.dates.formatDate(d.date) + ' (' + d.count + (d.count === 1 ? ' word)' : ' words)'))));
-        LG.dom.clear(root).append(h('div', { class: 'screen' },
+        shown = h('div', { class: 'screen' },
           h('div', { class: 'topbar' }, h('h1', null, 'Export a day'),
             h('button', { class: 'btn', type: 'button', onclick: () => app.go('home') }, 'Back')),
           days.length
@@ -75,7 +78,8 @@
                     h('button', { class: 'btn cancel', type: 'button', onclick: () => { exists = false; draw(); } }, 'Cancel')))
                 : h('div', { class: 'btn-row' },
                   h('button', { class: 'btn btn-primary export-go', type: 'button', onclick: () => doExport(false) }, 'Export')))
-            : h('div', { class: 'card' }, h('p', { class: 'muted' }, 'No words with a date in this file.'))));
+            : h('div', { class: 'card' }, h('p', { class: 'muted' }, 'No words with a date in this file.')));
+        LG.dom.clear(root).append(shown);
       };
 
       draw();
