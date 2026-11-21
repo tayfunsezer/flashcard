@@ -184,6 +184,9 @@
         const wholeMulti = whole && LG.text.tokenize(item.target, lang).length > 1;
         if (whole) blanks = [];
         const expected = whole ? item.target : blanks.map((b) => b.text).join(' ');
+        // What must be typed: bracketed words are optional, so hints and the blank leave them out.
+        const required = whole ? (LG.text.stripParens(item.target) || item.target) : expected;
+        const optionalParts = whole && required !== item.target;
         const multi = blanks.length > 1;
         let hints = 0;
 
@@ -192,7 +195,7 @@
         const hintLine = h('p', { class: 'hint muted', 'aria-live': 'polite' });
         const hintBtn = h('button', { class: 'btn', type: 'button', onclick: () => {
           hints = Math.min(MAX_HINTS, hints + 1);
-          hintLine.textContent = LG.words.hintText(expected, hints);
+          hintLine.textContent = LG.words.hintText(required, hints);
           hintBtn.textContent = hints < MAX_HINTS ? 'Hint (' + (MAX_HINTS - hints) + ' left)' : 'No hints left';
           hintBtn.disabled = hints >= MAX_HINTS;
           input.focus();
@@ -209,7 +212,7 @@
 
         const answerLine = whole
           ? h('p', { class: 'sentence', lang }, h('span', { class: 'blank',
-            style: 'width:' + Math.min(LG.text.charLength(item.target) + 1, 40) + 'ch', 'aria-label': 'blank, whole expression' }, ' '))
+            style: 'width:' + Math.min(LG.text.charLength(required) + 1, 40) + 'ch', 'aria-label': 'blank, whole expression' }, ' '))
           : h('p', { class: 'sentence', lang }, sentence(item.target, lang, (t) => {
             const b = blanks.find((x) => x.index === t.index);
             if (!b) return t.text;
@@ -220,12 +223,14 @@
           h('p', { class: 'clue muted', lang: app.ctx.langSource }, item.source),
           answerLine);
         const controls = h('div', { class: 'stack' },
-          h('div', { class: 'btn-row' }, input,
+          h('div', { class: 'cloze-field' }, input),
+          h('div', { class: 'btn-row' },
             h('button', { class: 'btn btn-primary enter-target', type: 'button', onclick: () => submit() }, 'Submit'),
             hintBtn,
             h('button', { class: 'btn btn-link', type: 'button', onclick: () => submit(true) }, 'Show answer')),
-          wholeMulti ? h('p', { class: 'muted small multi-note' }, 'Type the whole expression')
-            : multi ? h('p', { class: 'muted small multi-note' }, 'Type all ' + blanks.length + ' missing words in order') : null,
+          wholeMulti ? h('p', { class: 'muted small multi-note' }, 'Type the whole expression'
+            + (optionalParts ? ' (words in brackets are optional)' : '') + '; commas and symbols like & can be left out')
+            : multi ? h('p', { class: 'muted small multi-note' }, 'Type all ' + blanks.length + ' missing words in order; commas and symbols like & can be left out') : null,
           letterRow, hintLine);
 
         const label = progressLabel();
@@ -235,7 +240,8 @@
 
         function submit(giveUp) {
           if (!giveUp && !input.value.trim()) { input.focus(); return; }
-          const result = giveUp ? 'wrong' : whole ? LG.answer.checkWhole(input.value, expected, lang) : LG.answer.checkAnswer(input.value, expected, lang);
+          // Several words (whole expression or pinned words) compare word by word, so punctuation between them is ignored.
+          const result = giveUp ? 'wrong' : whole || multi ? LG.answer.checkWhole(input.value, expected, lang) : LG.answer.checkAnswer(input.value, expected, lang);
           let st = app.state;
           let xp = 0;
           if (track.counts(id)) {

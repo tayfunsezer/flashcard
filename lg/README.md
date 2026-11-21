@@ -23,7 +23,7 @@ Words you miss come back at the end of the round until you get them right (only 
 
 ### Ask for, stars and refreshing the file
 
-Ask for (on Home) sets what Cloze and Multiple Choice quiz: One word blanks a single word of a sentence, Whole expression asks for the full item. Star an item with ☆ in any game to keep it; the Marked words mode plays every starred item, Export marked saves them as a `.json` quiz file you can load again, and Clear all marks removes every star.
+Ask for (on Home) sets what Cloze and Multiple Choice quiz: One word blanks a single word of a sentence, Whole expression asks for the full item. When typing a Cloze answer, words in brackets are optional (`bać się` is right for `bać się (czegoś)`, and typing them is right too), and commas or symbols like `&` between words can be left out. Words in brackets are never picked as the blank unless you pin them. Star an item with ☆ in any game to keep it; the Marked words mode plays every starred item, Export marked saves them as a `.json` quiz file you can load again, and Clear all marks removes every star.
 
 After editing your word list, click ↻ Refresh file next to the file name on Home (or ↻ in a game header) to re-read it without going through the import again: your progress is kept and a banner shows how many items are new or gone. Edge and Chrome remember the file and only ask for permission to read it again; Safari and Firefox open the file picker, and you pick the same file. Picking a file with a different name starts a normal import.
 

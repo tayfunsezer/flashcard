@@ -216,7 +216,9 @@ legend { padding: 0; margin-bottom: 6px; font-weight: 600; }
   display: inline-block; min-width: 3ch; height: 1.15em; vertical-align: -0.15em;
   border-bottom: 2px solid var(--accent); background: var(--surface-2); border-radius: 3px 3px 0 0;
 }
-input.cloze-input { font-size: 1.125rem; width: 14rem; min-height: 40px; }
+/* The answer box has its own row and always spans the card, so long expressions fit. */
+.cloze-field { display: flex; }
+input.cloze-input { font-size: 1.125rem; width: 100%; max-width: 100%; min-height: 44px; box-sizing: border-box; }
 .letters { display: flex; flex-wrap: wrap; gap: 6px; }
 .letter { min-width: 36px; font-size: 1rem; }
 .hint { font-family: ui-monospace, Consolas, monospace; letter-spacing: 0.05em; min-height: 1.5em; margin: 0; }
