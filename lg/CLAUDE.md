@@ -19,6 +19,7 @@ js/core/      pure logic, no DOM; unit-tested
   rng.js         cyrb53 hash, seeded PRNG, shuffle
   dates.js       parseDate (DD-MM-YYYY, DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD, Excel dates), formatDate, todayISO
   importer.js    readFile → rows/json, encoding sniff (UTF-8 / UTF-16 / win-1254 vs win-1250), rowsToDataset, jsonToDataset, itemId
+  remote.js      parseUrl, fileNameFor, fetchFile (download a published table link into a file-like `{ name, arrayBuffer }` for readFile; `fetch` is injected for tests)
   words.js       kindOf (sentence ≥ 4 tokens, else term), rarity table, cloze candidates/blank picking, pins, hints, filterItems, categories
   answer.js      checkAnswer (one word), checkWhole (token-wise) → 'correct' | 'almost' | 'wrong'
   schedule.js    Leitner boxes 0–5, INTERVAL_DAYS [0,1,3,7,14,30], applyResult, buildReviewRound (due → unseen → rest), revengeIds
@@ -45,7 +46,7 @@ tests/dev/           headless-Edge CDP scripts for screenshots/UI checks (cdp.js
 
 ```js
 // Dataset (IndexedDB 'current')
-{ items: Item[], fileName, importedAt, encoding, learnColumn? }
+{ items: Item[], fileName, importedAt, encoding, learnColumn?, sourceUrl? /* set when loaded from a link */ }
 Item = { id: 'i…' /* cyrb53(normSource \u0001 normTarget) */, source, target, date: 'YYYY-MM-DD'|null, categories: string[], options?: string[] /* JSON imports */ }
 // target = the language being learned (column chosen at import); source = its translation
 
@@ -65,11 +66,12 @@ Item = { id: 'i…' /* cyrb53(normSource \u0001 normTarget) */, source, target, 
 - **Rounds** have no size cap and always start shuffled (`LG.play.startRound`). Review = every filtered eligible item, due first. MC eligibility comes from `mcIds`.
 - **Marks** = `progress[id].star === true`. Pinning a Cloze word also stars. Unstarring keeps pins.
 - **Refresh file**: uses the stored FileSystemFileHandle, with permission requested inside the click gesture. Without one, a banner asks the user to pick the file again. The same file name re-parses silently with the stored `learnColumn`; a different name goes through the full load screen. Progress is kept by id, and an edited row counts as one item gone plus one new.
+- **Download from a link**: the Load screen's link row (`linkRow` in `load.js`) calls `LG.remote.fetchFile` and feeds `readAndShow(root, file, null, url)`; the saved dataset keeps `sourceUrl`. `refreshFile` re-downloads from `sourceUrl` (file name reused, no handle, no picker) and keeps it on the new dataset. Verified 2026-11-21: works from http(s) origins (localhost, GitHub Pages), **fails from `file://`** (origin `null`: Google's 307 hop from docs.google.com sends no CORS header there), so the error says to open the app from its web address.
 - **Progress backup**: Home/Settings Export progress → `language-game-progress-YYYY-MM-DD.json` (`{ format, version, exportedAt, state }`). Import replaces the state but keeps the current languages when the file has none.
 
 ## Working on lg
 1. Put logic in `js/core` as pure functions taking `(state, …, nowMs, rand)`; inject time and randomness so tests are deterministic (`LG.rng.seeded(n)`).
-2. Write or extend `tests/<module>.test.js` first. Run `tests.html` in the browser or `node tests/run-node.js` (127 passing as of 2026-11-21). On this Mac, Node comes from nvm (`nvm install <major>`), not Homebrew.
+2. Write or extend `tests/<module>.test.js` first. Run `tests.html` in the browser or `node tests/run-node.js` (139 passing as of 2026-11-21; `T.run()` is async, so tests may be `async`). On this Mac, Node comes from nvm (`nvm install <major>`), not Homebrew.
 3. Wire the UI in `js/ui/screens/*` with `h()`. Use `app.banner(text, kind)` for messages, never `alert`; a `window.confirm` is used only for destructive actions.
 4. Changing the State shape: bump `LG.state.VERSION`, then migrate in `withDefaults` (which also covers imported progress files) and add a state test.
 5. Changing the import/export JSON: keep it readable by the root app or document the break (see `../CLAUDE.md`). Keep `markedQuiz` → `jsonToDataset` ids round-tripping (`marked.test.js`).

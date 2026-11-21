@@ -1,5 +1,7 @@
 (function (LG) {
   const STATE_KEY = 'lg.state';
+  // The last table link, kept apart from lg.state so it never ends up in an exported progress file.
+  const LINK_KEY = 'lg.sourceLink';
   const RESET_WARNING = 'Saved progress could not be read and was reset. Import a backup in Settings if you have one.';
   const DB_NAME = 'lg';
   const STORE = 'dataset';
@@ -23,6 +25,26 @@
     try {
       if (store === undefined) store = globalThis.localStorage;
       store.setItem(STATE_KEY, JSON.stringify(state));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function loadLink(store) {
+    try {
+      if (store === undefined) store = globalThis.localStorage;
+      const v = store.getItem(LINK_KEY);
+      return typeof v === 'string' ? v : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function saveLink(url, store) {
+    try {
+      if (store === undefined) store = globalThis.localStorage;
+      if (url) store.setItem(LINK_KEY, url); else store.removeItem(LINK_KEY);
       return true;
     } catch (e) {
       return false;
@@ -60,5 +82,5 @@
   async function saveHandle(handle) { await run('readwrite', (s) => (handle ? s.put(handle, HANDLE_KEY) : s.delete(HANDLE_KEY))); }
   async function loadHandle() { const v = await run('readonly', (s) => s.get(HANDLE_KEY)); return v || null; }
 
-  LG.storage = { STATE_KEY, loadState, saveState, saveDataset, loadDataset, clearDataset, saveHandle, loadHandle };
+  LG.storage = { STATE_KEY, LINK_KEY, loadState, saveState, loadLink, saveLink, saveDataset, loadDataset, clearDataset, saveHandle, loadHandle };
 })(globalThis.LG = globalThis.LG || {});

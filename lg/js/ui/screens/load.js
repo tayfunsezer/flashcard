@@ -51,7 +51,33 @@
     return h('dl', { class: 'summary' }, entries.map(([k, v]) => [h('dt', null, k), h('dd', null, String(v))]));
   }
 
-  function renderPick(root, error) {
+  // The link row: paste a published table link, download it, continue like a picked file.
+  function linkRow(root) {
+    const app = LG.app;
+    const input = h('input', { type: 'url', class: 'link-input', inputmode: 'url', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false',
+      autocomplete: 'off', placeholder: 'https://docs.google.com/spreadsheets/d/e/…/pub?output=tsv', value: LG.storage.loadLink() || (app.dataset && app.dataset.sourceUrl) || '' });
+    const btn = h('button', { class: 'btn btn-primary', type: 'button' }, 'Download');
+    const go = async () => {
+      const parsed = LG.remote.parseUrl(input.value);
+      if (!parsed.ok) return renderPick(root, parsed.error, '');
+      btn.disabled = true;
+      btn.textContent = 'Downloading…';
+      try {
+        const file = await LG.remote.fetchFile(parsed.url);
+        LG.storage.saveLink(parsed.url);
+        await readAndShow(root, file, null, parsed.url);
+      } catch (e) {
+        renderPick(root, (e && e.message) || String(e), '');
+      }
+    };
+    btn.addEventListener('click', go);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+    return h('div', { class: 'card stack' },
+      h('label', { class: 'field' }, h('span', null, 'Or paste a link to a published table (.tsv, .csv)'), h('div', { class: 'link-row' }, input, btn)),
+      h('p', { class: 'muted small' }, 'The host must allow downloads from a web page; a Google Sheets "Publish to the web" link does. Refresh (↻) downloads it again.'));
+  }
+
+  function renderPick(root, error, prefix = 'Could not read the file: ') {
     const app = LG.app;
     const zone = h('div', { class: 'dropzone' },
       h('p', null, 'Drop an .xlsx, .csv, .tsv or .json file here'),
@@ -83,22 +109,22 @@
     LG.dom.clear(root).append(h('div', { class: 'screen' },
       h('div', { class: 'topbar' }, h('h1', null, 'Load a word list'),
         app.dataset ? h('button', { class: 'btn', type: 'button', onclick: () => app.go('home') }, 'Back') : null),
-      error ? h('div', { class: 'banner banner-error', role: 'alert' }, h('span', null, 'Could not read the file: ' + error)) : null,
-      zone));
+      error ? h('div', { class: 'banner banner-error', role: 'alert' }, h('span', null, prefix + error)) : null,
+      zone, linkRow(root)));
   }
 
-  async function readAndShow(root, file, handle = null) {
+  async function readAndShow(root, file, handle = null, sourceUrl = null) {
     if (!/\.xlsx$/i.test(file.name) && !LG.importer.isTextTable(file.name) && !LG.importer.isJson(file.name)) return renderPick(root, file.name + ' is not an .xlsx, .csv, .tsv or .json file.');
     try {
       const { rows, json, encoding } = await LG.importer.readFile(file);
       if (json !== undefined) {
         const res = LG.importer.jsonToDataset(json, file.name);
         if (!res.items.length) return renderPick(root, 'no valid quiz entries were found.');
-        return renderLanguages(root, { res, fileName: file.name, encoding, handle });
+        return renderLanguages(root, { res, fileName: file.name, encoding, handle, sourceUrl });
       }
       const res = LG.importer.rowsToDataset(rows, { learnColumn: LG.app.state.settings.learnColumn });
       if (!res.items.length) return renderPick(root, 'no rows with both a Source and a Target were found.');
-      renderLanguages(root, { res, rows, fileName: file.name, encoding, handle });
+      renderLanguages(root, { res, rows, fileName: file.name, encoding, handle, sourceUrl });
     } catch (e) {
       renderPick(root, (e && e.message) || String(e));
     }
@@ -186,7 +212,7 @@
     startBtn.addEventListener('click', async () => {
       startBtn.disabled = true;
       const ds = fresh
-        ? { items: items(), fileName: opts.fileName, importedAt: Date.now(), encoding: opts.encoding, learnColumn }
+        ? { items: items(), fileName: opts.fileName, importedAt: Date.now(), encoding: opts.encoding, learnColumn, ...(opts.sourceUrl ? { sourceUrl: opts.sourceUrl } : {}) }
         : opts.dataset;
       try {
         if (fresh) await LG.storage.saveDataset(ds);
@@ -224,7 +250,7 @@
     langPicker,
     importFile: readAndShow,
     render(root, params = {}) {
-      if (params.file) readAndShow(root, params.file, params.handle || null);
+      if (params.file) readAndShow(root, params.file, params.handle || null, params.sourceUrl || null);
       else if (params.dataset) renderLanguages(root, { dataset: params.dataset });
       else renderPick(root);
     },

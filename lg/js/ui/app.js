@@ -168,6 +168,17 @@
   async function refreshFile({ inGame = false } = {}) {
     if (!app.dataset) return;
     if (inGame && !window.confirm('Refresh the file? This round ends; answers so far are kept.')) return;
+    if (app.dataset.sourceUrl) {
+      // A list loaded from a link refreshes from the link: no handle, no picker.
+      try {
+        return await finishRefresh(await LG.remote.fetchFile(app.dataset.sourceUrl, { fileName: app.dataset.fileName }));
+      } catch (e) {
+        clearRefreshBanners();
+        const el = banner('Could not refresh: ' + ((e && e.message) || String(e)), 'error');
+        el.insertBefore(h('button', { class: 'btn btn-small load-file', type: 'button', onclick: () => { el.remove(); go('load'); } }, 'Load file…'), el.lastChild);
+        return;
+      }
+    }
     let file = null;
     try {
       const handle = await LG.storage.loadHandle();
@@ -219,6 +230,7 @@
       }
       return;
     }
+    if (app.dataset.sourceUrl) res.dataset.sourceUrl = app.dataset.sourceUrl;
     const d = LG.reload.diff(app.dataset.items, res.dataset.items);
     try {
       await LG.storage.saveDataset(res.dataset);

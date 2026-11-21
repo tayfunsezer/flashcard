@@ -21,7 +21,7 @@ li { margin: 2px 0; }
     document.write('<script src="' + p + '"><\/script>');
   });
   document.write('<script>(' + function () {
-    var r = T.run();
+    T.run().then(function (r) {
     document.getElementById('summary').textContent = r.passed + ' passed, ' + r.failed + ' failed';
     var ul = document.getElementById('results');
     r.results.forEach(function (x) {
@@ -29,6 +29,7 @@ li { margin: 2px 0; }
       li.className = x.error ? 'fail' : 'pass';
       li.textContent = (x.error ? 'fail: ' : 'pass: ') + x.name + (x.error ? ' - ' + x.error.message : '');
       ul.appendChild(li);
+    });
     });
   }.toString() + ')()<\/script>');
 </script>

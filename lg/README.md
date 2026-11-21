@@ -27,6 +27,14 @@ Ask for (on Home) sets what Cloze and Multiple Choice quiz: One word blanks a si
 
 After editing your word list, click ↻ Refresh file next to the file name on Home (or ↻ in a game header) to re-read it without going through the import again: your progress is kept and a banner shows how many items are new or gone. Edge and Chrome remember the file and only ask for permission to read it again; Safari and Firefox open the file picker, and you pick the same file. Picking a file with a different name starts a normal import.
 
+### Download from a link
+
+On the Load screen you can paste a link to a published table (a `.tsv` or `.csv`, for example a Google Sheets "Publish to the web" link with `output=tsv`) and press Download. It then continues like a picked file: choose the column and languages, check the summary, Start. The link is remembered in this browser (local storage, never in the code or in the progress backup) and shows up in the box next time, so ↻ Refresh downloads the list again with no file picker, which is the easy way to update on a phone.
+
+- The host must allow downloads from a web page. Google Sheets published links do; a sheet's normal `/edit` link does not work.
+- Use the app from its web address. When `index.html` is opened as a local file, Google blocks the download and the app says so; pick the file instead.
+- Clearing the site data in your browser forgets the link.
+
 ### File format
 
 Columns are read by position, the header row is ignored:

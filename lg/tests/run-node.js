@@ -4,7 +4,7 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
-const sandbox = { console, TextDecoder, TextEncoder, Intl, setTimeout };
+const sandbox = { console, TextDecoder, TextEncoder, Intl, setTimeout, URL };
 sandbox.globalThis = sandbox;
 const ctx = vm.createContext(sandbox);
 
@@ -18,7 +18,8 @@ load('tests/manifest.js');
 const m = ctx.LG_MANIFEST;
 [...m.lib, ...m.src, ...m.tests].forEach(load);
 
-const result = vm.runInContext('T.run()', ctx);
+(async () => {
+const result = await vm.runInContext('T.run()', ctx);
 
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const found = [...html.matchAll(/<script[^>]*\ssrc="([^"]+)"/g)].map((x) => x[1]);
@@ -34,3 +35,4 @@ else {
 for (const f of result.failures) console.log('FAIL ' + f.name + '\n  ' + (f.error && f.error.message));
 console.log(result.passed + ' passed, ' + result.failed + ' failed');
 process.exit(result.failed ? 1 : 0);
+})();

@@ -22,11 +22,11 @@
       try { fn(); } catch (e) { threw = true; }
       if (!threw) throw new Error(msg || 'expected function to throw');
     },
-    run() {
+    async run() {
       const result = { passed: 0, failed: 0, failures: [] };
       const results = [];
       for (const t of tests) {
-        try { t.fn(); result.passed++; results.push({ name: t.name }); }
+        try { await t.fn(); result.passed++; results.push({ name: t.name }); }
         catch (error) { result.failed++; result.failures.push({ name: t.name, error }); results.push({ name: t.name, error }); }
       }
       result.results = results;

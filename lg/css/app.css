@@ -152,7 +152,7 @@ a { color: var(--accent); }
 
 /* Forms */
 label { cursor: pointer; }
-select, input[type="text"], input[type="search"], input[type="date"] {
+select, input[type="text"], input[type="search"], input[type="date"], input[type="url"] {
   font: inherit; font-size: 0.9375rem; color: var(--text);
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 6px 8px; min-height: 36px; max-width: 100%;
@@ -178,6 +178,13 @@ legend { padding: 0; margin-bottom: 6px; font-weight: 600; }
   padding: 40px 16px; text-align: center;
 }
 .dropzone.over { border-color: var(--accent); background: var(--surface-2); }
+.link-row { display: flex; gap: 8px; align-items: stretch; }
+input.link-input { flex: 1 1 auto; min-width: 0; width: 100%; box-sizing: border-box; min-height: 44px; }
+.link-row .btn { min-height: 44px; }
+@media (max-width: 480px) {
+  .link-row { flex-direction: column; }
+  .link-row .btn { width: 100%; }
+}
 .summary { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0 0 12px; }
 .summary dt { color: var(--text-muted); }
 .summary dd { margin: 0; }

@@ -74,6 +74,21 @@
     T.eq(LG.state.withDefaults({ settings: { learnColumn: 3 } }).settings.learnColumn, 1);
     T.eq(LG.state.withDefaults({ settings: { learnColumn: '2' } }).settings.learnColumn, 1);
   });
+  T.test('the remembered link lives under its own key, not in lg.state', () => {
+    const mem = { data: {}, getItem(k) { return k in this.data ? this.data[k] : null; }, setItem(k, v) { this.data[k] = String(v); }, removeItem(k) { delete this.data[k]; } };
+    T.eq(LG.storage.loadLink(mem), '');
+    T.eq(LG.storage.saveLink('https://x.test/a.tsv', mem), true);
+    T.eq(LG.storage.loadLink(mem), 'https://x.test/a.tsv');
+    T.ok(LG.storage.LINK_KEY !== LG.storage.STATE_KEY && !('lg.state' in mem.data));
+    T.eq(LG.storage.saveLink('', mem), true);
+    T.eq(LG.storage.loadLink(mem), '');
+  });
+  T.test('the remembered link survives a throwing or missing localStorage', () => {
+    const boom = { getItem() { throw new Error('SecurityError'); }, setItem() { throw new Error('QuotaExceeded'); }, removeItem() { throw new Error('x'); } };
+    T.eq(LG.storage.loadLink(boom), '');
+    T.eq(LG.storage.saveLink('https://x.test/a', boom), false);
+    T.eq(LG.storage.loadLink({ getItem: () => 42 }), '');
+  });
   T.test('withDefaults keeps array pins, drops bad ones', () => {
     const s = LG.state.withDefaults({ progress: { a: { pin: ['boję', 'się'] }, b: { pin: [1] }, c: { pin: 'x' } } });
     T.eq([s.progress.a.pin, s.progress.b.pin, s.progress.c.pin], [['boję', 'się'], null, 'x']);
