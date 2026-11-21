@@ -7,6 +7,7 @@
   const STORE = 'dataset';
   const KEY = 'current';
   const HANDLE_KEY = 'handle';
+  const DIR_KEY = 'repoDir';
 
   function loadState(store) {
     try {
@@ -82,5 +83,9 @@
   async function saveHandle(handle) { await run('readwrite', (s) => (handle ? s.put(handle, HANDLE_KEY) : s.delete(HANDLE_KEY))); }
   async function loadHandle() { const v = await run('readonly', (s) => s.get(HANDLE_KEY)); return v || null; }
 
-  LG.storage = { STATE_KEY, LINK_KEY, loadState, saveState, loadLink, saveLink, saveDataset, loadDataset, clearDataset, saveHandle, loadHandle };
+  // The repeated-words folder (a FileSystemDirectoryHandle) chosen on the Export a day screen.
+  async function saveDirHandle(handle) { await run('readwrite', (s) => (handle ? s.put(handle, DIR_KEY) : s.delete(DIR_KEY))); }
+  async function loadDirHandle() { const v = await run('readonly', (s) => s.get(DIR_KEY)); return v || null; }
+
+  LG.storage = { STATE_KEY, LINK_KEY, loadState, saveState, loadLink, saveLink, saveDataset, loadDataset, clearDataset, saveHandle, loadHandle, saveDirHandle, loadDirHandle };
 })(globalThis.LG = globalThis.LG || {});

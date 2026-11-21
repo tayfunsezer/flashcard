@@ -266,6 +266,7 @@
       h('div', { class: 'btn-row' },
         h('button', { class: 'btn', type: 'button', onclick: () => app.go('map') }, 'Category Map'),
         h('button', { class: 'btn', type: 'button', onclick: () => app.go('leitner') }, 'Leitner boxes'),
+        h('button', { class: 'btn export-day', type: 'button', disabled: LG.dayexport.datesIn(app.ctx.items).length === 0, onclick: () => app.go('exportday') }, 'Export a day'),
         h('button', { class: 'btn', type: 'button', onclick: () => app.go('settings') }, 'Settings'),
         h('button', { class: 'btn', type: 'button', onclick: async () => {
           if (!window.confirm('Load a new file? Your progress is kept for words that are in the new file.')) return;
