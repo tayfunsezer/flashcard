@@ -31,13 +31,14 @@ js/core/      pure logic, no DOM; unit-tested
   daily.js       Wordle-style daily word (deterministic per day, whole dataset)
   state.js       State shape, withDefaults (validation + v1→v2 migration), progress export/import
   play.js        state transitions used by screens: answerPrompt, matchBoard, completeRound, stars/pins, eligibleIds, mcEligibleIds
-  marked.js      markedQuiz (starred items → quiz JSON), markedItems (starred items in file order), export file name
+  marked.js      quizEntries (shared builder), markedQuiz (starred items → quiz JSON), markedItems (starred items in file order), export file name
+  dayexport.js   datesIn (dated items by day), relPath (`october-2026/marked-words/marked_words-26.json`), dayQuiz (one day as quiz entries), writeToRepo (check-then-write into a directory handle; 'written' | 'exists')
   reload.js      reparse/diff/bannerText for Refresh file
-js/store/storage.js  localStorage 'lg.state'; IndexedDB db 'lg' store 'dataset' keys 'current' (dataset) and 'handle' (FileSystemFileHandle)
+js/store/storage.js  localStorage 'lg.state'; IndexedDB db 'lg' store 'dataset' keys 'current' (dataset), 'handle' (FileSystemFileHandle) and 'repoDir' (repeated-words FileSystemDirectoryHandle)
 js/ui/dom.js         h(tag, attrs, ...children) element builder, clear, download, pickFile, pickFileWithHandle, withTimeout
 js/ui/app.js         LG.app: state holder, router go(name, params), banners, ctx, filters, refreshFile, boot
 js/ui/catpicker.js, sample.js (built-in Polish/English sample rows)
-js/ui/screens/       load, home, settings, marked (Manage marked: tick several, unmark via play.clearStars), summary, cloze, mc, match, flashcards, daily, map, leitner
+js/ui/screens/       load, home, settings, marked (Manage marked: tick several, unmark via play.clearStars), exportday (pick a date → quiz file into the repeated-words folder or a download), summary, cloze, mc, match, flashcards, daily, map, leitner
 tests/               *.test.js (core only), runner.js (T.test/T.eq/T.ok/T.throws), manifest.js, run-node.js
 tests/dev/           headless-Edge CDP scripts for screenshots/UI checks (cdp.js hard-codes a Windows Edge path)
 ```
@@ -69,9 +70,11 @@ Item = { id: 'i…' /* cyrb53(normSource \u0001 normTarget) */, source, target, 
 - **Download from a link**: the Load screen's link row (`linkRow` in `load.js`) calls `LG.remote.fetchFile` and feeds `readAndShow(root, file, null, url)`; the saved dataset keeps `sourceUrl`. `refreshFile` re-downloads from `sourceUrl` (file name reused, no handle, no picker) and keeps it on the new dataset. Verified 2026-11-21: works from http(s) origins (localhost, GitHub Pages), **fails from `file://`** (origin `null`: Google's 307 hop from docs.google.com sends no CORS header there), so the error says to open the app from its web address.
 - **Progress backup**: Home/Settings Export progress → `language-game-progress-YYYY-MM-DD.json` (`{ format, version, exportedAt, state }`). Import replaces the state but keeps the current languages when the file has none.
 
+- **Export a day**: Home → Export a day lists the file's dates; Export writes every word of that date as quiz JSON (question = source, answer = target, direction follows the loaded `learnColumn`) to `<month>-<year>/marked-words/marked_words-<day>.json` inside the folder chosen once with `showDirectoryPicker` (handle kept in IndexedDB `repoDir`). `writeToRepo` looks first; an existing file shows Overwrite / Download a copy / Cancel. No folder, no API or any write error → download with the target path in a banner. Verified with a fake folder handle in tests and the browser; the real picker from `file://` is the learner's check.
+
 ## Working on lg
 1. Put logic in `js/core` as pure functions taking `(state, …, nowMs, rand)`; inject time and randomness so tests are deterministic (`LG.rng.seeded(n)`).
-2. Write or extend `tests/<module>.test.js` first. Run `tests.html` in the browser or `node tests/run-node.js` (143 passing as of 2026-11-21; `T.run()` is async, so tests may be `async`). On this Mac, Node comes from nvm (`nvm install <major>`), not Homebrew.
+2. Write or extend `tests/<module>.test.js` first. Run `tests.html` in the browser or `node tests/run-node.js` (153 passing as of 2026-11-21; `T.run()` is async, so tests may be `async`). On this Mac, Node comes from nvm (`nvm install <major>`), not Homebrew.
 3. Wire the UI in `js/ui/screens/*` with `h()`. Use `app.banner(text, kind)` for messages, never `alert`; a `window.confirm` is used only for destructive actions.
 4. Changing the State shape: bump `LG.state.VERSION`, then migrate in `withDefaults` (which also covers imported progress files) and add a state test.
 5. Changing the import/export JSON: keep it readable by the root app or document the break (see `../CLAUDE.md`). Keep `markedQuiz` → `jsonToDataset` ids round-tripping (`marked.test.js`).
