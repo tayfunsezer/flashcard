@@ -37,4 +37,59 @@
     const back = LG.importer.jsonToDataset(JSON.stringify(quiz), 'marked_words-26.json').items.map((it) => it.id);
     T.eq(back, [all[0].id, all[1].id]);
   });
+  // In-memory stand-in for a FileSystemDirectoryHandle.
+  function fakeDir(failWith) {
+    const dir = { dirs: {}, files: {} };
+    const wrap = (d) => ({
+      async getDirectoryHandle(name, opts) {
+        if (failWith) throw { name: failWith };
+        if (!d.dirs[name]) {
+          if (!(opts && opts.create)) throw { name: 'NotFoundError' };
+          d.dirs[name] = { dirs: {}, files: {} };
+        }
+        return wrap(d.dirs[name]);
+      },
+      async getFileHandle(name, opts) {
+        if (!(name in d.files)) {
+          if (!(opts && opts.create)) throw { name: 'NotFoundError' };
+          d.files[name] = '';
+        }
+        return { async createWritable() { return { async write(t) { d.files[name] = t; }, async close() {} }; } };
+      },
+    });
+    return { dir, handle: wrap(dir) };
+  }
+  const PATH = ['october-2026', 'marked-words', 'marked_words-26.json'];
+  const fileOf = (dir) => dir.dirs['october-2026'] && dir.dirs['october-2026'].dirs['marked-words'].files['marked_words-26.json'];
+
+  T.test('writeToRepo writes into new month folders', async () => {
+    const f = fakeDir();
+    T.eq(await LG.dayexport.writeToRepo(f.handle, PATH, 'NEW', false), 'written');
+    T.eq(fileOf(f.dir), 'NEW');
+  });
+  T.test('writeToRepo reports exists and writes nothing', async () => {
+    const f = fakeDir();
+    await LG.dayexport.writeToRepo(f.handle, PATH, 'OLD', false);
+    T.eq(await LG.dayexport.writeToRepo(f.handle, PATH, 'NEW', false), 'exists');
+    T.eq(fileOf(f.dir), 'OLD');
+  });
+  T.test('writeToRepo overwrite replaces the existing file', async () => {
+    const f = fakeDir();
+    await LG.dayexport.writeToRepo(f.handle, PATH, 'OLD', false);
+    T.eq(await LG.dayexport.writeToRepo(f.handle, PATH, 'NEW', true), 'written');
+    T.eq(fileOf(f.dir), 'NEW');
+  });
+  T.test('writeToRepo leaves other files and folders alone', async () => {
+    const f = fakeDir();
+    await LG.dayexport.writeToRepo(f.handle, PATH, 'A', false);
+    await LG.dayexport.writeToRepo(f.handle, ['october-2026', 'marked-words', 'marked_words-27.json'], 'B', false);
+    T.eq(Object.keys(f.dir.dirs['october-2026'].dirs['marked-words'].files).sort(), ['marked_words-26.json', 'marked_words-27.json']);
+    T.eq(fileOf(f.dir), 'A');
+  });
+  T.test('writeToRepo propagates other errors', async () => {
+    const f = fakeDir('NotAllowedError');
+    let err = null;
+    try { await LG.dayexport.writeToRepo(f.handle, PATH, 'X', false); } catch (e) { err = e; }
+    T.eq(err && err.name, 'NotAllowedError');
+  });
 })();
