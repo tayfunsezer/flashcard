@@ -32,4 +32,19 @@
     T.eq(A.checkWhole('', 'boję się', 'pl'), 'wrong');
     T.eq(A.checkWhole('İstanbul', 'istanbul', 'tr'), 'correct');
   });
+  T.test('checkWhole: words in parentheses are optional', () => {
+    const A = LG.answer;
+    T.eq(A.checkWhole('bać się', 'bać się (czegoś)', 'pl'), 'correct');
+    T.eq(A.checkWhole('bać się czegoś', 'bać się (czegoś)', 'pl'), 'correct');
+    T.eq(A.checkWhole('bać się (czegoś)', 'bać się (czegoś)', 'pl'), 'correct');
+    T.eq(A.checkWhole('bac sie', 'bać się (czegoś)', 'pl'), 'almost');
+    T.eq(A.checkWhole('robić dobrze', '(komuś) robić, dobrze', 'pl'), 'correct');
+    T.eq(A.checkWhole('bać', 'bać się (czegoś)', 'pl'), 'wrong');
+    T.eq(A.checkWhole('czegoś', '(czegoś)', 'pl'), 'correct');
+  });
+  T.test('checkWhole ignores commas and ampersands in the input too', () => {
+    const A = LG.answer;
+    T.eq(A.checkWhole('orać, zaorać', 'orać zaorać', 'pl'), 'correct');
+    T.eq(A.checkWhole('orać & zaorać', 'orać zaorać', 'pl'), 'correct');
+  });
 })();

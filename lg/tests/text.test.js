@@ -40,4 +40,14 @@
     T.eq(t.matchCase('Istanbul', 'a', 'tr'), 'ıstanbul');
     T.eq(t.matchCase('', 'A', 'pl'), '');
   });
+  T.test('parenRanges and stripParens', () => {
+    const t = LG.text;
+    T.eq(t.parenRanges('bać się (czegoś)'), [[8, 16]]);
+    T.eq(t.parenRanges('a (b (c)) d (e'), [[2, 9]]);
+    T.eq(t.parenRanges('no brackets'), []);
+    T.eq(t.stripParens('bać się (czegoś)'), 'bać się');
+    T.eq(t.stripParens('(coś) robić (komuś) dobrze'), 'robić dobrze');
+    T.eq(t.stripParens('a (b (c)) d'), 'a d');
+    T.eq(t.stripParens('unclosed (x'), 'unclosed (x');
+  });
 })();

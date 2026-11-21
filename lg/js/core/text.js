@@ -34,6 +34,32 @@
     return out;
   }
 
+  // [start, end) of each top-level "(…)" group; an unclosed "(" is not a group.
+  function parenRanges(s) {
+    const out = [];
+    let depth = 0;
+    let start = -1;
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] === '(') { if (depth++ === 0) start = i; }
+      else if (s[i] === ')' && depth > 0 && --depth === 0) out.push([start, i + 1]);
+    }
+    return out;
+  }
+
+  function inParens(index, ranges) {
+    return ranges.some(([a, b]) => index >= a && index < b);
+  }
+
+  // "bać się (czegoś)" -> "bać się": the optional part of an expression removed.
+  function stripParens(s) {
+    const ranges = parenRanges(s);
+    if (!ranges.length) return s;
+    let out = '';
+    let at = 0;
+    for (const [a, b] of ranges) { out += s.slice(at, a) + ' '; at = b; }
+    return normalizeCell(out + s.slice(at));
+  }
+
   function charLength(s) {
     return Array.from(s).length;
   }
@@ -52,5 +78,5 @@
     return chars[0].toLocaleUpperCase(lang || undefined) + chars.slice(1).join('');
   }
 
-  LG.text = { normalizeCell, lower, fold, stripEdges, tokenize, charLength, isDenseScript, matchCase };
+  LG.text = { normalizeCell, lower, fold, stripEdges, tokenize, parenRanges, inParens, stripParens, charLength, isDenseScript, matchCase };
 })(globalThis.LG = globalThis.LG || {});

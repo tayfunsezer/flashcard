@@ -18,8 +18,12 @@
   }
 
   function clozeCandidates(target, rarity, lang) {
-    const tokens = LG.text.tokenize(target, lang);
-    if (!tokens.length) return [];
+    const all = LG.text.tokenize(target, lang);
+    if (!all.length) return [];
+    // Words in parentheses are optional extras: blank them only when nothing else is left.
+    const ranges = LG.text.parenRanges(target);
+    const outside = all.filter((t) => !LG.text.inParens(t.index, ranges));
+    const tokens = outside.length ? outside : all;
     const seen = new Set();
     const eligible = [];
     for (const t of tokens) {

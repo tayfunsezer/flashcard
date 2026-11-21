@@ -88,4 +88,15 @@
     T.eq(LG.words.pickBlank(it, { pin: ['dobrze'] }, rar, 'pl').text, 'dobrze');
     T.eq(LG.words.pickBlank(it, { pin: ['ona', 'śpi'], rot: 0 }, rar, 'pl').text !== undefined, true);
   });
+  T.test('clozeCandidates skips words inside parentheses', () => {
+    const w = LG.words;
+    const its = items(['bać się (czegoś strasznego)', 'kot']);
+    const rar = w.buildRarity(its, 'pl');
+    T.eq(w.clozeCandidates('bać się (czegoś strasznego)', rar, 'pl').map(c => c.text).includes('czegoś'), false);
+    T.eq(w.clozeCandidates('bać się (czegoś strasznego)', rar, 'pl').map(c => c.text).includes('strasznego'), false);
+    // Only bracketed words long enough: fall back to the words outside, not inside.
+    T.eq(w.clozeCandidates('iść (gdzieś daleko)', w.buildRarity(items(['iść (gdzieś daleko)']), 'pl'), 'pl').map(c => c.text), ['iść']);
+    // Everything in brackets: the whole item can still be blanked.
+    T.ok(w.clozeCandidates('(czegoś)', rar, 'pl').length > 0);
+  });
 })();
