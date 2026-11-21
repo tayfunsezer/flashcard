@@ -1,13 +1,18 @@
 (function (LG) {
-  // Starred items as quiz entries { question, options, correctIndex } that the JSON importer reads back.
-  function markedQuiz(items, progress, lang, rand) {
+  // Quiz entries { question, options, correctIndex } for `selected` items; distractors come from every item in `items`.
+  function quizEntries(items, selected, lang, rand) {
     const pool = items.map((it) => ({ text: it.target, categories: it.categories }));
-    return items.filter((it) => LG.play.isMarked(progress[it.id])).map((it) => {
+    return selected.map((it) => {
       const others = it.options && it.options.length ? it.options
         : LG.distractors.pickDistractors(it.target, pool, it.categories, lang, rand, 3);
       const options = LG.rng.shuffle([it.target].concat(others), rand);
       return { question: it.source, options, correctIndex: options.indexOf(it.target) };
     });
+  }
+
+  // Starred items as quiz entries that the JSON importer reads back.
+  function markedQuiz(items, progress, lang, rand) {
+    return quizEntries(items, items.filter((it) => LG.play.isMarked(progress[it.id])), lang, rand);
   }
 
   // The starred items, in file order (what the Manage marked screen lists).
@@ -21,5 +26,5 @@
     return 'marked-' + name + '-' + iso + '.json';
   }
 
-  LG.marked = { markedQuiz, markedItems, exportFileName };
+  LG.marked = { quizEntries, markedQuiz, markedItems, exportFileName };
 })(globalThis.LG = globalThis.LG || {});
