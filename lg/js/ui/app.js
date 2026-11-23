@@ -128,6 +128,11 @@
     rebuildCtx();
   }
 
+  // Clears the Home filters in place (screens hold the `app.filters` reference).
+  function resetFilters() {
+    Object.assign(app.filters, { dateFrom: '', dateTo: '', categories: [] });
+  }
+
   function lastExportText() {
     const t = app.state.lastExport;
     if (!t) return 'never';
@@ -297,7 +302,7 @@
   }
 
   Object.assign(app, {
-    GAMES, TITLES, go, refresh, save, setState, setSettings, applyTheme, rebuildCtx, setDataset,
+    GAMES, TITLES, go, refresh, save, setState, setSettings, applyTheme, rebuildCtx, setDataset, resetFilters,
     banner, reviewRound, roundIds, lastExportText, exportNow, importFromFile, refreshFile, refreshButton, boot,
   });
   LG.app = app;

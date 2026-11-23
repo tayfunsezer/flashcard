@@ -255,7 +255,7 @@
           LG.catpicker.multi({ options: catOptions, selected: f.categories, lang: app.ctx.langTarget,
             onchange: (sel) => { f.categories = sel; changed(); } })),
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => {
-          Object.assign(f, { dateFrom: '', dateTo: '', categories: [] });
+          app.resetFilters();
           app.refresh();
         } }, 'Clear filters')));
   }

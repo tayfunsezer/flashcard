@@ -224,6 +224,7 @@
         try { await LG.storage.saveHandle(opts.fileName === 'Sample data' ? null : opts.handle || null); } catch (e) { /* Refresh file re-picks */ }
       }
       app.setSettings({ langSource: src.value, langTarget: tgt.value, learnColumn });
+      if (fresh) app.resetFilters(); // a new file starts unfiltered
       app.setDataset(ds);
       app.go('home');
     });
