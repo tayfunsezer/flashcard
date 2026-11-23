@@ -50,6 +50,10 @@ A `.json` quiz file is a list of entries like `{ "question": "it does not bother
 
 Dates are written `DD-MM-YYYY`; `DD.MM.YYYY` and `DD/MM/YYYY` also work. CSV/TSV files saved by Excel in a legacy encoding (for example Turkish or Polish Windows code pages) are detected and decoded correctly; the import summary shows the encoding used.
 
+## Offline / install as an app
+
+Opened from its web address (GitHub Pages), the game works without internet after one online visit: `sw.js` keeps a copy of every file. On iPhone, open it in Safari → Share → **Add to Home Screen**; on desktop Chrome/Edge use the install icon in the address bar. When online it always loads the newest files; offline it uses the saved copy. The Home Screen app keeps its own progress, separate from Safari's, so move progress over with the backup below if needed. Downloading a word list from a link still needs internet. From `file://` nothing changes (no service worker there).
+
 ## Back up your progress
 
 Progress is stored in the browser. On `file://` pages that storage can be cleared by the browser, so use Export progress on the Home screen regularly and keep the `.json` file. Import progress restores it.

@@ -13,6 +13,8 @@ Two independent, static, client-side vocabulary apps live in this repo. Neither 
 
 Git history: commits are mostly "Add files via upload" (GitHub web uploads). The repo is served statically (`/fc/` = flashcard app, `/lg/` = game; the repo root has no `index.html`). `lg/` is also designed to run from `file://`.
 
+**Offline / PWA (both apps):** each of `fc/` and `lg/` has its own `manifest.webmanifest`, `icons/` (made by `python3 tools/icons.py`), `pwa.js` (registers the worker; skipped on `file://`) and `sw.js` scoped to its folder. `sw.js` is network-first with a 4 s timeout and a cache fallback, and on install caches `index.html` plus every local `src=`/`href=` it references, so **no version bump or file list to maintain**: new scripts added to `index.html` are picked up automatically and online visits always get the latest upload. Verified offline (reload and `?query` URLs) in headless Chromium 2026-11-23.
+
 ---
 
 ## How the two apps connect: the quiz JSON format
