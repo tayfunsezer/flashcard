@@ -122,13 +122,12 @@
         },
       };
 
-      // Small lines from Claude's answers (Ask Claude screen) under the answer: an example sentence, the aspect pair.
+      // Small lines from Claude's answers (Ask Claude screen) under the answer: an example sentence.
       function claudeNotes(id) {
         const e = app.notes && app.notes.byId[id];
         if (!e) return null;
         const lines = [];
         if (e.examples) lines.push(h('p', { class: 'fc-note', lang: langT }, e.examples.sentence, h('span', { class: 'muted' }, ' \u2014 ' + e.examples.translation)));
-        if (e.aspect) lines.push(h('p', { class: 'fc-note', lang: langT }, LG.claude.formatResult('aspect', e.aspect)));
         return lines.length ? h('div', { class: 'fc-notes' }, lines) : null;
       }
 

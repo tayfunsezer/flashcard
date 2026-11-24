@@ -34,13 +34,13 @@ js/core/      pure logic, no DOM; unit-tested
   play.js        state transitions used by screens: answerPrompt, matchBoard, completeRound, stars/pins, eligibleIds, mcEligibleIds
   marked.js      quizEntries (shared builder), markedQuiz (starred items → quiz JSON), markedItems (starred items in file order), export file name
   dayexport.js   datesIn (dated items by day), relPath (`october-2026/marked-words/marked_words-26.json`), dayQuiz (one day as quiz entries), writeToRepo (check-then-write into a directory handle; 'written' | 'exists')
-  claude.js      Ask Claude file hand-off: buildRequest, parseResponse (validation), selectItems, notes (mergeNotes/carryNotes); formats in docs/ask-claude-format.md
+  claude.js      Ask Claude file hand-off, one format per use case (endings quiz, example sentences): buildRequest, parseQuiz, parseResponse, selectItems, notes (mergeNotes/carryNotes); formats in docs/ask-claude-format.md
   reload.js      reparse/diff/bannerText for Refresh file; carryOver (edited rows: same source or same target, unique pairs only) + carryState (moves progress to the corrected row)
 js/store/storage.js  localStorage 'lg.state'; IndexedDB db 'lg' store 'dataset' keys 'current' (dataset), 'handle' (FileSystemFileHandle) and 'repoDir' (repeated-words FileSystemDirectoryHandle) and 'notes' (Claude answers, `LG.claude.normaliseNotes`)
 js/ui/dom.js         h(tag, attrs, ...children) element builder, clear, download, pickFile, pickFileWithHandle, withTimeout
 js/ui/app.js         LG.app: state holder, router go(name, params), banners, ctx, filters, refreshFile, boot
 js/ui/catpicker.js, sample.js (built-in Polish/English sample rows)
-js/ui/screens/       load, home, settings, askclaude (request file out, answer file in, preview), marked (Manage marked: tick several, unmark via play.clearStars), exportday (pick a date → quiz file into the repeated-words folder or a download), summary, cloze, mc, match, flashcards, daily, map, leitner
+js/ui/screens/       load, home, settings, askclaude (request file out; words from Home filters or picked; answer file in, checked and previewed), marked (Manage marked: tick several, unmark via play.clearStars), exportday (pick a date → quiz file into the repeated-words folder or a download), summary, cloze, mc, match, flashcards, daily, map, leitner
 tests/               *.test.js (core only), runner.js (T.test/T.eq/T.ok/T.throws), manifest.js, run-node.js
 tests/dev/           headless-Edge CDP scripts for screenshots/UI checks (cdp.js hard-codes a Windows Edge path)
 ```

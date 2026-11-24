@@ -446,3 +446,13 @@ input.cloze-input { font-size: 1.125rem; width: 100%; max-width: 100%; min-heigh
 .handoff-text { width: 100%; box-sizing: border-box; font: inherit; padding: 8px 10px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); resize: vertical; }
 .fc-notes { margin-top: 14px; max-width: 36rem; }
 .fc-note { margin: 4px 0 0; font-size: 1rem; line-height: 1.4; color: var(--text); overflow-wrap: anywhere; }
+
+.warn-line { margin: 0; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border); border-left: 4px solid var(--almost); border-radius: var(--radius); font-size: 0.9375rem; }
+.warn-line[hidden] { display: none; }
+.pick-list { max-height: 18rem; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+.pick-search { width: 100%; box-sizing: border-box; }
+.quiz-list { margin: 0; padding-left: 1.25rem; }
+.quiz-q + .quiz-q { margin-top: 10px; }
+.quiz-ok { color: var(--ok); font-weight: 600; }
+.check-row { display: flex; gap: 8px; align-items: flex-start; }
+.check-row input { margin-top: 4px; flex: none; }

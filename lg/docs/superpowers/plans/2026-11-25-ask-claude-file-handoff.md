@@ -24,3 +24,10 @@
 - [x] `docs/ask-claude-format.md` (formats, samples, rules) + README paragraph + `lg/CLAUDE.md` layout lines.
 - [x] Browser check in headless Chrome (local server): build a request, hand-write a response, load, preview, accept, see the note on a flashcard; reject paths (bad file, unknown ids); dark and light.
 - [x] Final `node tests/run-node.js`; update memory `ask-claude-branch-status` to DONE or FAILED with details.
+
+## Revision 1 tasks (see the spec's Revision 1)
+- [ ] Tests first (`tests/claude.test.js`): per-use-case format names; `endings` request (instructions mention `____`, 4 options, plain array, single-word sentence switch); no cap and `WARN_OVER`; `parseQuiz` (valid array and one-array wrapper, option count/duplicates/correctIndex, cleaning, rejected reasons, not JSON); aspect removed. Run -> FAIL.
+- [ ] `claude.js`: per-task formats, `endings`, `parseQuiz`, `cleanQuiz`, no cap; drop aspect. Run -> pass.
+- [ ] Screen: scope mode (Home filters | Pick myself with search and tick list), over-50 warning, endings options, quiz-check preview with Save quiz file; remove the aspect line from Flashcards.
+- [ ] Docs: rewrite `docs/ask-claude-format.md` per use case; README; `lg/CLAUDE.md`.
+- [ ] Browser check; final tests; update memory `ask-claude-branch-status`.

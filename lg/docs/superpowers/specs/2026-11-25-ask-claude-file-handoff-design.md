@@ -44,3 +44,17 @@ Why: batch jobs (example sentences, aspect clean-up) cost tokens once per word i
 ## Left to the builder
 
 Exact wording of instruction texts, CSS, preview table layout.
+
+## Revision 1 (2026-11-25, same night, after the learner's review of the first build)
+
+The learner's words: "I was expecting that you would go with grammar traps ... I would think a UI that would force me to pick the correct case endings ... I expect Claude to generate those bad endings and good ending ... I don't think that we can have a generic file like this, right? We need to have file per use case." Then: "this is a quiz after all, and our marked words file, or JSON import support this kind of format ... 1 question and 4 multi-options and 1 correct answer. I'm not super wary about losing the context. I very much want Claude to generate that question choice format that file load supports." And: "home filter logic is fine ... If I pick a date, let it be the whole date. If I pick a category, let it be the whole category. And don't make any cap, just somehow make it visible in the UI that it is over 50 words ... Also make another additional filter in this Ask Claude UI only that would pick me words one by one, the pairs one by one even."
+
+Changes:
+1. **One file format per use case**, each with its own `format` name and its own section in `docs/ask-claude-format.md`; only the code that moves files is shared.
+   - `examples` (kept): request `lg-examples-request`, response envelope `lg-examples-response` (notes kept in the app, shown on Flashcards).
+   - `endings` (new, the main use case): request `lg-endings-request`; the response is **a plain quiz file**, the same format the Load screen and the fc app read: a JSON array of `{ "question", "options" (exactly 4), "correctIndex" }`. No envelope, no explanation field (the learner does not need one). The question is the sentence with the case-sensitive word replaced by `____`; the options are the correct form and three wrong forms of the same word in other cases.
+   - `aspect` is dropped (learner: not useful by itself).
+2. **Choosing words for endings:** the Home filters decide the scope (a whole date, a whole category), then Claude decides per row whether it has a case point and skips rows without one (my call: the app does no grammar guessing). Single words: a checkbox "Let Claude write a short sentence for single words" (my call: on by default, since the learner did not answer; off means single words are skipped).
+3. **No cap.** The screen shows a visible warning when the selection is over 50 words (`LG.claude.WARN_OVER`); a long answer may be cut off or slow.
+4. **Pick myself** (Ask Claude screen only): a second scope mode with a searchable checklist of every word in the file (pair by pair); it starts with the words of the current Home filters ticked.
+5. **Endings answer check:** loading the quiz file runs a validator (array or one-array wrapper; exactly 4 distinct non-empty options; `correctIndex` 0-3; text cleaned, at most 300 characters for a question), shows the questions with the correct option marked, lists rejected ones with the reason, and offers **Save quiz file** (downloads the cleaned file, rejected questions removed). The learner then plays it like any quiz: Load screen in this app, or the fc app. Nothing is stored in the app for this use case.
