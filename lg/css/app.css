@@ -441,3 +441,8 @@ input.cloze-input { font-size: 1.125rem; width: 100%; max-width: 100%; min-heigh
 .filter-chips[hidden], .reset-filters[hidden], .field-clear[hidden] { display: none; }
 .filters-body { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 .field-line { display: flex; align-items: center; gap: 8px; }
+
+/* Ask Claude screen and the notes on a flashcard's answer side */
+.handoff-text { width: 100%; box-sizing: border-box; font: inherit; padding: 8px 10px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); resize: vertical; }
+.fc-notes { margin-top: 14px; max-width: 36rem; }
+.fc-note { margin: 4px 0 0; font-size: 1rem; line-height: 1.4; color: var(--text); overflow-wrap: anywhere; }

@@ -161,6 +161,13 @@
     return { ok: true, task: data.task, requestId: typeof data.requestId === 'string' ? data.requestId : '', results, rejected, unknown, warnings, note: clean(data.note) || '' };
   }
 
+  // One result as a single line of text (preview table, flashcard note).
+  function formatResult(task, value) {
+    if (!value) return '';
+    if (task === 'examples') return value.sentence + ' \u2014 ' + value.translation;
+    return [value.impf ? 'impf. ' + value.impf : '', value.pf ? 'pf. ' + value.pf : ''].filter(Boolean).join(' \u00b7 ');
+  }
+
   function mergeNotes(notes, task, results) {
     const byId = Object.assign({}, notes.byId);
     for (const [id, value] of Object.entries(results)) byId[id] = Object.assign({}, byId[id], { [task]: value });
@@ -187,6 +194,6 @@
   LG.claude = {
     REQUEST_FORMAT, RESPONSE_FORMAT, VERSION, MAX_TEXT, MAX_ITEMS, TASKS, TASK_IDS,
     emptyNotes, normaliseNotes, countNotes, selectItems, requestFileName, responseFileName, buildRequest, handoffSentence,
-    parseResponse, mergeNotes, withLastRequest, carryNotes,
+    parseResponse, formatResult, mergeNotes, withLastRequest, carryNotes,
   };
 })(globalThis.LG = globalThis.LG || {});

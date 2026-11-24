@@ -73,6 +73,12 @@
   T.test('parseResponse refuses a file over 1 MB', () => {
     T.eq(C.parseResponse(GOOD({ note: 'x'.repeat(1100000) }), { ids }).ok, false);
   });
+  T.test('formatResult: one line per task', () => {
+    T.eq(C.formatResult('examples', { sentence: 'Mam kota.', translation: 'I have a cat.' }), 'Mam kota. \u2014 I have a cat.');
+    T.eq(C.formatResult('aspect', { impf: 'robić', pf: 'zrobić' }), 'impf. robić \u00b7 pf. zrobić');
+    T.eq(C.formatResult('aspect', { pf: 'zrobić' }), 'pf. zrobić');
+    T.eq(C.formatResult('aspect', undefined), '');
+  });
   T.test('mergeNotes adds under the task, replaces an old answer, keeps other tasks; does not mutate', () => {
     const base = { version: 1, byId: { a: { aspect: { pf: 'zrobić' } } }, lastRequest: null };
     const next = C.mergeNotes(base, 'examples', { a: { sentence: 's', translation: 't' }, d: { sentence: 'k', translation: 'c' } });

@@ -14,6 +14,8 @@
     filters: { dateFrom: '', dateTo: '', categories: [] },
     // Set by Cloze, Multiple Choice and Flashcards: lets Refresh update the running round instead of ending it.
     activeRound: null,
+    // Answers loaded from Claude (see LG.claude): { version, byId, lastRequest }.
+    notes: LG.claude.emptyNotes(),
   };
 
   function rebuildCtx() {
@@ -128,6 +130,12 @@
     }
     app.dataset = ds;
     rebuildCtx();
+  }
+
+  // Replace the Claude notes and save them in the background (a failed save only costs the next page load).
+  function setNotes(next) {
+    app.notes = next;
+    Promise.resolve(LG.storage.saveNotes(next)).catch(() => banner('Claude answers could not be stored in this browser.', 'warn'));
   }
 
   // Clears the Home filters in place (screens hold the `app.filters` reference).
@@ -250,7 +258,10 @@
     } catch (e) {
       banner('The word list could not be stored; it will need loading again next time.', 'warn');
     }
-    if (pairs.length) setState(LG.reload.carryState(app.state, pairs));
+    if (pairs.length) {
+      setState(LG.reload.carryState(app.state, pairs));
+      setNotes(LG.claude.carryNotes(app.notes, pairs));
+    }
     setDataset(res.dataset);
     if (live) live.onDataset(map, removed); // a running game keeps its round
     else go('home');
@@ -303,6 +314,7 @@
       setSettings({ langSource: 'en', langTarget: 'pl', learnColumn: 1 });
     }
     if (!ds) return go('load');
+    try { app.notes = LG.claude.normaliseNotes(await LG.storage.loadNotes()); } catch (e) { app.notes = LG.claude.emptyNotes(); }
     setDataset(ds);
     if (!app.state.settings.langTarget) return go('load', { dataset: ds });
 
@@ -316,7 +328,7 @@
   }
 
   Object.assign(app, {
-    GAMES, TITLES, go, refresh, save, setState, setSettings, applyTheme, rebuildCtx, setDataset, resetFilters,
+    GAMES, TITLES, go, refresh, save, setState, setSettings, applyTheme, rebuildCtx, setDataset, setNotes, resetFilters,
     banner, reviewRound, roundIds, lastExportText, exportNow, importFromFile, refreshFile, refreshButton, boot,
   });
   LG.app = app;

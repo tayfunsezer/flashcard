@@ -122,6 +122,16 @@
         },
       };
 
+      // Small lines from Claude's answers (Ask Claude screen) under the answer: an example sentence, the aspect pair.
+      function claudeNotes(id) {
+        const e = app.notes && app.notes.byId[id];
+        if (!e) return null;
+        const lines = [];
+        if (e.examples) lines.push(h('p', { class: 'fc-note', lang: langT }, e.examples.sentence, h('span', { class: 'muted' }, ' \u2014 ' + e.examples.translation)));
+        if (e.aspect) lines.push(h('p', { class: 'fc-note', lang: langT }, LG.claude.formatResult('aspect', e.aspect)));
+        return lines.length ? h('div', { class: 'fc-notes' }, lines) : null;
+      }
+
       function show(id, revisit) {
         const v = views.get(id);
         shownId = id;
@@ -164,7 +174,7 @@
           v.flipped = true;
           onFlip = null;
           card.classList.add('fc-flipped');
-          card.append(h('hr', { class: 'fc-rule' }), back);
+          card.append(h('hr', { class: 'fc-rule' }), back, claudeNotes(id));
           const pressed = (r) => (v.grade !== undefined && (v.grade === 'wrong') === (r === 'wrong') ? 'true' : 'false');
           const knew = h('button', { class: 'btn fc-grade fc-knew', type: 'button', 'aria-pressed': pressed('correct'), onclick: () => grade('correct') },
             h('span', { class: 'choice-key', 'aria-hidden': 'true' }, '2'), 'Knew it');
