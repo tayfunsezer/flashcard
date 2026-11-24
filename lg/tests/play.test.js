@@ -148,4 +148,35 @@
     T.eq([st.progress.a.star, st.progress.a.pin, st.progress.a.box, st.progress.a.seen], [false, ['x'], 3, 5]);
     T.eq([st.progress.b.star, st.progress.c.star, st.progress.c.box], [true, false, 2]);
   });
+  T.test('reanswerPrompt: wrong then right ends as one right answer', () => {
+    const s0 = S.defaultState();
+    const before = s0.progress.a;
+    const first = P.answerPrompt(s0, 'a', 'wrong', {}, 0, 0).state;
+    T.eq(first.progress.a.box, 0);
+    const again = P.reanswerPrompt(first, 'a', before, 'correct', 1000);
+    T.eq([again.progress.a.box, again.progress.a.revenge, again.xp], [1, false, first.xp]);
+  });
+  T.test('reanswerPrompt: right then wrong ends as one wrong answer', () => {
+    const s0 = P.answerPrompt(S.defaultState(), 'a', 'correct', {}, 0, 0).state;
+    const first = P.answerPrompt(s0, 'a', 'correct', {}, 0, 0).state;
+    T.eq(first.progress.a.box, 2);
+    const again = P.reanswerPrompt(first, 'a', s0.progress.a, 'wrong', 1000);
+    T.eq([again.progress.a.box, again.progress.a.revenge], [0, true]);
+  });
+  T.test('reanswerPrompt keeps a star set after the first answer, and the same result changes nothing', () => {
+    const s0 = S.defaultState();
+    const first = P.toggleStar(P.answerPrompt(s0, 'a', 'correct', {}, 0, 0).state, 'a');
+    const again = P.reanswerPrompt(first, 'a', undefined, 'correct', 5);
+    T.eq([again.progress.a.star, again.progress.a.box], [true, 1]);
+    const twice = P.reanswerPrompt(again, 'a', undefined, 'correct', 5);
+    T.eq(twice.progress.a, again.progress.a);
+  });
+  T.test('reanswerPrompt updates the study set to follow the latest answer', () => {
+    const s0 = S.defaultState();
+    s0.studySet = LG.study.createStudySet({ by: 'date', value: 'x', game: 'cloze' }, ['a', 'b'], LG.rng.seeded(1));
+    const first = P.answerPrompt(s0, 'a', 'wrong', {}, 0, 0).state;
+    const again = P.reanswerPrompt(first, 'a', undefined, 'correct', 0);
+    T.ok(again.studySet.done.includes('a'));
+    T.ok(!again.studySet.queue.includes('a'));
+  });
 })();

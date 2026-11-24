@@ -14,6 +14,18 @@
       : { queue: rest.concat([id]), done: set.done.slice() });
   }
 
+  // Redo a word's study result after a re-answer: it ends up exactly as if only this answer had been recorded.
+  function rerecord(set, id, ok) {
+    const inQueue = set.queue.includes(id);
+    const inDone = set.done.includes(id);
+    if (ok ? !inQueue && inDone : inQueue && !inDone) return set;
+    const queue = set.queue.filter(x => x !== id);
+    const done = set.done.filter(x => x !== id);
+    return Object.assign({}, set, ok
+      ? { queue, done: done.concat([id]) }
+      : { queue: queue.concat([id]), done });
+  }
+
   function isFinished(set) {
     return set.queue.length === 0;
   }
@@ -27,5 +39,5 @@
     return Object.assign({}, set, { queue, done, total: queue.length + done.length });
   }
 
-  LG.study = { createStudySet, nextIds, recordStudy, isFinished, prune };
+  LG.study = { createStudySet, nextIds, recordStudy, rerecord, isFinished, prune };
 })(globalThis.LG = globalThis.LG || {});

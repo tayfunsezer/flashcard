@@ -26,4 +26,16 @@
     T.eq(st.prune(set, new Set(['2'])), null);
     T.eq(st.prune(null, new Set(['2'])), null);
   });
+  T.test('rerecord: right then wrong moves the word from done back to the queue end, once', () => {
+    let set = st.recordStudy({ queue: ['a', 'b'], done: [], total: 2 }, 'a', true);
+    set = st.rerecord(set, 'a', false);
+    T.eq([set.queue, set.done], [['b', 'a'], []]);
+    T.eq(st.rerecord(set, 'a', false), set);
+  });
+  T.test('rerecord: wrong then right', () => {
+    let set = st.recordStudy({ queue: ['a', 'b'], done: [], total: 2 }, 'a', false);
+    set = st.rerecord(set, 'a', true);
+    T.eq([set.queue, set.done], [['b'], ['a']]);
+    T.eq(st.rerecord(set, 'a', true), set);
+  });
 })();

@@ -27,6 +27,29 @@
     return { queue, first, repeats, total: r.total };
   }
 
+  // Put a word at the end of the queue without answering it (the learner skipped it for now).
+  function defer(r, id) {
+    if (!r.queue.includes(id)) return r;
+    return Object.assign({}, r, { queue: r.queue.filter((x) => x !== id).concat([id]) });
+  }
+
+  function canDefer(r) {
+    return r.queue.length > 1;
+  }
+
+  // The learner answered a word again after going back to it: the new answer is the one that counts.
+  function reanswer(r, id, result) {
+    const first = Object.assign({}, r.first, { [id]: result });
+    const repeats = Object.assign({}, r.repeats);
+    const rest = r.queue.filter((x) => x !== id);
+    let queue = rest;
+    if (result === 'wrong') {
+      if (r.queue.includes(id)) queue = r.queue;
+      else if ((repeats[id] || 0) < MAX_REPEATS) { queue = rest.concat([id]); repeats[id] = (repeats[id] || 0) + 1; }
+    }
+    return { queue, first, repeats, total: r.total };
+  }
+
   // Leave the round without an answer (e.g. a Multiple Choice item that cannot show four options).
   function drop(r, id) {
     return Object.assign({}, r, { queue: r.queue.filter((x) => x !== id) });
@@ -45,5 +68,5 @@
     return r.queue.length === 0;
   }
 
-  LG.round = { create, current, isFirst, record, drop, missed, progress, isDone, MAX_REPEATS };
+  LG.round = { create, current, isFirst, record, defer, canDefer, reanswer, drop, missed, progress, isDone, MAX_REPEATS };
 })(globalThis.LG = globalThis.LG || {});

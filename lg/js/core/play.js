@@ -24,6 +24,23 @@
     return { state: next, xp, combo: newCombo };
   }
 
+  // Answer a word again after the learner went back to it: the box, due date and revenge flag follow this answer
+  // as if the word had been answered once (from `before`, its entry before its first counted answer).
+  // Everything else on the entry (star, pin, rotation) and XP stay as they are now.
+  function reanswerPrompt(state, itemId, before, result, nowMs) {
+    const fresh = LG.schedule.applyResult(before, result, nowMs);
+    const cur = state.progress[itemId] || {};
+    const entry = Object.assign({}, cur, { box: fresh.box, due: fresh.due, revenge: fresh.revenge, seen: true });
+    if (cur.pin === undefined) entry.pin = null;
+    if (cur.rot === undefined) entry.rot = 0;
+    const set = state.studySet;
+    const inSet = set && (set.queue.includes(itemId) || set.done.includes(itemId));
+    return Object.assign({}, state, {
+      progress: setProgress(state, itemId, entry),
+      studySet: inSet ? LG.study.rerecord(set, itemId, result !== 'wrong') : state.studySet,
+    });
+  }
+
   function matchBoard(state, { ids, missedIds, seconds }, nowMs) {
     const progress = Object.assign({}, state.progress);
     let set = state.studySet;
@@ -163,5 +180,5 @@
     return 'Practice ' + words(total) + ' — ' + missedCount + ' missed, ' + markedCount + ' marked';
   }
 
-  LG.play = { isMarked, markedIds, practiceIds, practiceLabel, answerPrompt, matchBoard, completeRound, finishDaily, setPin, togglePinWord, setStar, toggleStar, clearStars, advanceRotation, eligibleIds, startRound, boards, mcEligibleIds, MC_OPTIONS: OPTIONS };
+  LG.play = { isMarked, markedIds, practiceIds, practiceLabel, answerPrompt, reanswerPrompt, matchBoard, completeRound, finishDaily, setPin, togglePinWord, setStar, toggleStar, clearStars, advanceRotation, eligibleIds, startRound, boards, mcEligibleIds, MC_OPTIONS: OPTIONS };
 })(globalThis.LG = globalThis.LG || {});
