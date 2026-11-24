@@ -23,7 +23,7 @@
         const set = app.state.studySet;
         return set && set.game === 'match' ? set : null;
       };
-      const plan = study ? [] : LG.play.boards((params.ids || []).filter((id) => app.ctx.itemsById.has(id)), BOARD_SIZE);
+      let plan = study ? [] : LG.play.boards((params.ids || []).filter((id) => app.ctx.itemsById.has(id)), BOARD_SIZE);
       const boardIds = (k) => {
         if (!study) return plan[k] || [];
         const set = studySet();
@@ -36,6 +36,8 @@
 
       const total = { xp: 0, correct: 0, wrong: 0, missed: [], boxBefore: new Map(), touched: [], seen: [] };
       let onEnter = null;
+      let curK = 0;
+      let live = null; // patches the board on screen after a file refresh (null between boards)
       const keydown = (e) => {
         if (!screen.isConnected) { document.removeEventListener('keydown', keydown); return; }
         // A focused button handles Enter natively.
@@ -58,6 +60,7 @@
 
       function playBoard(k) {
         const ids = boardIds(k);
+        curK = k;
         onEnter = null;
         for (const id of ids) if (!total.seen.includes(id)) total.seen.push(id);
         for (const id of ids) {
@@ -76,7 +79,7 @@
           'aria-label': side === 0 ? 'Clues' : 'Answers' },
         col.map((id) => {
           const b = h('button', { class: 'btn tile', type: 'button', lang: langOf(side), 'aria-pressed': 'false',
-            onclick: () => pick(side, id) }, text(id, side));
+            dataset: { id }, onclick: () => pick(side, b.dataset.id) }, text(id, side));
           tiles[side].set(id, b);
           return b;
         })));
@@ -158,10 +161,48 @@
           }, FLASH_MS);
         }
 
+        // Refresh file: edited words get their new text on the same tile (matches, misses and the timer stay), gone words
+        // leave the board. A board with no pair left ends; one whose remaining pairs are all matched completes.
+        live = (map, removed) => {
+          const rename = (id) => (map.has(id) ? map.get(id) : id);
+          for (const id of ids.slice()) {
+            if (removed.has(id)) {
+              for (const side of [0, 1]) {
+                const el = tiles[side].get(id);
+                if (el) el.remove();
+                tiles[side].delete(id);
+                columns[side] = columns[side].filter((x) => x !== id);
+                if (board.picked[side] === id) board.picked[side] = null;
+              }
+              ids.splice(ids.indexOf(id), 1);
+              if (done.delete(id)) board.found -= 1;
+              board.missed = board.missed.filter((x) => x !== id);
+            } else if (map.has(id)) {
+              const nid = map.get(id);
+              ids[ids.indexOf(id)] = nid;
+              for (const side of [0, 1]) {
+                const el = tiles[side].get(id);
+                tiles[side].delete(id);
+                tiles[side].set(nid, el);
+                columns[side] = columns[side].map((x) => (x === id ? nid : x));
+                if (board.picked[side] === id) board.picked[side] = nid;
+                el.dataset.id = nid;
+                el.textContent = text(nid, side);
+              }
+              if (done.delete(id)) done.add(nid);
+              board.missed = board.missed.map(rename);
+            }
+          }
+          drawCount();
+          if (board.found === ids.length) boardDone();
+        };
+
         // Each board is saved as it ends (XP via matchBoard, its own timer).
         function boardDone() {
           stopTimer();
-          const res = LG.play.matchBoard(app.state, { ids, missedIds: board.missed, seconds: elapsed() }, Date.now());
+          live = null;
+          const res = ids.length ? LG.play.matchBoard(app.state, { ids, missedIds: board.missed, seconds: elapsed() }, Date.now())
+            : { state: app.state, xp: 0 };
           app.setState(res.state);
           total.xp += res.xp;
           total.correct += ids.length - board.missed.length;
@@ -203,6 +244,21 @@
           again: () => app.go('match', { ids: app.roundIds('match', mode), mode }),
         });
       }
+
+      // Refresh file keeps this round: the learner stays on the board (or between boards); see `live`.
+      app.activeRound = {
+        screen,
+        onDataset(map, removed) {
+          const rename = (id) => (map.has(id) ? map.get(id) : id);
+          const keep = (list) => list.filter((id) => !removed.has(id)).map(rename);
+          LG.screens.cloze.remapMap(total.boxBefore, map, removed, true);
+          total.touched = keep(total.touched);
+          total.seen = keep(total.seen);
+          total.missed = keep(total.missed);
+          plan = LG.play.remapBoards(plan, curK + 1, map, removed);
+          if (live) live(map, removed);
+        },
+      };
 
       playBoard(0);
     },

@@ -179,4 +179,11 @@
     T.ok(again.studySet.done.includes('a'));
     T.ok(!again.studySet.queue.includes('a'));
   });
+  T.test('remapBoards renames and drops ids only from the given board on; empty boards are omitted', () => {
+    const plan = [['a', 'b'], ['c', 'd'], ['e']];
+    const out = P.remapBoards(plan, 1, new Map([['c', 'c2']]), new Set(['e']));
+    T.eq(out, [['a', 'b'], ['c2', 'd']]);
+    T.eq(plan, [['a', 'b'], ['c', 'd'], ['e']], 'input is not mutated');
+    T.eq(P.remapBoards(plan, 0, new Map([['a', 'a2']]), new Set(['b'])), [['a2'], ['c', 'd'], ['e']]);
+  });
 })();

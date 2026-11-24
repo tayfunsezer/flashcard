@@ -136,6 +136,13 @@
     return out;
   }
 
+  // The Pair Match plan after a file refresh: boards from index `from` on rename ids through `map` and drop `removed`
+  // ones; boards left empty are omitted. Earlier boards are history and stay as they are.
+  function remapBoards(plan, from, map, removed) {
+    return plan.map((b, k) => (k < from ? b : b.filter((id) => !removed.has(id)).map((id) => (map.has(id) ? map.get(id) : id))))
+      .filter((b) => b.length);
+  }
+
   // Ids Multiple Choice can ask about: terms when the file has >= 4 terms, sentences when its
   // sentences offer >= 4 distinct cloze words (the distractor pools used by the MC screen).
   // ask 'whole': every item can be asked as a whole expression once there are 4 distinct targets;
@@ -180,5 +187,5 @@
     return 'Practice ' + words(total) + ' — ' + missedCount + ' missed, ' + markedCount + ' marked';
   }
 
-  LG.play = { isMarked, markedIds, practiceIds, practiceLabel, answerPrompt, reanswerPrompt, matchBoard, completeRound, finishDaily, setPin, togglePinWord, setStar, toggleStar, clearStars, advanceRotation, eligibleIds, startRound, boards, mcEligibleIds, MC_OPTIONS: OPTIONS };
+  LG.play = { isMarked, markedIds, practiceIds, practiceLabel, answerPrompt, reanswerPrompt, matchBoard, completeRound, finishDaily, setPin, togglePinWord, setStar, toggleStar, clearStars, advanceRotation, eligibleIds, startRound, boards, remapBoards, mcEligibleIds, MC_OPTIONS: OPTIONS };
 })(globalThis.LG = globalThis.LG || {});

@@ -20,7 +20,7 @@ js/core/      pure logic, no DOM; unit-tested
   dates.js       parseDate (DD-MM-YYYY, DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD, Excel dates), formatDate, todayISO
   importer.js    readFile → rows/json, encoding sniff (UTF-8 / UTF-16 / win-1254 vs win-1250), rowsToDataset, jsonToDataset, itemId
   remote.js      parseUrl, fileNameFor, fetchFile (download a published table link into a file-like `{ name, arrayBuffer }` for readFile; `fetch` is injected for tests)
-  words.js       kindOf (sentence ≥ 4 tokens, else term), rarity table, cloze candidates/blank picking, pins, hints, filterItems, activeFilters/withoutFilter/withDateFrom (filter chips, single resets, End defaults to Start), categories
+  words.js       kindOf (sentence ≥ 4 tokens, else term), rarity table, cloze candidates/blank picking, pins, hints, filterItems, activeFilters/withoutFilter/withDateFrom (filter chips, single resets, End follows Start), categories
   answer.js      checkAnswer (one word), checkWhole (token-wise) → 'correct' | 'almost' | 'wrong'; diffWords (typed vs expected, per word: ok/almost/wrong + missing, for the Cloze feedback line)
   schedule.js    Leitner boxes 0–5, INTERVAL_DAYS [0,1,3,7,14,30], applyResult, buildReviewRound (due → unseen → rest), revengeIds
   leitner.js     board/dueIds/idsInBox for the Leitner screen (due = by end of local day)
@@ -68,7 +68,7 @@ Item = { id: 'i…' /* cyrb53(normSource \u0001 normTarget) */, source, target, 
 - **Rounds** have no size cap and always start shuffled (`LG.play.startRound`). Review = every filtered eligible item, due first. MC eligibility comes from `mcIds`.
 - **Marks** = `progress[id].star === true`. Pinning a Cloze word also stars. Unstarring keeps pins.
 - **Navigation and re-answers** (`flashcards.js`, `mc.js`): a `LG.trail` per screen plus a `views` Map per word. `LG.screens.cloze.answerWord` scores an answer: first answer counts; a revisited answered word is a re-answer (`LG.play.reanswerPrompt` recomputes the box from the progress entry saved before the first answer, no XP, study set via `LG.study.rerecord`); the automatic "Again" repeat does not count.
-- **Refresh in a game**: Cloze, MC and Flashcards set `app.activeRound = { screen, onDataset(map, removed) }`; `finishRefresh` calls it instead of going Home, after `carryState` moved progress. Pair Match/Daily have none, so they keep the confirm-and-end behaviour.
+- **Refresh in a game**: Cloze, MC, Flashcards and Pair Match set `app.activeRound = { screen, onDataset(map, removed) }`; `finishRefresh` calls it instead of going Home, after `carryState` moved progress. Pair Match patches the board on screen (tiles renamed in place, gone pairs dropped, timer and matches kept; `LG.play.remapBoards` for later boards). Daily has none, so it keeps the confirm-and-end behaviour.
 - **Refresh file**: uses the stored FileSystemFileHandle, with permission requested inside the click gesture. Without one, a banner asks the user to pick the file again. The same file name re-parses silently with the stored `learnColumn`; a different name goes through the full load screen. Progress is kept by id; an edited row whose source or target is unchanged is carried over by `reload.carryOver` (a row with both sides changed counts as one item gone plus one new).
 - **Download from a link**: the Load screen's link row (`linkRow` in `load.js`) calls `LG.remote.fetchFile` and feeds `readAndShow(root, file, null, url)`; the saved dataset keeps `sourceUrl`. `refreshFile` re-downloads from `sourceUrl` (file name reused, no handle, no picker) and keeps it on the new dataset. Verified 2026-11-21: works from http(s) origins (localhost, GitHub Pages), **fails from `file://`** (origin `null`: Google's 307 hop from docs.google.com sends no CORS header there), so the error says to open the app from its web address.
 - **Progress backup**: Home/Settings Export progress → `language-game-progress-YYYY-MM-DD.json` (`{ format, version, exportedAt, state }`). Import replaces the state but keeps the current languages when the file has none.
@@ -77,7 +77,7 @@ Item = { id: 'i…' /* cyrb53(normSource \u0001 normTarget) */, source, target, 
 
 ## Working on lg
 1. Put logic in `js/core` as pure functions taking `(state, …, nowMs, rand)`; inject time and randomness so tests are deterministic (`LG.rng.seeded(n)`).
-2. Write or extend `tests/<module>.test.js` first. Run `tests.html` in the browser or `node tests/run-node.js` (189 passing as of 2026-11-24; `T.run()` is async, so tests may be `async`). On this Mac, Node comes from nvm (`nvm install <major>`), not Homebrew.
+2. Write or extend `tests/<module>.test.js` first. Run `tests.html` in the browser or `node tests/run-node.js` (191 passing as of 2026-11-24; `T.run()` is async, so tests may be `async`). On this Mac, Node comes from nvm (`nvm install <major>`), not Homebrew.
 3. Wire the UI in `js/ui/screens/*` with `h()`. Use `app.banner(text, kind)` for messages, never `alert`; a `window.confirm` is used only for destructive actions.
 4. Changing the State shape: bump `LG.state.VERSION`, then migrate in `withDefaults` (which also covers imported progress files) and add a state test.
 5. Changing the import/export JSON: keep it readable by the `fc/` app or document the break (see `../CLAUDE.md`). Keep `markedQuiz` → `jsonToDataset` ids round-tripping (`marked.test.js`).

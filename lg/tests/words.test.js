@@ -113,10 +113,14 @@
   T.test('withDateFrom fills an empty End with the picked Start', () => {
     const f = { dateFrom: '', dateTo: '', categories: ['a'] };
     T.eq(LG.words.withDateFrom(f, '2026-10-05'), { dateFrom: '2026-10-05', dateTo: '2026-10-05', categories: ['a'] });
-    T.eq(f.dateFrom, '');
+    T.eq(f.dateFrom, '', 'input is not mutated');
   });
-  T.test('withDateFrom keeps an End the learner already chose, even an earlier one', () => {
-    T.eq(LG.words.withDateFrom({ dateFrom: '', dateTo: '2026-09-01', categories: [] }, '2026-10-05'), { dateFrom: '2026-10-05', dateTo: '2026-09-01', categories: [] });
+  T.test('withDateFrom moves End along when Start changes again (29 Oct then 30 Oct)', () => {
+    const first = LG.words.withDateFrom({ dateFrom: '', dateTo: '', categories: [] }, '2026-10-29');
+    T.eq(LG.words.withDateFrom(first, '2026-10-30'), { dateFrom: '2026-10-30', dateTo: '2026-10-30', categories: [] });
+  });
+  T.test('withDateFrom overwrites an End chosen earlier, even an earlier one', () => {
+    T.eq(LG.words.withDateFrom({ dateFrom: '', dateTo: '2026-09-01', categories: [] }, '2026-10-05'), { dateFrom: '2026-10-05', dateTo: '2026-10-05', categories: [] });
   });
   T.test('withDateFrom: clearing Start leaves End alone', () => {
     T.eq(LG.words.withDateFrom({ dateFrom: '2026-10-05', dateTo: '2026-10-05', categories: [] }, ''), { dateFrom: '', dateTo: '2026-10-05', categories: [] });

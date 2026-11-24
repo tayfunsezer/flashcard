@@ -277,7 +277,7 @@
         clear.hidden = !f[key];
         input.addEventListener('change', () => {
           if (key === 'dateFrom') {
-            // An empty End takes the Start day, so its calendar opens on that month and year.
+            // End always takes the Start day, so its calendar opens on that month and year.
             Object.assign(f, LG.words.withDateFrom(f, input.value));
             fields.dateTo.input.value = f.dateTo;
             fields.dateTo.clear.hidden = !f.dateTo;
