@@ -74,6 +74,16 @@
         unlater(id);
         if (study) studyFirst.set(id, result); else r = LG.round.reanswer(r, id, result);
       },
+      // The file was refreshed: `map` renames edited words, `removed` are gone (see remapMap).
+      remap(map, removed) {
+        if (!study) r = LG.round.remap(r, map, removed);
+        remapMap(studyFirst, map, removed, true);
+        remapMap(kept, map, removed, false);
+        for (let i = later.length - 1; i >= 0; i--) {
+          if (removed.has(later[i])) later.splice(i, 1);
+          else if (map.has(later[i])) later[i] = map.get(later[i]);
+        }
+      },
       // Study mode: the first queued word that is not excluded and not skipped for now.
       studyNext(set, exclude) {
         const free = (x) => !(exclude && exclude.has(x));
@@ -134,6 +144,27 @@
     return btn;
   }
 
+  // Rename (move) or drop the ids of a Map or Set in place after a file refresh: `map` = edited words old -> new id,
+  // `removed` = words no longer in the file. With move false an edited word's entry is dropped (it described the old text).
+  function remapMap(m, map, removed, move) {
+    const isSet = m instanceof Set;
+    const entries = isSet ? Array.from(m, (k) => [k]) : Array.from(m);
+    m.clear();
+    for (const [k, v] of entries) {
+      if (removed.has(k)) continue;
+      let key = k;
+      if (map.has(k)) { if (!move) continue; key = map.get(k); }
+      if (isSet) m.add(key); else m.set(key, v);
+    }
+    return m;
+  }
+
+  // The per-round tallies a game screen keeps, renamed after a refresh.
+  function remapRound(round, map, removed) {
+    for (const name of ['from', 'before', 'unmarked', 'seen']) if (round[name]) remapMap(round[name], map, removed, true);
+    round.touched = round.touched.filter((id) => !removed.has(id)).map((id) => (map.has(id) ? map.get(id) : id));
+  }
+
   // Scores one Multiple Choice / Flashcards answer and saves it; returns { xp, left } (`left`: the word left the round).
   // First answer to a word: counts (Leitner box, XP, tallies). Automatic "Again" repeat: not counted.
   // `revisit`: the learner went back to this word and answers it again: the new answer replaces the counted one
@@ -180,7 +211,7 @@
   }
 
   LG.screens.cloze = {
-    gameHeader, sentence, roundTracker, againTag, starButton, answerWord, navRow,
+    gameHeader, sentence, roundTracker, againTag, starButton, answerWord, navRow, remapMap, remapRound,
     render(root, params) {
       const app = LG.app;
       const lang = app.ctx.langTarget;
@@ -192,6 +223,7 @@
       const screen = h('div', { class: 'screen' });
       root.append(screen);
       let onEnter = null;
+      let shownId = null;
       const skipped = new Set();
 
       if (mode === 'study' ? !app.state.studySet : !ids.length) {
@@ -207,6 +239,19 @@
         onEnter();
       };
       document.addEventListener('keydown', keydown);
+
+      // Refresh file keeps this round: edited words are renamed, gone words leave. The prompt is redrawn only when the
+      // word on screen was edited or removed (an unchanged word keeps what was typed).
+      app.activeRound = {
+        screen,
+        onDataset(map, removed) {
+          LG.screens.cloze.remapRound(round, map, removed);
+          LG.screens.cloze.remapMap(skipped, map, removed, false);
+          track.remap(map, removed);
+          screen.firstChild.replaceWith(gameHeader('Cloze', Object.assign({}, progressLabel(), { combo: round.combo, xp: round.xp })));
+          if (shownId && (map.has(shownId) || removed.has(shownId))) prompt();
+        },
+      };
 
       function nextId() {
         if (mode === 'study') {
@@ -252,6 +297,7 @@
           track.skip(id);
         }
         round.seen.add(id);
+        shownId = id;
         const repeat = track.isRepeat(id);
         const wholeMulti = whole && LG.text.tokenize(item.target, lang).length > 1;
         if (whole) blanks = [];

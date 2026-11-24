@@ -12,6 +12,8 @@
     ctx: null,
     current: null,
     filters: { dateFrom: '', dateTo: '', categories: [] },
+    // Set by Cloze, Multiple Choice and Flashcards: lets Refresh update the running round instead of ending it.
+    activeRound: null,
   };
 
   function rebuildCtx() {
@@ -172,7 +174,7 @@
   // unreadable handle always goes through the banner button, which is a fresh gesture.
   async function refreshFile({ inGame = false } = {}) {
     if (!app.dataset) return;
-    if (inGame && !window.confirm('Refresh the file? This round ends; answers so far are kept.')) return;
+    if (inGame && !liveRound() && !window.confirm('Refresh the file? This round ends; answers so far are kept.')) return;
     if (app.dataset.sourceUrl) {
       // A list loaded from a link refreshes from the link: no handle, no picker.
       try {
@@ -237,14 +239,26 @@
     }
     if (app.dataset.sourceUrl) res.dataset.sourceUrl = app.dataset.sourceUrl;
     const d = LG.reload.diff(app.dataset.items, res.dataset.items);
+    // Edited rows keep their progress: the old id's entry moves to the corrected row.
+    const pairs = LG.reload.carryOver(app.dataset.items, res.dataset.items);
+    const map = new Map(pairs.map((p) => [p.from, p.to]));
+    const newIds = new Set(res.dataset.items.map((it) => it.id));
+    const removed = new Set(app.dataset.items.map((it) => it.id).filter((id) => !newIds.has(id) && !map.has(id)));
+    const live = liveRound();
     try {
       await LG.storage.saveDataset(res.dataset);
     } catch (e) {
       banner('The word list could not be stored; it will need loading again next time.', 'warn');
     }
+    if (pairs.length) setState(LG.reload.carryState(app.state, pairs));
     setDataset(res.dataset);
-    go('home');
-    banner(LG.reload.bannerText(file.name, d), 'info');
+    if (live) live.onDataset(map, removed); // a running game keeps its round
+    else go('home');
+    banner(LG.reload.bannerText(file.name, d, pairs.length), 'info');
+  }
+
+  function liveRound() {
+    return app.activeRound && app.activeRound.screen.isConnected ? app.activeRound : null;
   }
 
   const PICK_AGAIN = 'Pick the file again to refresh it.';

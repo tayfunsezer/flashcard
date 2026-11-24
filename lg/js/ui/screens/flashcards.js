@@ -16,6 +16,7 @@
       let onFlip = null;
       let onGrade = null;
       let goTo = null;
+      let shownId = null;
 
       if (mode === 'study' ? !app.state.studySet : !ids.length) {
         app.banner('Nothing to play in this round.', 'info');
@@ -104,8 +105,26 @@
         show(LG.trail.current(trail), true);
       }
 
+      // Refresh file keeps this round: edited words are renamed (the card is redrawn with the new text), gone words
+      // leave. The screen is redrawn only when the word on screen was edited or removed.
+      app.activeRound = {
+        screen,
+        onDataset(map, removed) {
+          const C = LG.screens.cloze;
+          C.remapRound(round, map, removed);
+          C.remapMap(views, map, removed, true);
+          track.remap(map, removed);
+          trail = LG.trail.remap(trail, map, removed);
+          screen.firstChild.replaceWith(gameHeader('Flashcards', Object.assign({}, progressLabel(), { combo: round.combo, xp: round.xp })));
+          if (!shownId) return;
+          if (removed.has(shownId)) return next();
+          if (map.has(shownId)) show(map.get(shownId), true);
+        },
+      };
+
       function show(id, revisit) {
         const v = views.get(id);
+        shownId = id;
         round.seen.add(id);
         const item = app.ctx.itemsById.get(id);
         const s2t = app.state.settings.direction !== 't2s';

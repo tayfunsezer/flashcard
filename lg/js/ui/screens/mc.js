@@ -17,6 +17,7 @@
       let onEnter = null;
       let onKey = null;
       let goTo = null;
+      let shownId = null;
       const skipped = new Set();
 
       if (mode === 'study' ? !app.state.studySet : !ids.length) {
@@ -157,9 +158,33 @@
         show(LG.trail.current(trail), true);
       }
 
+      // Refresh file keeps this round: edited words are renamed (their question is rebuilt from the new text), gone words
+      // leave. The screen is redrawn only when the word on screen was edited or removed.
+      app.activeRound = {
+        screen,
+        onDataset(map, removed) {
+          const C = LG.screens.cloze;
+          C.remapRound(round, map, removed);
+          C.remapMap(views, map, removed, false);
+          C.remapMap(skipped, map, removed, false);
+          track.remap(map, removed);
+          trail = LG.trail.remap(trail, map, removed);
+          screen.firstChild.replaceWith(gameHeader('Multiple Choice', Object.assign({}, progressLabel(), { combo: round.combo, xp: round.xp })));
+          if (!shownId) return;
+          if (removed.has(shownId)) return next();
+          if (!map.has(shownId)) return;
+          const id = map.get(shownId);
+          const v = makeView(id);
+          if (!v) { track.skip(id); return next(); }
+          views.set(id, v);
+          show(id, true);
+        },
+      };
+
       function show(id, revisit) {
         const v = views.get(id);
         const q = v.q;
+        shownId = id;
         round.seen.add(id);
         if (revisit && v.picked !== undefined) v.open = true; // an answered word can be answered again
         const buttons = v.options.map((text, i) => h('button', { class: 'btn choice', type: 'button', lang: q.lang, onclick: () => choose(i) },
