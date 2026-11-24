@@ -168,5 +168,10 @@
     return Object.assign({}, f, { [entry.key]: '' });
   }
 
-  LG.words = { MIN_SENTENCE_TOKENS, kindOf, buildRarity, clozeCandidates, pickBlank, pickBlanks, pinWords, resolvePins, hintText, specialLetters, filterItems, groupOptions, itemsInCategory, searchCategories, activeFilters, withoutFilter };
+  // Picking a Start date also fills an empty End with the same day (so the End calendar opens on that month).
+  function withDateFrom(f, value) {
+    return Object.assign({}, f, { dateFrom: value, dateTo: value && !f.dateTo ? value : f.dateTo });
+  }
+
+  LG.words = { MIN_SENTENCE_TOKENS, kindOf, buildRarity, clozeCandidates, pickBlank, pickBlanks, pinWords, resolvePins, hintText, specialLetters, filterItems, groupOptions, itemsInCategory, searchCategories, activeFilters, withoutFilter, withDateFrom };
 })(globalThis.LG = globalThis.LG || {});

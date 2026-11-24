@@ -110,4 +110,15 @@
     T.eq(LG.words.withoutFilter(f, { key: 'dateFrom', value: '2026-11-01' }), { dateFrom: '', dateTo: '2026-11-30', categories: ['a', 'b'] });
     T.eq(f.categories, ['a', 'b']);
   });
+  T.test('withDateFrom fills an empty End with the picked Start', () => {
+    const f = { dateFrom: '', dateTo: '', categories: ['a'] };
+    T.eq(LG.words.withDateFrom(f, '2026-10-05'), { dateFrom: '2026-10-05', dateTo: '2026-10-05', categories: ['a'] });
+    T.eq(f.dateFrom, '');
+  });
+  T.test('withDateFrom keeps an End the learner already chose, even an earlier one', () => {
+    T.eq(LG.words.withDateFrom({ dateFrom: '', dateTo: '2026-09-01', categories: [] }, '2026-10-05'), { dateFrom: '2026-10-05', dateTo: '2026-09-01', categories: [] });
+  });
+  T.test('withDateFrom: clearing Start leaves End alone', () => {
+    T.eq(LG.words.withDateFrom({ dateFrom: '2026-10-05', dateTo: '2026-10-05', categories: [] }, ''), { dateFrom: '', dateTo: '2026-10-05', categories: [] });
+  });
 })();

@@ -19,7 +19,7 @@ Rounds have no size limit: a Review round takes every word that matches your fil
 
 Marking words: after an answer in Cloze, click words in the answer sentence to mark them; the item then blanks those words every time. The round summary offers to practise the words you missed plus the ones you marked in that round. The Marked words mode on Home plays every marked item (under your filters) in any game, and ☆/★ marks or unmarks an item. ✕ on the pin row clears its pinned words only.
 
-Filters (below the games on Home) limit Review, Marked words and the Leitner screen by date range and category. Active filters show as chips under the Filters heading even when the panel is closed: ✕ on a chip removes just that filter, each date field has its own Clear, and Reset all clears every filter at once.
+Filters (below the games on Home) limit Review, Marked words and the Leitner screen by date range and category. Active filters show as chips under the Filters heading even when the panel is closed: ✕ on a chip removes just that filter, each date field has its own Clear, and Reset all clears every filter at once. Picking a Date from while Date to is empty fills Date to with the same day, so its calendar opens on that month and year; an End date you already chose is never changed.
 
 Words you miss come back at the end of the round until you get them right (only your first answer moves the word between boxes). After a round you can practise just the words you missed, in the same game or as Flashcards.
 

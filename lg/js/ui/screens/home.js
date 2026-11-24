@@ -275,10 +275,22 @@
         const input = h('input', { type: 'date', value: f[key] });
         const clear = h('button', { class: 'btn btn-link field-clear small', type: 'button', 'aria-label': 'Clear ' + text.toLowerCase() }, 'Clear');
         clear.hidden = !f[key];
-        input.addEventListener('change', () => { f[key] = input.value; clear.hidden = !input.value; paint(); onchange(); });
+        input.addEventListener('change', () => {
+          if (key === 'dateFrom') {
+            // An empty End takes the Start day, so its calendar opens on that month and year.
+            Object.assign(f, LG.words.withDateFrom(f, input.value));
+            fields.dateTo.input.value = f.dateTo;
+            fields.dateTo.clear.hidden = !f.dateTo;
+          } else f[key] = input.value;
+          clear.hidden = !input.value;
+          paint();
+          onchange();
+        });
         clear.addEventListener('click', () => { input.value = ''; f[key] = ''; clear.hidden = true; paint(); onchange(); });
+        fields[key] = { input, clear };
         return h('label', { class: 'field' }, h('span', null, text), h('div', { class: 'field-line' }, input, clear));
       };
+      const fields = {};
 
       const body = !open ? null : h('div', { class: 'stack filters-body' },
         h('div', { class: 'row' }, dateField('dateFrom', 'Date from'), dateField('dateTo', 'Date to')),
