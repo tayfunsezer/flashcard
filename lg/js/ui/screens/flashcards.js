@@ -9,12 +9,13 @@
       const langT = app.ctx.langTarget;
       const mode = params.mode || 'review';
       const ids = (params.ids || []).filter((id) => app.ctx.itemsById.has(id));
-      const round = { combo: 0, xp: 0, correct: 0, wrong: 0, from: new Map(), touched: [], unmarked: new Set(), seen: new Set() };
+      const round = { combo: 0, xp: 0, correct: 0, wrong: 0, from: new Map(), before: new Map(), touched: [], unmarked: new Set(), seen: new Set() };
       const track = roundTracker(mode, ids);
       const screen = h('div', { class: 'screen' });
       root.append(screen);
       let onFlip = null;
       let onGrade = null;
+      let goTo = null;
 
       if (mode === 'study' ? !app.state.studySet : !ids.length) {
         app.banner('Nothing to play in this round.', 'info');
@@ -31,6 +32,12 @@
           if (t && t.tagName === 'BUTTON' && (!t.closest('.fc-area') || t.classList.contains('star-btn'))) return;
           e.preventDefault();
           if (onFlip) onFlip();
+        } else if (goTo && e.key === 'ArrowLeft') {
+          e.preventDefault();
+          goTo.back();
+        } else if (goTo && e.key === 'ArrowRight') {
+          e.preventDefault();
+          goTo.forward();
         } else if (onGrade && (e.key === '1' || e.key === '2')) {
           e.preventDefault();
           onGrade(e.key === '2' ? 'correct' : 'wrong');
@@ -42,7 +49,7 @@
         if (mode === 'study') {
           const set = app.state.studySet;
           if (!set || LG.study.isFinished(set)) return null;
-          return LG.study.nextIds(set)[0];
+          return track.studyNext(set);
         }
         return track.current();
       }
@@ -68,66 +75,101 @@
         });
       }
 
-      function prompt() {
+      // One entry per word: whether it was flipped and the grade given (so Back shows the same card).
+      const views = new Map();
+      let trail = LG.trail.create();
+
+      function next() {
         const id = nextId();
         if (!id) return finish();
+        views.set(id, { flipped: false, grade: undefined });
+        trail = LG.trail.push(trail, id);
+        show(id, false);
+      }
+
+      function advance() {
+        if (LG.trail.canForward(trail)) {
+          trail = LG.trail.forward(trail);
+          return show(LG.trail.current(trail), true);
+        }
+        const cur = LG.trail.current(trail);
+        if (cur && views.get(cur).grade === undefined) track.defer(cur);
+        next();
+      }
+
+      function goBack() {
+        const t = LG.trail.back(trail);
+        if (!t) return;
+        trail = t;
+        show(LG.trail.current(trail), true);
+      }
+
+      function show(id, revisit) {
+        const v = views.get(id);
         round.seen.add(id);
         const item = app.ctx.itemsById.get(id);
         const s2t = app.state.settings.direction !== 't2s';
         const side = (text, lang, cls) => h('p', { class: 'fc-text ' + cls, lang }, text);
         const front = s2t ? side(item.source, langS, 'fc-front') : side(item.target, langT, 'fc-front');
         const back = s2t ? side(item.target, langT, 'fc-back') : side(item.source, langS, 'fc-back');
-        let flipped = false;
 
         // Clicking the card is a mouse shortcut; the Show answer button and Space cover the keyboard.
         const card = h('div', { class: 'card fc-card', onclick: () => flip() }, front);
-        const showBtn = h('button', { class: 'btn btn-primary', type: 'button', onclick: () => flip() },
-          'Show answer', h('span', { class: 'key-hint', 'aria-hidden': 'true' }, 'Space'));
-        const controls = h('div', { class: 'fc-controls' }, showBtn);
-        const label = progressLabel();
-        clear(screen).append(
-          gameHeader('Flashcards', Object.assign({}, label, { combo: round.combo, xp: round.xp })),
-          againTag(track.isRepeat(id)),
-          h('div', { class: 'fc-area' }, card, controls));
-        showBtn.focus();
-        onFlip = () => flip();
-        onGrade = null;
+        const controls = h('div', { class: 'fc-controls' });
+        const area = h('div', { class: 'fc-area' }, card, controls);
+        const navHolder = h('div', null);
+        const header = () => gameHeader('Flashcards', Object.assign({}, progressLabel(), { combo: round.combo, xp: round.xp }));
+        clear(screen).append(header(), againTag(!revisit && v.grade === undefined && track.isRepeat(id)), area, navHolder);
+
+        function nav() {
+          const answered = v.grade !== undefined;
+          clear(navHolder).append(LG.screens.cloze.navRow({
+            canBack: LG.trail.canBack(trail), onBack: goBack,
+            canForward: answered || LG.trail.canForward(trail) || track.canDefer(),
+            forwardLabel: answered ? 'Next' : 'Skip', onForward: advance,
+          }));
+          goTo = { back: goBack, forward: () => { const f = navHolder.querySelector('.nav-forward'); if (f && !f.disabled) f.click(); } };
+        }
+
+        function showFront() {
+          const showBtn = h('button', { class: 'btn btn-primary', type: 'button', onclick: () => flip() },
+            'Show answer', h('span', { class: 'key-hint', 'aria-hidden': 'true' }, 'Space'));
+          clear(controls).append(showBtn, starButton(id, (_, now) => { if (now) round.unmarked.add(id); }));
+          showBtn.focus();
+          onFlip = () => flip();
+          onGrade = null;
+        }
 
         function flip() {
-          if (flipped) return;
-          flipped = true;
+          if (v.flipped && card.classList.contains('fc-flipped')) return;
+          v.flipped = true;
           onFlip = null;
           card.classList.add('fc-flipped');
           card.append(h('hr', { class: 'fc-rule' }), back);
-          const knew = h('button', { class: 'btn fc-grade fc-knew', type: 'button', onclick: () => grade('correct') },
+          const pressed = (r) => (v.grade !== undefined && (v.grade === 'wrong') === (r === 'wrong') ? 'true' : 'false');
+          const knew = h('button', { class: 'btn fc-grade fc-knew', type: 'button', 'aria-pressed': pressed('correct'), onclick: () => grade('correct') },
             h('span', { class: 'choice-key', 'aria-hidden': 'true' }, '2'), 'Knew it');
-          const missed = h('button', { class: 'btn fc-grade fc-missed', type: 'button', onclick: () => grade('wrong') },
+          const missed = h('button', { class: 'btn fc-grade fc-missed', type: 'button', 'aria-pressed': pressed('wrong'), onclick: () => grade('wrong') },
             h('span', { class: 'choice-key', 'aria-hidden': 'true' }, '1'), "Didn't know");
           clear(controls).append(h('div', { class: 'fc-grades', role: 'group', 'aria-label': 'Did you know it?' }, missed, knew),
             starButton(id, (_, now) => { if (now) round.unmarked.add(id); }));
-          knew.focus();
+          if (!revisit || v.grade === undefined) knew.focus();
           onGrade = grade;
         }
 
         function grade(result) {
           onGrade = null;
-          if (track.counts(id)) {
-            if (!round.from.has(id)) {
-              round.from.set(id, (app.state.progress[id] && app.state.progress[id].box) || 0);
-              round.touched.push(id);
-            }
-            const res = LG.play.answerPrompt(app.state, id, result, { hints: 0 }, Date.now(), round.combo);
-            app.setState(res.state);
-            round.combo = res.combo;
-            round.xp += res.xp;
-            round[result] += 1;
-          }
-          track.record(id, result);
-          prompt();
+          LG.screens.cloze.answerWord({ id, result, revisit, round, track });
+          v.grade = result;
+          screen.firstChild.replaceWith(header());
+          advance();
         }
+
+        nav();
+        if (v.flipped) flip(); else showFront();
       }
 
-      prompt();
+      next();
     },
   };
 })(globalThis.LG = globalThis.LG || {});

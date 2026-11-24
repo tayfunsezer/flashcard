@@ -10,12 +10,13 @@
       const langT = app.ctx.langTarget;
       const mode = params.mode || 'review';
       const ids = (params.ids || []).filter((id) => app.ctx.itemsById.has(id));
-      const round = { combo: 0, xp: 0, correct: 0, wrong: 0, from: new Map(), touched: [], unmarked: new Set(), seen: new Set() };
+      const round = { combo: 0, xp: 0, correct: 0, wrong: 0, from: new Map(), before: new Map(), touched: [], unmarked: new Set(), seen: new Set() };
       const track = roundTracker(mode, ids);
       const screen = h('div', { class: 'screen' });
       root.append(screen);
       let onEnter = null;
       let onKey = null;
+      let goTo = null;
       const skipped = new Set();
 
       if (mode === 'study' ? !app.state.studySet : !ids.length) {
@@ -31,6 +32,12 @@
           if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('enter-target')) return;
           e.preventDefault();
           onEnter();
+        } else if (e.key === 'ArrowLeft' && goTo) {
+          e.preventDefault();
+          goTo.back();
+        } else if (e.key === 'ArrowRight' && goTo) {
+          e.preventDefault();
+          goTo.forward();
         } else if (onKey && e.key >= '1' && e.key <= '9') {
           onKey(Number(e.key) - 1);
         }
@@ -41,7 +48,7 @@
         if (mode === 'study') {
           const set = app.state.studySet;
           if (!set || LG.study.isFinished(set)) return null;
-          return set.queue.find((id) => !skipped.has(id)) || null;
+          return track.studyNext(set, skipped);
         }
         return track.current();
       }
@@ -101,77 +108,112 @@
         };
       }
 
-      function prompt() {
-        let id, q, wrong;
+      // One entry per word: the question as first shown, its option order, and the answer given (so Back shows the same question).
+      const views = new Map();
+      let trail = LG.trail.create();
+
+      function makeView(id) {
+        const q = build(app.ctx.itemsById.get(id), id);
+        let wrong = q.own ? LG.rng.shuffle(q.own.slice(), Math.random).slice(0, OPTIONS - 1) : [];
+        if (wrong.length < OPTIONS - 1) {
+          wrong = wrong.concat(LG.distractors.pickDistractors(q.answer, q.pool.filter((p) => !wrong.includes(p.text)), q.categories, q.lang, Math.random, OPTIONS - 1 - wrong.length));
+        }
+        if (wrong.length < OPTIONS - 1) return null;
+        // A repeat gets fresh distractors and a fresh shuffle; the answer (and a sentence's blank) stay the same.
+        const options = LG.rng.shuffle([q.answer].concat(wrong), Math.random);
+        return { q, options, correctIdx: options.indexOf(q.answer), picked: undefined, result: undefined, xp: 0, open: true };
+      }
+
+      // Takes the next word from the queue (skipping words that cannot show four options) and shows it.
+      function next() {
+        let id, v;
         for (;;) {
           id = nextId();
           if (!id) return finish();
-          q = build(app.ctx.itemsById.get(id), id);
-          wrong = q.own ? LG.rng.shuffle(q.own.slice(), Math.random).slice(0, OPTIONS - 1) : [];
-          if (wrong.length < OPTIONS - 1) {
-            wrong = wrong.concat(LG.distractors.pickDistractors(q.answer, q.pool.filter((p) => !wrong.includes(p.text)), q.categories, q.lang, Math.random, OPTIONS - 1 - wrong.length));
-          }
-          if (wrong.length >= OPTIONS - 1) break;
+          v = makeView(id);
+          if (v) break;
           skipped.add(id); // fewer than four distinct options: leave this item out of the round
           track.skip(id);
         }
-        round.seen.add(id);
-        const repeat = track.isRepeat(id);
-        // A repeat gets fresh distractors and a fresh shuffle; the answer (and a sentence's blank) stay the same.
-        const options = LG.rng.shuffle([q.answer].concat(wrong), Math.random);
-        const correctIdx = options.indexOf(q.answer);
-        const buttons = options.map((text, i) => h('button', { class: 'btn choice', type: 'button', lang: q.lang, onclick: () => choose(i) },
-          h('span', { class: 'choice-key', 'aria-hidden': 'true' }, String(i + 1)), h('span', { class: 'choice-text' }, text)));
+        views.set(id, v);
+        trail = LG.trail.push(trail, id);
+        show(id, false);
+      }
 
+      function advance() {
+        if (LG.trail.canForward(trail)) {
+          trail = LG.trail.forward(trail);
+          return show(LG.trail.current(trail), true);
+        }
+        const cur = LG.trail.current(trail);
+        if (cur && views.get(cur).picked === undefined) track.defer(cur);
+        next();
+      }
+
+      function goBack() {
+        const t = LG.trail.back(trail);
+        if (!t) return;
+        trail = t;
+        show(LG.trail.current(trail), true);
+      }
+
+      function show(id, revisit) {
+        const v = views.get(id);
+        const q = v.q;
+        round.seen.add(id);
+        if (revisit && v.picked !== undefined) v.open = true; // an answered word can be answered again
+        const buttons = v.options.map((text, i) => h('button', { class: 'btn choice', type: 'button', lang: q.lang, onclick: () => choose(i) },
+          h('span', { class: 'choice-key', 'aria-hidden': 'true' }, String(i + 1)), h('span', { class: 'choice-text' }, text)));
         const card = h('div', { class: 'card fb mc' }, q.clue || null, q.body);
         const choices = h('div', { class: 'choices', role: 'group', 'aria-label': 'Answer options' }, buttons);
         const foot = h('div', { class: 'stack' });
-        const label = progressLabel();
-        clear(screen).append(gameHeader('Multiple Choice', Object.assign({}, label, { combo: round.combo, xp: round.xp })), againTag(repeat), card, choices, foot);
-        onEnter = null;
-        onKey = (i) => { if (i < buttons.length) choose(i); };
+        const star = LG.screens.cloze.starButton(id, (_, now) => { if (now) round.unmarked.add(id); });
+        const header = () => gameHeader('Multiple Choice', Object.assign({}, progressLabel(), { combo: round.combo, xp: round.xp }));
+        const navHolder = h('div', null);
+        clear(screen).append(header(), againTag(!revisit && v.picked === undefined && track.isRepeat(id)), card, choices, foot, navHolder);
+
+        function paint() {
+          const answered = v.picked !== undefined;
+          buttons.forEach((b, k) => {
+            b.disabled = answered && !v.open;
+            b.classList.toggle('choice-correct', answered && k === v.correctIdx);
+            b.classList.toggle('choice-wrong', answered && k === v.picked && k !== v.correctIdx);
+          });
+          card.classList.toggle('fb-ok', answered && v.result === 'correct');
+          card.classList.toggle('fb-bad', answered && v.result === 'wrong');
+          if (answered && q.solved) card.lastChild.replaceWith(q.solved.cloneNode(true));
+          clear(foot).append(
+            answered ? h('p', { class: 'fb-msg fb-text-' + v.result, role: 'status' },
+              v.result === 'correct' ? 'Correct' : ['Answer: ', h('strong', { lang: q.lang }, q.answer)],
+              v.xp ? h('span', { class: 'muted' }, '  +' + v.xp + ' XP') : null) : '',
+            h('div', { class: 'btn-row' }, star));
+          clear(navHolder).append(LG.screens.cloze.navRow({
+            canBack: LG.trail.canBack(trail), onBack: goBack,
+            canForward: answered || LG.trail.canForward(trail) || track.canDefer(),
+            forwardLabel: answered ? 'Next' : 'Skip', primary: answered, onForward: advance,
+          }));
+          const fwd = navHolder.querySelector('.nav-forward');
+          onEnter = answered && fwd ? () => advance() : null;
+          if (answered && fwd && !v.open) fwd.focus();
+        }
 
         function choose(i) {
-          onKey = null;
-          const result = i === correctIdx ? 'correct' : 'wrong';
-          let st = app.state;
-          let xp = 0;
-          if (track.counts(id)) {
-            if (!round.from.has(id)) {
-              round.from.set(id, (st.progress[id] && st.progress[id].box) || 0);
-              round.touched.push(id);
-            }
-            const res = LG.play.answerPrompt(st, id, result, { hints: 0 }, Date.now(), round.combo);
-            st = res.state;
-            xp = res.xp;
-            round.combo = res.combo;
-            round.xp += res.xp;
-            round[result] += 1;
-          }
-          if (track.record(id, result) && q.sentence) st = LG.play.advanceRotation(st, id);
-          app.setState(st);
-
-          buttons.forEach((b, k) => {
-            b.disabled = true;
-            if (k === correctIdx) b.classList.add('choice-correct');
-            else if (k === i) b.classList.add('choice-wrong');
-          });
-          card.classList.add(result === 'correct' ? 'fb-ok' : 'fb-bad');
-          if (q.solved) card.lastChild.replaceWith(q.solved);
-          const next = h('button', { class: 'btn btn-primary enter-target', type: 'button', onclick: () => prompt() }, 'Next');
-          clear(foot).append(
-            h('p', { class: 'fb-msg fb-text-' + result, role: 'status' },
-              result === 'correct' ? 'Correct' : ['Answer: ', h('strong', { lang: q.lang }, q.answer)],
-              xp ? h('span', { class: 'muted' }, '  +' + xp + ' XP') : null),
-            h('div', { class: 'btn-row' }, next,
-              LG.screens.cloze.starButton(id, (_, now) => { if (now) round.unmarked.add(id); })));
-          screen.firstChild.replaceWith(gameHeader('Multiple Choice', Object.assign({}, mode === 'study' ? label : progressLabel(), { combo: round.combo, xp: round.xp })));
-          next.focus();
-          onEnter = () => prompt();
+          if (!v.open) return;
+          v.open = false;
+          v.picked = i;
+          v.result = i === v.correctIdx ? 'correct' : 'wrong';
+          const res = LG.screens.cloze.answerWord({ id, result: v.result, revisit, round, track, rotate: q.sentence });
+          v.xp = res.xp;
+          paint();
+          screen.firstChild.replaceWith(header());
         }
+
+        onKey = (i) => { if (i < buttons.length) choose(i); };
+        goTo = { back: goBack, forward: () => { const f = navHolder.querySelector('.nav-forward'); if (f && !f.disabled) f.click(); } };
+        paint();
       }
 
-      prompt();
+      next();
     },
   };
 })(globalThis.LG = globalThis.LG || {});

@@ -43,6 +43,8 @@
     let r = LG.round.create(study ? [] : ids);
     const studyFirst = new Map();
     const kept = new Map();
+    const later = []; // study mode: words skipped for now (the study queue itself lives in the saved state)
+    const unlater = (id) => { const i = later.indexOf(id); if (i >= 0) later.splice(i, 1); };
     return {
       current: () => LG.round.current(r),
       // Whether this answer goes through answerPrompt and the tallies.
@@ -50,11 +52,36 @@
       isRepeat: (id) => !study && !LG.round.isFirst(r, id),
       // Records the answer; true when the word has left the round (time to advance Cloze rotation).
       record(id, result) {
+        unlater(id);
         if (study) { if (!studyFirst.has(id)) studyFirst.set(id, result); return true; }
         r = LG.round.record(r, id, result);
         return !r.queue.includes(id);
       },
       skip(id) { if (!study) r = LG.round.drop(r, id); },
+      // Skip a word for now: it comes back later in the round without being answered.
+      defer(id) {
+        if (study) { if (!later.includes(id)) later.push(id); } else r = LG.round.defer(r, id);
+      },
+      canDefer() {
+        if (!study) return LG.round.canDefer(r);
+        const set = LG.app.state.studySet;
+        return !!set && set.queue.length > 1;
+      },
+      // The answer that counts for a word in this round ('correct' | 'almost' | 'wrong'), or undefined.
+      counted: (id) => (study ? studyFirst.get(id) : r.first[id]),
+      // The learner answered a word again after going back to it: the new answer is the one that counts.
+      reanswer(id, result) {
+        unlater(id);
+        if (study) studyFirst.set(id, result); else r = LG.round.reanswer(r, id, result);
+      },
+      // Study mode: the first queued word that is not excluded and not skipped for now.
+      studyNext(set, exclude) {
+        const free = (x) => !(exclude && exclude.has(x));
+        const id = set.queue.find((x) => free(x) && !later.includes(x));
+        if (id) return id;
+        later.length = 0;
+        return set.queue.find(free) || null;
+      },
       label: () => LG.round.progress(r),
       missed: () => (study ? [...studyFirst].filter(([, v]) => v === 'wrong').map(([id]) => id) : LG.round.missed(r)),
       // Value fixed at a word's first showing (e.g. its blank), reused for its repeats.
@@ -107,8 +134,53 @@
     return btn;
   }
 
+  // Scores one Multiple Choice / Flashcards answer and saves it; returns { xp, left } (`left`: the word left the round).
+  // First answer to a word: counts (Leitner box, XP, tallies). Automatic "Again" repeat: not counted.
+  // `revisit`: the learner went back to this word and answers it again: the new answer replaces the counted one
+  // (box recomputed from before the first answer, tallies moved, no XP, combo untouched); the same result changes nothing.
+  // `round.before` is a Map the screen creates: id -> progress entry before the first counted answer.
+  function answerWord({ id, result, revisit, round, track, rotate }) {
+    const app = LG.app;
+    let st = app.state;
+    const had = round.before.has(id) ? track.counted(id) : undefined;
+    if (revisit && had !== undefined) {
+      if ((had === 'wrong') === (result === 'wrong')) return { xp: 0, left: false };
+      app.setState(LG.play.reanswerPrompt(st, id, round.before.get(id), result, Date.now()));
+      round[had] -= 1;
+      round[result] += 1;
+      track.reanswer(id, result);
+      return { xp: 0, left: false };
+    }
+    let xp = 0;
+    if (track.counts(id)) {
+      if (!round.from.has(id)) {
+        round.from.set(id, (st.progress[id] && st.progress[id].box) || 0);
+        round.before.set(id, st.progress[id]);
+        round.touched.push(id);
+      }
+      const res = LG.play.answerPrompt(st, id, result, { hints: 0 }, Date.now(), round.combo);
+      st = res.state;
+      xp = res.xp;
+      round.combo = res.combo;
+      round.xp += res.xp;
+      round[result] += 1;
+    }
+    const left = track.record(id, result);
+    if (left && rotate) st = LG.play.advanceRotation(st, id);
+    app.setState(st);
+    return { xp, left };
+  }
+
+  // "← Back" and "Skip →" / "Next →" under a game card. `primary` styles the forward button as the main action.
+  function navRow({ canBack, onBack, canForward, forwardLabel, onForward, primary }) {
+    return h('div', { class: 'btn-row nav-row' },
+      h('button', { class: 'btn btn-small', type: 'button', disabled: !canBack, onclick: onBack }, '\u2190 Back'),
+      h('button', { class: 'btn btn-small nav-forward' + (primary ? ' btn-primary enter-target' : ''), type: 'button',
+        disabled: !canForward, onclick: onForward }, forwardLabel + ' \u2192'));
+  }
+
   LG.screens.cloze = {
-    gameHeader, sentence, roundTracker, againTag, starButton,
+    gameHeader, sentence, roundTracker, againTag, starButton, answerWord, navRow,
     render(root, params) {
       const app = LG.app;
       const lang = app.ctx.langTarget;
