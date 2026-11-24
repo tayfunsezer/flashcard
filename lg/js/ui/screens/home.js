@@ -237,27 +237,65 @@
       btn('s2t', 'Source → Target'), btn('t2s', 'Target → Source'));
   }
 
+  // Filters: header with Reset all, chips for the active filters (each removable), and the editing panel.
+  // Picking a date or category repaints only the header and chips (so search text and focus stay); Reset all and a chip's ✕
+  // redraw the card, because the date inputs and category list must show the cleared values.
   function filtersCard(onchange) {
     const app = LG.app;
-    const f = app.filters;
-    const catOptions = LG.words.groupOptions(app.ctx.items).categories;
-    const dateInput = (key, label) => h('label', { class: 'field' }, h('span', null, label),
-      h('input', { type: 'date', value: f[key], onchange: (e) => { f[key] = e.target.value; changed(); } }));
-    const isActive = () => Boolean(f.dateFrom || f.dateTo || f.categories.length);
-    const marker = h('span', { class: 'muted small' });
-    const changed = () => { marker.textContent = isActive() ? ' (active)' : ''; onchange(); };
-    marker.textContent = isActive() ? ' (active)' : '';
-    return h('details', { class: 'card', open: isActive() },
-      h('summary', null, h('strong', null, 'Filters'), marker),
-      h('div', { class: 'stack', style: 'margin-top:12px' },
-        h('div', { class: 'row' }, dateInput('dateFrom', 'Date from'), dateInput('dateTo', 'Date to')),
+    const wrap = h('div', null);
+    let open = null;
+
+    function draw() {
+      const f = app.filters;
+      if (open === null) open = LG.words.activeFilters(f).length > 0;
+      const catOptions = LG.words.groupOptions(app.ctx.items).categories;
+      const count = h('span', { class: 'muted small' });
+      const chips = h('div', { class: 'filter-chips' });
+      const reset = h('button', { class: 'btn btn-small reset-filters', type: 'button', onclick: () => {
+        app.resetFilters();
+        draw();
+        onchange();
+      } }, 'Reset all');
+
+      const label = (e) => (e.key === 'dateFrom' ? 'From ' + LG.dates.formatDate(e.value) : e.key === 'dateTo' ? 'To ' + LG.dates.formatDate(e.value) : e.value);
+      const paint = () => {
+        const act = LG.words.activeFilters(app.filters);
+        count.textContent = act.length ? '(' + act.length + ' active)' : '';
+        reset.hidden = act.length === 0;
+        chips.hidden = act.length === 0;
+        LG.dom.clear(chips).append(...act.map((e) => h('span', { class: 'chip' }, h('span', { class: 'chip-text' }, label(e)),
+          h('button', { type: 'button', class: 'chip-x', 'aria-label': 'Remove ' + label(e), onclick: () => {
+            Object.assign(app.filters, LG.words.withoutFilter(app.filters, e));
+            draw();
+            onchange();
+          } }, '\u2715'))));
+      };
+
+      const dateField = (key, text) => {
+        const input = h('input', { type: 'date', value: f[key] });
+        const clear = h('button', { class: 'btn btn-link field-clear small', type: 'button', 'aria-label': 'Clear ' + text.toLowerCase() }, 'Clear');
+        clear.hidden = !f[key];
+        input.addEventListener('change', () => { f[key] = input.value; clear.hidden = !input.value; paint(); onchange(); });
+        clear.addEventListener('click', () => { input.value = ''; f[key] = ''; clear.hidden = true; paint(); onchange(); });
+        return h('label', { class: 'field' }, h('span', null, text), h('div', { class: 'field-line' }, input, clear));
+      };
+
+      const body = !open ? null : h('div', { class: 'stack filters-body' },
+        h('div', { class: 'row' }, dateField('dateFrom', 'Date from'), dateField('dateTo', 'Date to')),
         h('fieldset', null, h('legend', { class: 'small' }, 'Categories'),
           LG.catpicker.multi({ options: catOptions, selected: f.categories, lang: app.ctx.langTarget,
-            onchange: (sel) => { f.categories = sel; changed(); } })),
-        h('button', { class: 'btn btn-small', type: 'button', onclick: () => {
-          app.resetFilters();
-          app.refresh();
-        } }, 'Clear filters')));
+            onchange: (sel) => { f.categories = sel; paint(); onchange(); } })));
+
+      paint();
+      LG.dom.clear(wrap).append(h('div', { class: 'card' },
+        h('div', { class: 'spread filters-head' },
+          h('button', { class: 'btn btn-link filters-toggle', type: 'button', 'aria-expanded': String(open), onclick: () => { open = !open; draw(); } },
+            h('strong', null, 'Filters'), ' ' + (open ? '\u25be' : '\u25b8')),
+          h('div', { class: 'row' }, count, reset)),
+        chips, body));
+    }
+    draw();
+    return wrap;
   }
 
   function footer() {
