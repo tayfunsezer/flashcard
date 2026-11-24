@@ -28,5 +28,18 @@
     return canForward(t) ? { ids: t.ids, pos: t.pos + 1 } : null;
   }
 
-  LG.trail = { create, push, current, canBack, canForward, back, forward };
+  // The file was refreshed: `map` renames edited words, `removed` are words no longer in the file.
+  // The position stays on the same word, or on the next one when that word is gone.
+  function remap(t, map, removed) {
+    const ids = [];
+    let pos = 0;
+    t.ids.forEach((id, i) => {
+      if (removed.has(id)) return;
+      if (i < t.pos) pos++;
+      ids.push(map.has(id) ? map.get(id) : id);
+    });
+    return { ids, pos: ids.length ? Math.min(pos, ids.length - 1) : -1 };
+  }
+
+  LG.trail = { create, push, current, canBack, canForward, back, forward, remap };
 })(globalThis.LG = globalThis.LG || {});

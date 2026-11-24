@@ -26,4 +26,13 @@
     Tr.push(t, 'c');
     T.eq(t, { ids: ['a', 'b'], pos: 1 });
   });
+  T.test('trail: remap keeps the current word and drops removed ones', () => {
+    let t = Tr.back(build('a', 'b', 'c'));
+    t = Tr.remap(t, new Map([['b', 'b2']]), new Set(['a']));
+    T.eq(t.ids, ['b2', 'c']);
+    T.eq(Tr.current(t), 'b2');
+    const gone = Tr.remap(Tr.back(build('a', 'b', 'c')), new Map(), new Set(['b']));
+    T.eq(gone.ids, ['a', 'c']);
+    T.ok(gone.pos >= 0 && gone.pos < gone.ids.length);
+  });
 })();

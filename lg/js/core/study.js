@@ -26,6 +26,11 @@
       : { queue: queue.concat([id]), done });
   }
 
+  function remap(set, map) {
+    const ren = (id) => (map.has(id) ? map.get(id) : id);
+    return Object.assign({}, set, { queue: set.queue.map(ren), done: set.done.map(ren) });
+  }
+
   function isFinished(set) {
     return set.queue.length === 0;
   }
@@ -39,5 +44,5 @@
     return Object.assign({}, set, { queue, done, total: queue.length + done.length });
   }
 
-  LG.study = { createStudySet, nextIds, recordStudy, rerecord, isFinished, prune };
+  LG.study = { createStudySet, nextIds, recordStudy, rerecord, remap, isFinished, prune };
 })(globalThis.LG = globalThis.LG || {});

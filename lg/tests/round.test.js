@@ -65,5 +65,18 @@
     r = R.reanswer(r, 'a', 'wrong');
     T.ok(!r.queue.includes('a'));
     T.eq(r.repeats.a, 3);
-  });
+  });
+  T.test('remap renames queue/first/repeats and drops removed words, adjusting total', () => {
+    let r = R.record(R.create(['a', 'b', 'c', 'd']), 'a', 'wrong');
+    r = R.remap(r, new Map([['a', 'a2']]), new Set(['c']));
+    T.eq(r.queue, ['b', 'd', 'a2']);
+    T.eq(r.first, { a2: 'wrong' });
+    T.eq(r.repeats, { a2: 1 });
+    T.eq(r.total, 3);
+  });
+  T.test('remap: removing the last queued word finishes the round', () => {
+    const r = R.remap(R.create(['a']), new Map(), new Set(['a']));
+    T.ok(R.isDone(r));
+    T.eq(R.progress(r), { done: 0, total: 0 });
+  });
 })();

@@ -38,4 +38,8 @@
     T.eq([set.queue, set.done], [['b'], ['a']]);
     T.eq(st.rerecord(set, 'a', true), set);
   });
+  T.test('remap renames ids in queue and done', () => {
+    const set = st.remap({ by: 'x', value: 'y', game: 'z', queue: ['a', 'b'], done: ['c'], total: 3 }, new Map([['a', 'a2'], ['c', 'c2']]));
+    T.eq([set.queue, set.done, set.total], [['a2', 'b'], ['c2'], 3]);
+  });
 })();

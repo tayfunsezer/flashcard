@@ -50,6 +50,20 @@
     return { queue, first, repeats, total: r.total };
   }
 
+  // The file was refreshed: `map` renames edited words, `removed` are words no longer in the file.
+  function remap(r, map, removed) {
+    const ren = (id) => (map.has(id) ? map.get(id) : id);
+    const inRound = new Set(r.queue.concat(Object.keys(r.first)));
+    let gone = 0;
+    for (const id of removed) if (inRound.has(id)) gone++;
+    const keep = (obj) => {
+      const out = {};
+      for (const k of Object.keys(obj)) if (!removed.has(k)) out[ren(k)] = obj[k];
+      return out;
+    };
+    return { queue: r.queue.filter((id) => !removed.has(id)).map(ren), first: keep(r.first), repeats: keep(r.repeats), total: r.total - gone };
+  }
+
   // Leave the round without an answer (e.g. a Multiple Choice item that cannot show four options).
   function drop(r, id) {
     return Object.assign({}, r, { queue: r.queue.filter((x) => x !== id) });
@@ -68,5 +82,5 @@
     return r.queue.length === 0;
   }
 
-  LG.round = { create, current, isFirst, record, defer, canDefer, reanswer, drop, missed, progress, isDone, MAX_REPEATS };
+  LG.round = { create, current, isFirst, record, defer, canDefer, reanswer, remap, drop, missed, progress, isDone, MAX_REPEATS };
 })(globalThis.LG = globalThis.LG || {});
