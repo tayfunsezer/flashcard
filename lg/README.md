@@ -72,3 +72,5 @@ UI checks (development only): `tests/dev/cdp.js` drives headless Edge for screen
 ## Layout
 
 `index.html` loads plain scripts sharing one `LG` namespace. `js/core/` holds the logic (import, scheduling, scoring, answer checking), `js/store/` the browser storage, `js/ui/` the app shell and screens, `css/app.css` the styles, `lib/` the bundled spreadsheet reader, and `tests/` the test suite.
+
+**Ask Claude (file hand-off).** Home → Ask Claude writes a request file for your current filter (for example one date), you give it to Claude (Claude Code, claude.ai, any assistant that can read and write files), and you load Claude's answer file back: the app shows a preview and keeps what you accept. Two tasks to start: example sentences and aspect pairs (impf./pf.), shown on the Flashcards answer side. No server, no key, no network: just two JSON files, documented in `docs/ask-claude-format.md`.
