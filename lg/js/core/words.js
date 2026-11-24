@@ -153,5 +153,20 @@
     return starts.sort(byCount).concat(contains.sort(byCount)).slice(0, limit);
   }
 
-  LG.words = { MIN_SENTENCE_TOKENS, kindOf, buildRarity, clozeCandidates, pickBlank, pickBlanks, pinWords, resolvePins, hintText, specialLetters, filterItems, groupOptions, itemsInCategory, searchCategories };
+  // The filters that are switched on, for chips: dates first, then each category in its selected order.
+  function activeFilters(f) {
+    const out = [];
+    if (f.dateFrom) out.push({ key: 'dateFrom', value: f.dateFrom });
+    if (f.dateTo) out.push({ key: 'dateTo', value: f.dateTo });
+    for (const c of f.categories) out.push({ key: 'category', value: c });
+    return out;
+  }
+
+  // A copy of the filters with that one entry cleared.
+  function withoutFilter(f, entry) {
+    if (entry.key === 'category') return Object.assign({}, f, { categories: f.categories.filter((c) => c !== entry.value) });
+    return Object.assign({}, f, { [entry.key]: '' });
+  }
+
+  LG.words = { MIN_SENTENCE_TOKENS, kindOf, buildRarity, clozeCandidates, pickBlank, pickBlanks, pinWords, resolvePins, hintText, specialLetters, filterItems, groupOptions, itemsInCategory, searchCategories, activeFilters, withoutFilter };
 })(globalThis.LG = globalThis.LG || {});

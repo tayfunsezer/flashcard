@@ -99,4 +99,15 @@
     // Everything in brackets: the whole item can still be blanked.
     T.ok(w.clozeCandidates('(czegoś)', rar, 'pl').length > 0);
   });
+  T.test('activeFilters lists dates then categories, nothing when empty', () => {
+    T.eq(LG.words.activeFilters({ dateFrom: '', dateTo: '', categories: [] }), []);
+    T.eq(LG.words.activeFilters({ dateFrom: '2026-11-01', dateTo: '', categories: ['a', 'b'] }),
+      [{ key: 'dateFrom', value: '2026-11-01' }, { key: 'category', value: 'a' }, { key: 'category', value: 'b' }]);
+  });
+  T.test('withoutFilter clears only the named filter and does not mutate', () => {
+    const f = { dateFrom: '2026-11-01', dateTo: '2026-11-30', categories: ['a', 'b'] };
+    T.eq(LG.words.withoutFilter(f, { key: 'category', value: 'b' }), { dateFrom: '2026-11-01', dateTo: '2026-11-30', categories: ['a'] });
+    T.eq(LG.words.withoutFilter(f, { key: 'dateFrom', value: '2026-11-01' }), { dateFrom: '', dateTo: '2026-11-30', categories: ['a', 'b'] });
+    T.eq(f.categories, ['a', 'b']);
+  });
 })();
