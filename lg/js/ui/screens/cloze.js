@@ -262,6 +262,18 @@
           feedback(result, xp, giveUp ? '' : input.value.trim());
         }
 
+        // The typed answer word by word: wrong words underlined, accent-only slips dotted, left-out words as chips.
+        function typedWords(typed) {
+          const d = LG.answer.diffWords(typed, expected, lang);
+          const out = [];
+          d.typed.forEach((t, i) => {
+            if (i) out.push(' ');
+            out.push(h('span', { class: 'typed-' + t.status, lang }, t.text));
+          });
+          d.missing.forEach((w) => out.push(' ', h('span', { class: 'typed-missing', lang, title: 'missing word' }, '\u2039' + w + '\u203a')));
+          return out;
+        }
+
         function feedback(result, xp, typed) {
           const next = h('button', { class: 'btn btn-primary enter-target', type: 'button', onclick: () => prompt() }, 'Next');
           const pinBox = h('div', { class: 'pin-row small' });
@@ -292,8 +304,7 @@
           const msg = h('p', { class: 'fb-msg fb-text-' + result, role: 'status' },
             MESSAGES[result], result === 'correct' ? null : h('strong', { lang }, expected),
             xp ? h('span', { class: 'muted' }, '  +' + xp + ' XP') : null);
-          const typedLine = typed && result !== 'correct'
-            ? h('p', { class: 'typed small muted' }, 'You typed: ', h('span', { class: 'typed-' + result, lang }, typed)) : null;
+          const typedLine = typed && result !== 'correct' ? h('p', { class: 'typed small muted' }, 'You typed: ', typedWords(typed)) : null;
           clear(controls).append(msg, typedLine || '', h('div', { class: 'pin-row small' }, pinBox, star), h('div', { class: 'btn-row' }, next));
           screen.firstChild.replaceWith(gameHeader('Cloze', Object.assign({}, mode === 'study' ? label : progressLabel(), { combo: round.combo, xp: round.xp })));
           next.focus();

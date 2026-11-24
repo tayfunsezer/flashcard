@@ -238,8 +238,10 @@ input.cloze-input { font-size: 1.125rem; width: 100%; max-width: 100%; min-heigh
 .word-pinned { text-decoration: underline dotted; text-underline-offset: 4px; }
 .pin-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-height: 30px; }
 .typed { margin: 0; }
-.typed-wrong { text-decoration: line-through; }
-.typed-almost { color: var(--text); }
+.typed-ok { color: var(--text); }
+.typed-wrong { color: var(--text); text-decoration: underline wavy var(--bad); text-underline-offset: 4px; }
+.typed-almost { color: var(--text); text-decoration: underline dotted var(--almost); text-underline-offset: 4px; }
+.typed-missing { color: var(--text-muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
 .multi-note { margin: 0; }
 .fb-msg { font-size: 1.0625rem; font-weight: 600; margin: 0; }
 .fb-text-correct { color: var(--ok); }

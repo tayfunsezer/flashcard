@@ -48,3 +48,38 @@
     T.eq(A.checkWhole('orać & zaorać', 'orać zaorać', 'pl'), 'correct');
   });
 })();
+
+(function () {
+  const d = LG.answer.diffWords;
+  const st = (r) => r.typed.map((t) => t.status);
+  T.test('diffWords: left-out word is missing, typed words ok', () => {
+    const r = d('boję się', 'boję się czegoś', 'pl');
+    T.eq(st(r), ['ok', 'ok']);
+    T.eq(r.missing, ['czegoś']);
+  });
+  T.test('diffWords: accent-only slips are almost', () => {
+    const r = d('bac sie czegos', 'bać się czegoś', 'pl');
+    T.eq(st(r), ['almost', 'almost', 'almost']);
+    T.eq(r.missing, []);
+  });
+  T.test('diffWords: one wrong word does not mark the rest', () => {
+    const r = d('ala ma psa', 'ala ma kota', 'pl');
+    T.eq(st(r), ['ok', 'ok', 'wrong']);
+    T.eq(r.missing, []);
+    T.eq(r.typed[2].text, 'psa');
+  });
+  T.test('diffWords: an extra typed word is the only wrong one', () => {
+    T.eq(st(d('ala ma bardzo kota', 'ala ma kota', 'pl')), ['ok', 'ok', 'wrong', 'ok']);
+  });
+  T.test('diffWords: optional bracketed words', () => {
+    const a = d('bać się', 'bać się (czegoś)', 'pl');
+    T.eq(st(a), ['ok', 'ok']);
+    T.eq(a.missing, []);
+    T.eq(st(d('bać się czegoś', 'bać się (czegoś)', 'pl')), ['ok', 'ok', 'ok']);
+  });
+  T.test('diffWords: empty input', () => {
+    const r = d('', 'kot', 'pl');
+    T.eq(r.typed, []);
+    T.eq(r.missing, ['kot']);
+  });
+})();
