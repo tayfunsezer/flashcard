@@ -19,6 +19,8 @@ Rounds have no size limit: a Review round takes every word that matches your fil
 
 Marking words: after an answer in Cloze, click words in the answer sentence to mark them; the item then blanks those words every time. The round summary offers to practise the words you missed plus the ones you marked in that round. The Marked words mode on Home plays every marked item (under your filters) in any game, and ☆/★ marks or unmarks an item. ✕ on the pin row clears its pinned words only.
 
+Filters (below the games on Home) limit Review, Marked words and the Leitner screen by date range and category. Active filters show as chips under the Filters heading even when the panel is closed: ✕ on a chip removes just that filter, each date field has its own Clear, and Reset all clears every filter at once.
+
 Words you miss come back at the end of the round until you get them right (only your first answer moves the word between boxes). After a round you can practise just the words you missed, in the same game or as Flashcards.
 
 In Flashcards and Multiple Choice you can move around without answering: Back and Skip (also the left and right arrow keys) step through the words you have seen, a skipped word comes back later in the round, and ☆ Mark works on any of them. Going back to a word you already answered lets you answer it again; the new answer replaces the old one, so the Leitner box ends up as if you had answered only once, with your latest answer (re-answers give no extra XP).

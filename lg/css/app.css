@@ -201,9 +201,12 @@ input.link-input { flex: 1 1 auto; min-width: 0; width: 100%; box-sizing: border
 .game .muted { font-size: 0.875rem; }
 .btn-like { display: block; margin-top: 4px; padding: 7px 14px; text-align: center; font-weight: 600; font-size: 0.9375rem; background: var(--accent); color: var(--accent-text); border-radius: var(--radius); }
 .game:hover:not(:disabled) .btn-like { filter: brightness(1.08); }
-.mode-note { margin: 8px 0 0; }
+.mode-fieldset { margin: 20px 0 24px; }
+.mode-note { margin: 14px 0 0; }
+.marked-actions { gap: 10px; margin: 14px 0 0; }
 .study-line { margin: 12px 0 8px; }
 .empty-pile { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 8px 0; }
+.card > .games, .card > .empty-pile { margin-top: 4px; }
 .empty-pile p { margin: 0; }
 .game-reason { color: var(--text-muted); font-size: 0.875rem; }
 
@@ -426,11 +429,12 @@ input.cloze-input { font-size: 1.125rem; width: 100%; max-width: 100%; min-heigh
 .ask-toggle { align-items: center; gap: 6px; }
 
 /* Manage marked */
-.mm-row { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 8px 4px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.mm-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+.mm-row { display: flex; align-items: flex-start; gap: 12px; min-height: 52px; padding: 12px 8px; border-bottom: 1px solid var(--border); cursor: pointer; }
 .mm-row:last-child { border-bottom: 0; }
 .mm-row input { margin-top: 3px; flex: none; }
 .mm-text { min-width: 0; overflow-wrap: anywhere; }
-.mm-text .muted { display: block; }
+.mm-text .muted { display: block; margin-top: 2px; font-size: 0.9375rem; }
 .filters-head { margin: 0; }
 .filters-toggle { padding: 0; min-height: 32px; font-size: 1rem; color: var(--text); text-decoration: none; }
 .filter-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }

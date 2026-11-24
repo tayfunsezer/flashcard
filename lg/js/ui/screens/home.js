@@ -201,7 +201,7 @@
       LG.dom.clear(card).append(
         h('div', { class: 'spread' }, h('h2', { style: 'margin:0' }, 'Play'),
           h('div', { class: 'row' }, askToggle(), directionToggle())),
-        h('fieldset', { style: 'margin:12px 0' },
+        h('fieldset', { class: 'mode-fieldset' },
           h('legend', { class: 'small' }, 'Mode'),
           h('div', { class: 'row' },
             radio('mode', 'review', 'Review', ui.mode === 'review', setMode('review')),
@@ -209,7 +209,7 @@
             radio('mode', 'study', 'Study set', ui.mode === 'study', setMode('study')),
             radio('mode', 'marked', 'Marked words', ui.mode === 'marked', setMode('marked'))),
           h('p', { class: 'muted small mode-note' }, modeNote),
-          ui.mode === 'marked' ? h('div', { class: 'btn-row' }, markedButtons()) : null,
+          ui.mode === 'marked' ? h('div', { class: 'btn-row marked-actions' }, markedButtons()) : null,
           studyControls),
         studyLine || '', games, msgBox);
     };
@@ -312,7 +312,6 @@
         } }, 'Load new file')),
       h('div', { class: 'btn-row' },
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => { app.exportNow(); app.refresh(); } }, 'Export progress'),
-        h('button', { class: 'btn btn-small', type: 'button', disabled: markedCount() === 0, onclick: exportMarked }, 'Export marked (' + markedCount() + ')'),
         h('button', { class: 'btn btn-small', type: 'button', onclick: async () => { if (await app.importFromFile()) app.refresh(); } }, 'Import progress'),
         h('span', { class: 'muted small' }, 'Last exported: ' + app.lastExportText())));
   }

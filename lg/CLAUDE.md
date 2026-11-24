@@ -20,7 +20,7 @@ js/core/      pure logic, no DOM; unit-tested
   dates.js       parseDate (DD-MM-YYYY, DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD, Excel dates), formatDate, todayISO
   importer.js    readFile → rows/json, encoding sniff (UTF-8 / UTF-16 / win-1254 vs win-1250), rowsToDataset, jsonToDataset, itemId
   remote.js      parseUrl, fileNameFor, fetchFile (download a published table link into a file-like `{ name, arrayBuffer }` for readFile; `fetch` is injected for tests)
-  words.js       kindOf (sentence ≥ 4 tokens, else term), rarity table, cloze candidates/blank picking, pins, hints, filterItems, categories
+  words.js       kindOf (sentence ≥ 4 tokens, else term), rarity table, cloze candidates/blank picking, pins, hints, filterItems, activeFilters/withoutFilter (filter chips and single resets), categories
   answer.js      checkAnswer (one word), checkWhole (token-wise) → 'correct' | 'almost' | 'wrong'; diffWords (typed vs expected, per word: ok/almost/wrong + missing, for the Cloze feedback line)
   schedule.js    Leitner boxes 0–5, INTERVAL_DAYS [0,1,3,7,14,30], applyResult, buildReviewRound (due → unseen → rest), revengeIds
   leitner.js     board/dueIds/idsInBox for the Leitner screen (due = by end of local day)
@@ -77,7 +77,7 @@ Item = { id: 'i…' /* cyrb53(normSource \u0001 normTarget) */, source, target, 
 
 ## Working on lg
 1. Put logic in `js/core` as pure functions taking `(state, …, nowMs, rand)`; inject time and randomness so tests are deterministic (`LG.rng.seeded(n)`).
-2. Write or extend `tests/<module>.test.js` first. Run `tests.html` in the browser or `node tests/run-node.js` (184 passing as of 2026-11-24; `T.run()` is async, so tests may be `async`). On this Mac, Node comes from nvm (`nvm install <major>`), not Homebrew.
+2. Write or extend `tests/<module>.test.js` first. Run `tests.html` in the browser or `node tests/run-node.js` (186 passing as of 2026-11-24; `T.run()` is async, so tests may be `async`). On this Mac, Node comes from nvm (`nvm install <major>`), not Homebrew.
 3. Wire the UI in `js/ui/screens/*` with `h()`. Use `app.banner(text, kind)` for messages, never `alert`; a `window.confirm` is used only for destructive actions.
 4. Changing the State shape: bump `LG.state.VERSION`, then migrate in `withDefaults` (which also covers imported progress files) and add a state test.
 5. Changing the import/export JSON: keep it readable by the `fc/` app or document the break (see `../CLAUDE.md`). Keep `markedQuiz` → `jsonToDataset` ids round-tripping (`marked.test.js`).

@@ -34,9 +34,10 @@
             h('button', { class: 'btn', type: 'button', onclick: () => app.go('home') }, 'Back')),
           items.length
             ? h('div', { class: 'card' },
-              h('div', { class: 'btn-row', style: 'margin-bottom:8px' },
-                h('button', { class: 'btn btn-small', type: 'button', onclick: setAll(true) }, 'Select all'),
-                h('button', { class: 'btn btn-small', type: 'button', onclick: setAll(false) }, 'Select none'),
+              h('div', { class: 'mm-toolbar' },
+                h('div', { class: 'btn-row' },
+                  h('button', { class: 'btn btn-small', type: 'button', onclick: setAll(true) }, 'Select all'),
+                  h('button', { class: 'btn btn-small', type: 'button', onclick: setAll(false) }, 'Select none')),
                 unmark),
               rows)
             : h('div', { class: 'card' }, h('p', { class: 'muted' }, 'No marked words.'))));
