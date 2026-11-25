@@ -36,9 +36,11 @@ js/core/      pure logic, no DOM; unit-tested
   dayexport.js   datesIn (dated items by day), relPath (`october-2026/marked-words/marked_words-26.json`), dayQuiz (one day as quiz entries), writeToRepo (check-then-write into a directory handle; 'written' | 'exists')
   claude.js      Ask Claude file hand-off, one format per use case (endings quiz, example sentences): buildRequest, parseQuiz, parseResponse, selectItems, notes (mergeNotes/carryNotes); formats in docs/ask-claude-format.md
   aspect.js      Aspect pairs: parse (`X (impf.) & Y (pf.) extras`, either order), pairIds, directions (Random = half each way), card (no aspect label in Random), answers/grade (partner verb, extras optional), reveal
+  voice.js       TTS voice choice (pure): rank (Premium 3 > Enhanced 2 > on-device 1 > online 0), forLang (primary-subtag match, best first), pick (saved voice if it still exists, else best), label
   reload.js      reparse/diff/bannerText for Refresh file; carryOver (edited rows: same source or same target, unique pairs only) + carryState (moves progress to the corrected row)
 js/store/storage.js  localStorage 'lg.state'; IndexedDB db 'lg' store 'dataset' keys 'current' (dataset), 'handle' (FileSystemFileHandle) and 'repoDir' (repeated-words FileSystemDirectoryHandle) and 'notes' (Claude answers, `LG.claude.normaliseNotes`)
 js/ui/dom.js         h(tag, attrs, ...children) element builder, clear, download, pickFile, pickFileWithHandle, withTimeout
+js/ui/speech.js      LG.speech: speechSynthesis wrapper (cached async voice list, `speak(text, lang)` cancels the previous one, `button(getText)` = Listen button hidden when no voice); only the learned language is spoken
 js/ui/app.js         LG.app: state holder, router go(name, params), banners, ctx, filters, refreshFile, boot
 js/ui/catpicker.js, sample.js (built-in Polish/English sample rows)
 js/ui/screens/       load, home, settings, askclaude (request file out; words from Home filters or picked; answer file in, checked and previewed), marked (Manage marked: tick several, unmark via play.clearStars), exportday (pick a date → quiz file into the repeated-words folder or a download), summary, cloze, aspect (Aspect pairs: practice-only, `LG.play.practiceAnswer`; NOT in `app.GAMES`, which drives revenge/Leitner/`?screen=`; its Home tile is `aspectTile`), mc, match, flashcards, daily, map, leitner
@@ -55,7 +57,7 @@ Item = { id: 'i…' /* cyrb53(normSource \u0001 normTarget) */, source, target, 
 // target = the language being learned (column chosen at import); source = its translation
 
 // State (localStorage 'lg.state', VERSION 2)
-{ version, settings: { theme: 'system'|'light'|'dark', langSource, langTarget, direction: 's2t'|'t2s', learnColumn: 1|2, ask: 'word'|'whole' },
+{ version, settings: { theme: 'system'|'light'|'dark', langSource, langTarget, direction: 's2t'|'t2s', learnColumn: 1|2, ask: 'word'|'whole', voices: { [lang]: voiceName } },
   progress: { [id]: { box 0-5, due ms, seen, revenge, pin: string[]|null, rot, star? } },
   xp, streak: { current, best, lastDay }, daily: { date, guesses, done, won }, studySet: { by, value, game, queue, done, total }|null, lastExport }
 ```
@@ -79,7 +81,7 @@ Item = { id: 'i…' /* cyrb53(normSource \u0001 normTarget) */, source, target, 
 
 ## Working on lg
 1. Put logic in `js/core` as pure functions taking `(state, …, nowMs, rand)`; inject time and randomness so tests are deterministic (`LG.rng.seeded(n)`).
-2. Write or extend `tests/<module>.test.js` first. Run `tests.html` in the browser or `node tests/run-node.js` (228 passing as of 2026-11-25; `T.run()` is async, so tests may be `async`). On this Mac, Node comes from nvm (`nvm install <major>`), not Homebrew.
+2. Write or extend `tests/<module>.test.js` first. Run `tests.html` in the browser or `node tests/run-node.js` (235 passing as of 2026-11-25; `T.run()` is async, so tests may be `async`). On this Mac, Node comes from nvm (`nvm install <major>`), not Homebrew.
 3. Wire the UI in `js/ui/screens/*` with `h()`. Use `app.banner(text, kind)` for messages, never `alert`; a `window.confirm` is used only for destructive actions.
 4. Changing the State shape: bump `LG.state.VERSION`, then migrate in `withDefaults` (which also covers imported progress files) and add a state test.
 5. Changing the import/export JSON: keep it readable by the `fc/` app or document the break (see `../CLAUDE.md`). Keep `markedQuiz` → `jsonToDataset` ids round-tripping (`marked.test.js`).

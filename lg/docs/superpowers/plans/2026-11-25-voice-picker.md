@@ -1,6 +1,6 @@
 # Voice picker and listen buttons Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Speak the learned language with a chosen (or best available) voice: Settings picker, Listen buttons on answer sides, and speech in Pair Match.
 
@@ -44,16 +44,16 @@
   - `label(voice) → string` (name, plus ` (online)` when `localService` is false)
 - Produces: `state.settings.voices: { [lang]: string }`.
 
-- [ ] **Step 1: Write `tests/voice.test.js`** (IIFE, `T.test`, fake voices such as `{ name: 'Ewa (Premium)', lang: 'pl-PL', localService: true }`) with these tests and register the file and `voice.js` in the manifest and `index.html`:
+- [x] **Step 1: Write `tests/voice.test.js`** (IIFE, `T.test`, fake voices such as `{ name: 'Ewa (Premium)', lang: 'pl-PL', localService: true }`) with these tests and register the file and `voice.js` in the manifest and `index.html`:
   - `rank orders Premium > Enhanced > plain local > online`: `Ewa (Premium)` 3, `Ewa (Enhanced)` 2, `Zosia` 1, `Google polski` (not local) 0.
   - `forLang matches by primary subtag`: `pl` matches `pl-PL` and `pl_PL`, not `plx-XX`, not `en-US`; `PL` matches too; result ordered Premium, Enhanced, plain, online.
   - `pick prefers the saved voice, falls back to the best, null when none`: saved `Zosia` present → Zosia; saved `Gone` → `Ewa (Premium)`; empty or undefined saved → `Ewa (Premium)`; no Polish voices → `null`; empty list → `null`.
   - `label marks online voices`: `label(googleVoice) === 'Google polski (online)'`, local voice unchanged.
   - In `tests/state.test.js`: `defaultState().settings.voices` deep-equals `{}`; `withDefaults({})` and an old-shape state with no `voices` give `{}`; `withDefaults({ settings: { voices: { pl: 'Ewa (Premium)' } } }).settings.voices` keeps it; malformed (`'x'`, `['a']`, `{ pl: 5 }`) becomes `{}` or drops the bad entry (`{ pl: 5 }` → `{}`).
-- [ ] **Step 2: Run `node tests/run-node.js`; expected: the new tests fail (`LG.voice` undefined / `voices` undefined), no manifest drift error**
-- [ ] **Step 3: Implement `LG.voice` in `js/core/voice.js` and the `voices` default plus validation in `js/core/state.js`** (keep only string values whose key is a string).
-- [ ] **Step 4: Run `node tests/run-node.js`; expected: all pass**
-- [ ] **Step 5: Commit** `feat(lg): voice ranking core and voices setting`
+- [x] **Step 2: Run `node tests/run-node.js`; expected: the new tests fail (`LG.voice` undefined / `voices` undefined), no manifest drift error**
+- [x] **Step 3: Implement `LG.voice` in `js/core/voice.js` and the `voices` default plus validation in `js/core/state.js`** (keep only string values whose key is a string).
+- [x] **Step 4: Run `node tests/run-node.js`; expected: all pass**
+- [x] **Step 5: Commit** `feat(lg): voice ranking core and voices setting`
 
 ### Task 2: `LG.speech` wrapper, Listen button, Settings Voice card
 
@@ -71,11 +71,11 @@
   - `speak(text: string, lang: string) → void` (cancels current speech; picks the voice with `LG.voice.pick(voices(), lang, state.settings.voices[lang])`; sets `utterance.voice` and `utterance.lang`; does nothing when no voice or when `text` has no letters or digits)
   - `button(getText: () => string) → HTMLButtonElement` (`btn btn-small`, text "Listen", speaks `getText()` in `ctx.langTarget`; hidden while unavailable or no voice for the language and shown when the list arrives)
 
-- [ ] **Step 1: Implement `js/ui/speech.js` per the Interfaces block; `button` subscribes via `onVoices` and unsubscribes when `isConnected` is false on a later call.** There is no unit test (browser API); the logic that matters is in `LG.voice`.
-- [ ] **Step 2: Settings → Voice card:** heading "Voice"; a `<select>` whose first option is `Automatic (best available)` (value `''`), then `LG.voice.forLang(LG.speech.voices(), langTarget)` as options labelled by `LG.voice.label`; selecting writes `app.setSettings({ voices: Object.assign({}, settings.voices, { [lang]: name }) })` (empty value removes the key); a **Test voice** button speaking the first item's learned text (fallback sample: the language name) through `LG.speech.speak`; a line "Automatic uses: <label>"; "Saved voice not found, using <label>." when the saved name is missing; "No <lang> voice found on this device." when none. The card redraws on `onVoices`. Hidden when `langTarget` is empty or speech is unavailable.
-- [ ] **Step 3: Verify in the browser** (`python3 -m http.server 8791 --directory <repo>` and `http://localhost:8791/lg/index.html`, load a test dataset as in earlier checks): Settings shows Ewa (Premium) as the Automatic line on the learner's Mac, the dropdown lists the Polish voices, Test voice speaks (audible), the choice survives a reload, Google polski is labelled "(online)".
+- [x] **Step 1: Implement `js/ui/speech.js` per the Interfaces block; `button` subscribes via `onVoices` and unsubscribes when `isConnected` is false on a later call.** There is no unit test (browser API); the logic that matters is in `LG.voice`.
+- [x] **Step 2: Settings → Voice card:** heading "Voice"; a `<select>` whose first option is `Automatic (best available)` (value `''`), then `LG.voice.forLang(LG.speech.voices(), langTarget)` as options labelled by `LG.voice.label`; selecting writes `app.setSettings({ voices: Object.assign({}, settings.voices, { [lang]: name }) })` (empty value removes the key); a **Test voice** button speaking the first item's learned text (fallback sample: the language name) through `LG.speech.speak`; a line "Automatic uses: <label>"; "Saved voice not found, using <label>." when the saved name is missing; "No <lang> voice found on this device." when none. The card redraws on `onVoices`. Hidden when `langTarget` is empty or speech is unavailable.
+- [x] **Step 3: Verify in the browser** (`python3 -m http.server 8791 --directory <repo>` and `http://localhost:8791/lg/index.html`, load a test dataset as in earlier checks): Settings shows Ewa (Premium) as the Automatic line on the learner's Mac, the dropdown lists the Polish voices, Test voice speaks (audible), the choice survives a reload, Google polski is labelled "(online)".
   Expected: no console errors; hard-reload with ⌘⇧R after code changes.
-- [ ] **Step 4: Run `node tests/run-node.js`; expected: all pass. Commit** `feat(lg): speech wrapper, Listen button and Voice settings`
+- [x] **Step 4: Run `node tests/run-node.js`; expected: all pass. Commit** `feat(lg): speech wrapper, Listen button and Voice settings`
 
 ### Task 3: Listen on the answer sides (Cloze, Flashcards, Aspect pairs)
 
@@ -85,10 +85,10 @@
 **Interfaces:**
 - Consumes: `LG.speech.button(getText)` (Task 2).
 
-- [ ] **Step 1: Cloze:** in `feedback(...)`, add `LG.speech.button(() => item.target)` to the row with the Mark star.
-- [ ] **Step 2: Flashcards:** in `flip()`, append the Listen button under the back side (`getText = () => item.target`); the back side is drawn once per word, so no duplicates when the card is revisited with Back.
-- [ ] **Step 3: Aspect pairs:** in `feedback(...)`, add the button with `getText = () => c.impf + ', ' + c.pf + (c.extras ? ' ' + c.extras : '')`.
-- [ ] **Step 4: Verify in the browser** in all three games, both flashcard directions (the button speaks the learned text even when the revealed side is the translation); Listen twice quickly does not overlap; with `speechSynthesis` removed via the console (`delete window.speechSynthesis` before load is not possible, so check that `LG.speech.available()` false hides the button by stubbing it) nothing breaks.
+- [x] **Step 1: Cloze:** in `feedback(...)`, add `LG.speech.button(() => item.target)` to the row with the Mark star.
+- [x] **Step 2: Flashcards:** in `flip()`, append the Listen button under the back side (`getText = () => item.target`); the back side is drawn once per word, so no duplicates when the card is revisited with Back.
+- [x] **Step 3: Aspect pairs:** in `feedback(...)`, add the button with `getText = () => c.impf + ', ' + c.pf + (c.extras ? ' ' + c.extras : '')`.
+- [x] **Step 4: Verify in the browser** in all three games, both flashcard directions (the button speaks the learned text even when the revealed side is the translation); Listen twice quickly does not overlap; with `speechSynthesis` removed via the console (`delete window.speechSynthesis` before load is not possible, so check that `LG.speech.available()` false hides the button by stubbing it) nothing breaks.
   Expected: no console errors. Run `node tests/run-node.js`; all pass. Commit `feat(lg): Listen buttons on Cloze, Flashcards and Aspect pairs answers`
 
 ### Task 4: Pair Match speech
@@ -96,9 +96,9 @@
 **Files:**
 - Modify: `lg/js/ui/screens/match.js` (check endings)
 
-- [ ] **Step 1: In `pick(side, id)`**, after the tile is selected (not when deselected and not when the board is locked), call `LG.speech.speak(text(id, side), langT)` when `langOf(side) === langT`.
-- [ ] **Step 2: In `resolve()`'s matched branch**, when the last tapped tile's language was not `langT`, speak `app.ctx.itemsById.get(a).target` in `langT` (the learned word is heard once, never twice). Record the last tapped side in a local variable inside `pick`.
-- [ ] **Step 3: Verify in the browser**, both directions (Source → Target and Target → Source): tapping a Polish tile speaks it, tapping an English tile is silent, a correct match always ends with the Polish word heard once, a wrong match is silent, tapping fast cancels the previous word.
+- [x] **Step 1: In `pick(side, id)`**, after the tile is selected (not when deselected and not when the board is locked), call `LG.speech.speak(text(id, side), langT)` when `langOf(side) === langT`.
+- [x] **(Dropped, see spec Goal 5 revision) Step 2: In `resolve()`’s matched branch**, when the last tapped tile's language was not `langT`, speak `app.ctx.itemsById.get(a).target` in `langT` (the learned word is heard once, never twice). Record the last tapped side in a local variable inside `pick`.
+- [x] **Step 3: Verify in the browser**, both directions (Source → Target and Target → Source): tapping a Polish tile speaks it, tapping an English tile is silent, a correct match always ends with the Polish word heard once, a wrong match is silent, tapping fast cancels the previous word.
   Expected: no console errors. Run `node tests/run-node.js`; all pass. Commit `feat(lg): speak the learned word in Pair Match`
 
 ### Task 5: Docs and final check
@@ -106,7 +106,7 @@
 **Files:**
 - Modify: `lg/README.md`, `lg/CLAUDE.md`, this plan (tick boxes)
 
-- [ ] **Step 1: README:** a "Voice and listening" paragraph: Settings → Voice (Automatic prefers Premium, then Enhanced, then on-device, then online voices; a choice is remembered per language; how to download better macOS voices: System Settings → Accessibility → Spoken Content → System Voice → Manage Voices…, then restart the browser), the Listen button on answer sides, Pair Match speaking Polish tiles, only the learned language is spoken, no `fc/` changes.
-- [ ] **Step 2: `lg/CLAUDE.md`:** add `voice.js` to the core list and `speech.js` to the UI list, add `settings.voices` to the State block, update the test count.
-- [ ] **Step 3: Run `node tests/run-node.js` and `tests.html`; both green with the same count. `git diff --stat main...` shows no CRLF churn.**
-- [ ] **Step 4: Tick this plan's boxes and commit** `docs(lg): voice picker README, developer notes, plan done`
+- [x] **Step 1: README:** a "Voice and listening" paragraph: Settings → Voice (Automatic prefers Premium, then Enhanced, then on-device, then online voices; a choice is remembered per language; how to download better macOS voices: System Settings → Accessibility → Spoken Content → System Voice → Manage Voices…, then restart the browser), the Listen button on answer sides, Pair Match speaking Polish tiles, only the learned language is spoken, no `fc/` changes.
+- [x] **Step 2: `lg/CLAUDE.md`:** add `voice.js` to the core list and `speech.js` to the UI list, add `settings.voices` to the State block, update the test count.
+- [x] **Step 3: Run `node tests/run-node.js` and `tests.html`; both green with the same count. `git diff --stat main...` shows no CRLF churn.**
+- [x] **Step 4: Tick this plan's boxes and commit** `docs(lg): voice picker README, developer notes, plan done`
