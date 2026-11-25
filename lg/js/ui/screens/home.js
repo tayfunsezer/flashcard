@@ -252,7 +252,8 @@
     return h('div', { class: 'aspect-choices', role: 'group', 'aria-label': 'Aspect pairs direction' },
       h('button', { class: 'btn', type: 'button', onclick: go('impf-pf') }, 'impf. \u2192 pf.'),
       h('button', { class: 'btn', type: 'button', onclick: go('pf-impf') }, 'pf. \u2192 impf.'),
-      h('button', { class: 'btn', type: 'button', onclick: go('random') }, 'Random'));
+      h('button', { class: 'btn', type: 'button', onclick: go('random') }, 'Random'),
+      h('button', { class: 'btn', type: 'button', onclick: go('random-guess') }, 'Random + guess aspect'));
   }
 
   function askToggle() {

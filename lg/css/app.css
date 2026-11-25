@@ -210,7 +210,11 @@ input.link-input { flex: 1 1 auto; min-width: 0; width: 100%; box-sizing: border
 .empty-pile p { margin: 0; }
 .game-reason { color: var(--text-muted); font-size: 0.875rem; }
 .game-wide { grid-column: 1 / -1; }
-.aspect-choices { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.aspect-choices { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .aspect-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.aspect-guess { gap: 8px; }
+.aspect-guess select { min-height: 44px; font-size: 1.125rem; }
+.aspect-guess input.cloze-input { flex: 1; min-width: 0; }
 
 /* Feedback states (games) */
 .fb { transition: background-color 150ms; }

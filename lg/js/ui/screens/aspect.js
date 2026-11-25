@@ -12,6 +12,7 @@
       const lang = app.ctx.langTarget;
       const dirMode = params.dir || 'random';
       const mode = params.mode || 'review';
+      const guess = dirMode === 'random-guess';
       const ids = (params.ids || []).filter((id) => app.ctx.itemsById.has(id) && app.ctx.aspectIds.has(id));
       const screen = h('div', { class: 'screen' });
       root.append(screen);
@@ -59,6 +60,8 @@
 
         const input = h('input', { type: 'text', class: 'cloze-input', lang, autocomplete: 'off', autocapitalize: 'off',
           spellcheck: 'false', 'aria-label': 'Partner verb' });
+        const pick = guess ? h('select', { class: 'aspect-pick', 'aria-label': 'Aspect of the shown verb' },
+          h('option', { value: '' }, 'Aspect?'), h('option', { value: 'impf.' }, 'impf.'), h('option', { value: 'pf.' }, 'pf.')) : null;
         const insert = (ch) => {
           const start = input.selectionStart ?? input.value.length;
           const end = input.selectionEnd ?? start;
@@ -79,7 +82,7 @@
           h('p', { class: 'clue muted', lang: app.ctx.langSource }, c.english),
           verbLine);
         const controls = h('div', { class: 'stack' },
-          h('div', { class: 'cloze-field' }, input),
+          h('div', { class: 'cloze-field' + (guess ? ' aspect-guess' : '') }, pick || '', input),
           h('div', { class: 'btn-row' },
             h('button', { class: 'btn btn-primary enter-target', type: 'button', onclick: () => submit() }, 'Submit'),
             h('button', { class: 'btn btn-link', type: 'button', onclick: () => submit(true) }, 'Show answer')),
@@ -90,8 +93,12 @@
         onEnter = () => submit();
 
         function submit(giveUp) {
+          if (!giveUp && guess && !pick.value) { pick.focus(); return; }
           if (!giveUp && !input.value.trim()) { input.focus(); return; }
-          const result = giveUp ? 'wrong' : LG.aspect.grade(input.value, c, lang);
+          const picked = guess ? pick.value : null;
+          const graded = giveUp ? { result: 'wrong', aspectOk: false } : guess ? LG.aspect.gradeGuess(input.value, picked, c, lang)
+            : { result: LG.aspect.grade(input.value, c, lang), aspectOk: true };
+          const result = graded.result;
           let xp = 0;
           if (track.counts(id)) {
             const res = LG.play.practiceAnswer(app.state, result, round.combo);
@@ -102,7 +109,7 @@
             round[result] += 1;
           }
           track.record(id, result);
-          feedback(result, xp, giveUp ? '' : input.value.trim());
+          feedback(result, xp, giveUp ? '' : input.value.trim(), guess ? { picked, ok: graded.aspectOk } : null);
         }
 
         function typedWords(typed) {
@@ -116,16 +123,19 @@
           return out;
         }
 
-        function feedback(result, xp, typed) {
+        function feedback(result, xp, typed, aspect) {
           const next = h('button', { class: 'btn btn-primary enter-target', type: 'button', onclick: () => prompt() }, 'Next');
           const star = cz.starButton(id, (_, now) => { if (now) round.unmarked.add(id); });
           card.classList.add(FB_CLASS[result]);
           verbLine.replaceWith(h('p', { class: 'sentence', lang }, LG.aspect.reveal(c)));
           const msg = h('p', { class: 'fb-msg fb-text-' + result, role: 'status' },
-            MESSAGES[result], result === 'correct' ? null : h('strong', { lang }, c.answer),
+            aspect && !aspect.ok && result === 'almost' ? 'Almost \u2014 right verb, wrong aspect: ' : MESSAGES[result], result === 'correct' ? null : h('strong', { lang }, c.answer),
             xp ? h('span', { class: 'muted' }, '  +' + xp + ' XP') : null);
           const typedLine = typed && result !== 'correct' ? h('p', { class: 'typed small muted' }, 'You typed: ', typedWords(typed)) : null;
-          clear(controls).append(msg, typedLine || '', h('div', { class: 'pin-row small' }, star), h('div', { class: 'btn-row' }, next));
+          const aspectLine = aspect ? h('p', { class: 'small ' + (aspect.ok ? 'muted' : 'fb-text-almost') },
+            !aspect.picked ? 'Aspect: ' + c.shownKind + ' (the shown verb)'
+              : aspect.ok ? 'Aspect: ' + c.shownKind + ' \u2713' : 'You picked ' + aspect.picked + ', it is ' + c.shownKind + '.') : null;
+          clear(controls).append(msg, aspectLine || '', typedLine || '', h('div', { class: 'pin-row small' }, star), h('div', { class: 'btn-row' }, next));
           screen.firstChild.replaceWith(header());
           next.focus();
           onEnter = () => prompt();
