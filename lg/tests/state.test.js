@@ -93,4 +93,12 @@
     const s = LG.state.withDefaults({ progress: { a: { pin: ['boję', 'się'] }, b: { pin: [1] }, c: { pin: 'x' } } });
     T.eq([s.progress.a.pin, s.progress.b.pin, s.progress.c.pin], [['boję', 'się'], null, 'x']);
   });
+  T.test('settings.voices: default, old states, validation', () => {
+    T.eq(S.defaultState().settings.voices, {});
+    T.eq(S.withDefaults({}).settings.voices, {});
+    T.eq(S.withDefaults({ version: 2, settings: { theme: 'dark' } }).settings.voices, {});
+    T.eq(S.withDefaults({ settings: { voices: { pl: 'Ewa (Premium)' } } }).settings.voices, { pl: 'Ewa (Premium)' });
+    for (const bad of ['x', ['a'], 5, null]) T.eq(S.withDefaults({ settings: { voices: bad } }).settings.voices, {});
+    T.eq(S.withDefaults({ settings: { voices: { pl: 5, de: 'Anna' } } }).settings.voices, { de: 'Anna' });
+  });
 })();

@@ -5,7 +5,7 @@
   function defaultState() {
     return {
       version: VERSION,
-      settings: { theme: 'system', langSource: '', langTarget: '', direction: 's2t', learnColumn: 1, ask: 'word' },
+      settings: { theme: 'system', langSource: '', langTarget: '', direction: 's2t', learnColumn: 1, ask: 'word', voices: {} },
       progress: {},
       xp: 0,
       streak: { current: 0, best: 0, lastDay: null },
@@ -24,6 +24,12 @@
   const pick = (ok, v, d) => (ok(v) ? v : d);
   const oneOf = (list, v, d) => (list.includes(v) ? v : d);
   const strOrNull = (v) => (isStr(v) ? v : null);
+  // Chosen TTS voice per language: { pl: 'Ewa (Premium)' }; anything else is dropped.
+  const voiceMap = (v) => {
+    const out = {};
+    if (v && typeof v === 'object' && !Array.isArray(v)) for (const k of Object.keys(v)) if (isStr(v[k])) out[k] = v[k];
+    return out;
+  };
 
   function validStudySet(v) {
     if (!isObj(v)) return null;
@@ -61,6 +67,7 @@
         direction: oneOf(['s2t', 't2s'], se.direction, d.settings.direction),
         learnColumn: oneOf([1, 2], se.learnColumn, d.settings.learnColumn),
         ask: oneOf(['word', 'whole'], se.ask, d.settings.ask),
+        voices: voiceMap(se.voices),
       },
       progress,
       xp: pick(isNum, o.xp, d.xp),
