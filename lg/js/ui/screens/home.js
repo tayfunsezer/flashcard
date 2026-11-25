@@ -8,7 +8,7 @@
   };
   const SUGGEST = { cloze: 'No items in this set', mc: 'No items in this set', match: 'No items in this set', flashcards: 'No items in this set' };
   // Session-only choices on this screen.
-  const ui = { mode: 'review', by: 'category', value: '' };
+  const ui = { mode: 'review', by: 'category', value: '', aspectOpen: false };
 
   function studyItems() {
     const items = LG.app.ctx.items;
@@ -34,6 +34,24 @@
     else if (ui.mode === 'revenge' && usable.length < 1) reason = 'Revenge pile is empty for this game';
     else if (ui.mode === 'marked' && usable.length < 1) reason = 'No marked items for this game';
     return { ids: usable, reason };
+  }
+
+  // Aspect pairs tile: verb-pair rows among the filtered items (starred ones only in Marked mode). Practice only,
+  // so Revenge pile and Study set (which need a Leitner box) disable it.
+  function aspectAvailability(pool) {
+    const app = LG.app;
+    const ids = LG.play.eligibleIds(pool, 'aspect', app.ctx.langTarget, app.ctx.mcIds, app.ctx.aspectIds);
+    if (app.ctx.aspectIds.size === 0) return { ids: [], reason: 'No verb pairs in this set' };
+    if (ui.mode === 'revenge' || ui.mode === 'study') return { ids: [], reason: 'Practice only, use Review or Marked' };
+    if (ui.mode === 'marked') {
+      const marked = LG.play.markedIds(ids, app.state.progress);
+      return { ids: marked, reason: marked.length ? null : 'No marked pairs' };
+    }
+    return { ids, reason: ids.length ? null : 'No verb pairs match the filters' };
+  }
+
+  function startAspect(ids, dir) {
+    LG.app.go('aspect', { ids: LG.play.startRound(ids), mode: ui.mode, dir });
   }
 
   function start(game, msgBox) {
@@ -143,7 +161,7 @@
       if (ui.mode === 'study' && !list.some(([v]) => v === ui.value)) ui.value = list.length ? list[0][0] : '';
       const msgBox = h('p', { class: 'error-text', role: 'status' });
       const pool = ui.mode === 'study' ? studyItems() : filteredItems();
-      const setMode = (m) => () => { ui.mode = m; render(); };
+      const setMode = (m) => () => { ui.mode = m; ui.aspectOpen = false; render(); };
 
       const studyControls = ui.mode !== 'study' ? null : h('div', { class: 'row', style: 'margin-top:8px' },
         h('select', { 'aria-label': 'Study set by', onchange: (e) => { ui.by = e.target.value; ui.value = ''; render(); } },
@@ -196,7 +214,8 @@
             h('span', { class: 'muted' }, info.desc),
             h('span', { class: 'game-reason' }, a.reason || count),
             a.reason ? null : h('span', { class: 'btn-like' }, 'Start ' + info.name));
-        }));
+        }).concat([aspectTile(pool)]));
+      const aspectRow = ui.aspectOpen && !revengeEmpty && !markedEmpty ? aspectChoices(pool) : null;
 
       LG.dom.clear(card).append(
         h('div', { class: 'spread' }, h('h2', { style: 'margin:0' }, 'Play'),
@@ -211,11 +230,30 @@
           h('p', { class: 'muted small mode-note' }, modeNote),
           ui.mode === 'marked' ? h('div', { class: 'btn-row marked-actions' }, markedButtons()) : null,
           studyControls),
-        studyLine || '', games, msgBox);
+        studyLine || '', games, aspectRow || '', msgBox);
     };
     card.refresh = render;
     render();
     return card;
+  }
+
+  function aspectTile(pool) {
+    const a = aspectAvailability(pool);
+    return h('button', { class: 'btn game', type: 'button', disabled: !!a.reason, 'aria-expanded': String(ui.aspectOpen),
+      onclick: () => { ui.aspectOpen = !ui.aspectOpen; LG.app.refresh(); } },
+      h('strong', null, 'Aspect pairs'),
+      h('span', { class: 'muted' }, 'Type the other aspect of a verb.'),
+      h('span', { class: 'game-reason' }, a.reason || a.ids.length + (a.ids.length === 1 ? ' pair' : ' pairs')),
+      a.reason ? null : h('span', { class: 'btn-like' }, 'Choose direction'));
+  }
+
+  function aspectChoices(pool) {
+    const { ids } = aspectAvailability(pool);
+    const go = (dir) => () => startAspect(ids, dir);
+    return h('div', { class: 'btn-row aspect-choices', role: 'group', 'aria-label': 'Aspect pairs direction' },
+      h('button', { class: 'btn', type: 'button', onclick: go('impf-pf') }, 'impf. \u2192 pf.'),
+      h('button', { class: 'btn', type: 'button', onclick: go('pf-impf') }, 'pf. \u2192 impf.'),
+      h('button', { class: 'btn', type: 'button', onclick: go('random') }, 'Random'));
   }
 
   function askToggle() {
@@ -339,7 +377,7 @@
             h('span', { class: 'muted small file-info' }, app.dataset.fileName + ' · ' + app.ctx.items.length + ' items'),
             app.dataset.fileName === 'Sample data' ? null
               : h('button', { class: 'btn btn-small refresh-file', type: 'button', onclick: () => app.refreshFile({ inGame: false }) }, '↻ Refresh file'))),
-        statsRow(), dailyCard(), studyResume(), play, filtersCard(() => play.refresh()), footer()));
+        statsRow(), dailyCard(), studyResume(), play, filtersCard(() => { ui.aspectOpen = false; play.refresh(); }), footer()));
     },
   };
 })(globalThis.LG = globalThis.LG || {});
