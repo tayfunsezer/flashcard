@@ -119,9 +119,18 @@
 
   // mcIds (optional Set, see mcEligibleIds) restricts Multiple Choice to items that can show four options.
   // Cloze, Pair Match and Flashcards take every item, words and sentences alike.
-  function eligibleIds(items, game, lang, mcIds) {
+  // aspectIds (optional Set, LG.aspect.pairIds) restricts Aspect pairs to verb-pair rows.
+  function eligibleIds(items, game, lang, mcIds, aspectIds) {
+    if (game === 'aspect' && aspectIds) return items.filter(it => aspectIds.has(it.id)).map(it => it.id);
     if (game !== 'mc' || !mcIds) return items.map(it => it.id);
     return items.filter(it => mcIds.has(it.id)).map(it => it.id);
+  }
+
+  // Practice-only answer (Aspect pairs): XP and combo as answerPrompt, but no box, due date or study set moves.
+  function practiceAnswer(state, result, combo) {
+    const newCombo = result !== 'wrong' ? combo + 1 : 0;
+    const xp = Math.round(LG.rewards.promptXp({ result, hints: 0 }) * LG.rewards.comboMultiplier(newCombo));
+    return { state: Object.assign({}, state, { xp: state.xp + xp }), xp, combo: newCombo };
   }
 
   // Every round starts in a fresh random order (a shuffled copy; the input is left alone).
@@ -187,5 +196,5 @@
     return 'Practice ' + words(total) + ' — ' + missedCount + ' missed, ' + markedCount + ' marked';
   }
 
-  LG.play = { isMarked, markedIds, practiceIds, practiceLabel, answerPrompt, reanswerPrompt, matchBoard, completeRound, finishDaily, setPin, togglePinWord, setStar, toggleStar, clearStars, advanceRotation, eligibleIds, startRound, boards, remapBoards, mcEligibleIds, MC_OPTIONS: OPTIONS };
+  LG.play = { isMarked, markedIds, practiceIds, practiceLabel, answerPrompt, reanswerPrompt, matchBoard, completeRound, finishDaily, setPin, togglePinWord, setStar, toggleStar, clearStars, advanceRotation, eligibleIds, practiceAnswer, startRound, boards, remapBoards, mcEligibleIds, MC_OPTIONS: OPTIONS };
 })(globalThis.LG = globalThis.LG || {});

@@ -186,4 +186,21 @@
     T.eq(plan, [['a', 'b'], ['c', 'd'], ['e']], 'input is not mutated');
     T.eq(P.remapBoards(plan, 0, new Map([['a', 'a2']]), new Set(['b'])), [['a2'], ['c', 'd'], ['e']]);
   });
+  T.test('practiceAnswer: xp and combo like answerPrompt, progress untouched', () => {
+    const st = S.defaultState();
+    st.progress = { a: { box: 2, due: 5, seen: true } };
+    let r = P.practiceAnswer(st, 'correct', 4);
+    T.eq([r.combo, r.xp, r.state.xp], [5, 15, 15]);
+    T.ok(r.state.progress === st.progress);
+    T.ok(r.state.studySet === st.studySet);
+    r = P.practiceAnswer(st, 'wrong', 4);
+    T.eq([r.combo, r.xp, r.state.xp], [0, 0, 0]);
+    T.ok(r.state.progress === st.progress);
+    T.eq(P.practiceAnswer(st, 'almost', 0).xp, 5);
+  });
+  T.test('eligibleIds aspect filter', () => {
+    const items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+    T.eq(P.eligibleIds(items, 'aspect', 'pl', null, new Set(['b'])), ['b']);
+    T.eq(P.eligibleIds(items, 'cloze', 'pl', null, new Set(['b'])), ['a', 'b', 'c']);
+  });
 })();
