@@ -214,8 +214,7 @@
             h('span', { class: 'muted' }, info.desc),
             h('span', { class: 'game-reason' }, a.reason || count),
             a.reason ? null : h('span', { class: 'btn-like' }, 'Start ' + info.name));
-        }).concat([aspectTile(pool)]));
-      const aspectRow = ui.aspectOpen && !revengeEmpty && !markedEmpty ? aspectChoices(pool) : null;
+        }).concat([aspectTile(pool)], ui.aspectOpen ? [aspectChoices(pool)] : []));
 
       LG.dom.clear(card).append(
         h('div', { class: 'spread' }, h('h2', { style: 'margin:0' }, 'Play'),
@@ -230,7 +229,7 @@
           h('p', { class: 'muted small mode-note' }, modeNote),
           ui.mode === 'marked' ? h('div', { class: 'btn-row marked-actions' }, markedButtons()) : null,
           studyControls),
-        studyLine || '', games, aspectRow || '', msgBox);
+        studyLine || '', games, msgBox);
     };
     card.refresh = render;
     render();
@@ -239,7 +238,7 @@
 
   function aspectTile(pool) {
     const a = aspectAvailability(pool);
-    return h('button', { class: 'btn game', type: 'button', disabled: !!a.reason, 'aria-expanded': String(ui.aspectOpen),
+    return h('button', { class: 'btn game game-wide', type: 'button', disabled: !!a.reason, 'aria-expanded': String(ui.aspectOpen),
       onclick: () => { ui.aspectOpen = !ui.aspectOpen; LG.app.refresh(); } },
       h('strong', null, 'Aspect pairs'),
       h('span', { class: 'muted' }, 'Type the other aspect of a verb.'),
@@ -250,7 +249,7 @@
   function aspectChoices(pool) {
     const { ids } = aspectAvailability(pool);
     const go = (dir) => () => startAspect(ids, dir);
-    return h('div', { class: 'btn-row aspect-choices', role: 'group', 'aria-label': 'Aspect pairs direction' },
+    return h('div', { class: 'aspect-choices', role: 'group', 'aria-label': 'Aspect pairs direction' },
       h('button', { class: 'btn', type: 'button', onclick: go('impf-pf') }, 'impf. \u2192 pf.'),
       h('button', { class: 'btn', type: 'button', onclick: go('pf-impf') }, 'pf. \u2192 impf.'),
       h('button', { class: 'btn', type: 'button', onclick: go('random') }, 'Random'));
