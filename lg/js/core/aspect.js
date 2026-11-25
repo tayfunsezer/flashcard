@@ -68,9 +68,15 @@
     return { result: base !== 'wrong' && !aspectOk ? 'almost' : base, aspectOk };
   }
 
+  // Width (in characters) of the blank. In the random modes it is constant: the answer's length would hint at the
+  // aspect, since a perfective is often longer than its imperfective.
+  function blankLength(c, mode) {
+    return mode === 'random' || mode === 'random-guess' ? 10 : LG.text.charLength(c.answer);
+  }
+
   function reveal(c) {
     return c.impf + ' (impf.) & ' + c.pf + ' (pf.)' + (c.extras ? ' ' + c.extras : '');
   }
 
-  LG.aspect = { parse, pairIds, directions, card, answers, grade, gradeGuess, reveal };
+  LG.aspect = { parse, pairIds, directions, card, answers, grade, gradeGuess, blankLength, reveal };
 })(globalThis.LG = globalThis.LG || {});

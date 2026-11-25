@@ -77,7 +77,7 @@
           c.shownAspect ? h('span', { class: 'muted small aspect-tag' }, ' (' + c.shownAspect + ')') : '',
           c.extras ? ' ' + c.extras : '',
           ' → ',
-          h('span', { class: 'blank', style: 'width:' + (LG.text.charLength(c.answer) + 1) + 'ch', 'aria-label': 'blank' }, ' '));
+          h('span', { class: 'blank', style: 'width:' + (LG.aspect.blankLength(c, dirMode) + 1) + 'ch', 'aria-label': 'blank' }, ' '));
         const card = h('div', { class: 'card fb cloze' },
           h('p', { class: 'clue muted', lang: app.ctx.langSource }, c.english),
           verbLine);

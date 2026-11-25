@@ -82,4 +82,13 @@
     T.eq(A.gradeGuess('xyz', 'impf.', c, 'pl'), { result: 'wrong', aspectOk: true });
     T.eq(A.gradeGuess('xyz', 'pf.', c, 'pl'), { result: 'wrong', aspectOk: false });
   });
+  T.test('blankLength: no length hint in the random modes', () => {
+    const short = A.card({ id: 'a', source: 's', target: 'robić (impf.) & zrobić (pf.)' }, 'pf-impf', 'random');
+    const long = A.card({ id: 'b', source: 's', target: 'zapinać (impf.) & zapiąć (pf.)' }, 'pf-impf', 'random');
+    T.ok(short.answer.length !== long.answer.length);
+    T.eq(A.blankLength(short, 'random'), A.blankLength(long, 'random'));
+    T.eq(A.blankLength(short, 'random-guess'), A.blankLength(long, 'random-guess'));
+    T.eq(A.blankLength(short, 'pf-impf'), 5);
+    T.eq(A.blankLength(long, 'pf-impf'), 7);
+  });
 })();
