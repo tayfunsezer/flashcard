@@ -41,6 +41,7 @@
     const u = new SpeechSynthesisUtterance(String(text));
     u.voice = voice;
     u.lang = voice.lang;
+    u.rate = LG.app.state.settings.speechRate || 1;
     speechSynthesis.speak(u);
   }
 

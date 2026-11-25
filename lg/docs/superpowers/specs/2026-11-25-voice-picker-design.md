@@ -18,9 +18,11 @@ Why: lg has no audio. Hearing the words is a real gap (see the backlog memory), 
 
 5b. (Added at the learner's request, after the first build.) A Settings checkbox **Read <language> tiles aloud in Pair Match** (`settings.speakMatch`, default on) turns the Pair Match speech off. Nothing else in the app speaks unless the learner presses Listen or Test voice.
 
+5c. (Added at the learner's request.) A **Speed** slider in the Voice card (`settings.speechRate`, 0.5 to 1.5, default 0.85, clamped on load); every spoken text uses it, and releasing the slider speaks the sample. **Test voice** speaks the file's first sentence (`LG.voice.sampleText`) instead of its first item, which may be a single word.
+
 ## Non-goals / anti-goals
 
-- No `fc/` changes. No auto-speak on reveal (maybe later). No rate or pitch controls, no recording, no pre-recorded cloud audio, no network calls of our own.
+- No `fc/` changes. No auto-speak on reveal (maybe later). No pitch control (speed was added later, see 5c), no recording, no pre-recorded cloud audio, no network calls of our own.
 - Never speak English (the translation side), and never block a game when speech is missing.
 
 ## Constraints

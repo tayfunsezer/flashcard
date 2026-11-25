@@ -26,5 +26,11 @@
     return voice.localService ? voice.name : voice.name + ' (online)';
   }
 
-  LG.voice = { rank, forLang, pick, label };
+  // Text for "Test voice": the first sentence of the file (a word alone says little about a voice), else the first item.
+  function sampleText(items, kinds, fallback) {
+    const s = items.find((it) => kinds.get(it.id) === 'sentence') || items[0];
+    return s ? s.target : fallback;
+  }
+
+  LG.voice = { rank, forLang, pick, label, sampleText };
 })(globalThis.LG = globalThis.LG || {});

@@ -34,4 +34,11 @@
     T.eq(V.label(online), 'Google polski (online)');
     T.eq(V.label(plain), 'Zosia');
   });
+  T.test('sampleText: first sentence in the file, else the first item, else the language name', () => {
+    const items = [{ id: 'a', target: 'chleb' }, { id: 'b', target: 'Lubię jeść świeży chleb' }, { id: 'c', target: 'Dzień dobry wszystkim tutaj' }];
+    const kinds = new Map([['a', 'term'], ['b', 'sentence'], ['c', 'sentence']]);
+    T.eq(V.sampleText(items, kinds, 'Polish'), 'Lubię jeść świeży chleb');
+    T.eq(V.sampleText([items[0]], new Map([['a', 'term']]), 'Polish'), 'chleb');
+    T.eq(V.sampleText([], new Map(), 'Polish'), 'Polish');
+  });
 })();

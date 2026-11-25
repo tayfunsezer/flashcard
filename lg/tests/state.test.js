@@ -108,4 +108,12 @@
     T.eq(S.withDefaults({ settings: { speakMatch: false } }).settings.speakMatch, false);
     T.eq(S.withDefaults({ settings: { speakMatch: 'no' } }).settings.speakMatch, true);
   });
+  T.test('settings.speechRate: default 0.85, clamped to 0.5..1.5, bad values reset', () => {
+    T.eq(S.defaultState().settings.speechRate, 0.85);
+    T.eq(S.withDefaults({}).settings.speechRate, 0.85);
+    T.eq(S.withDefaults({ settings: { speechRate: 0.7 } }).settings.speechRate, 0.7);
+    T.eq(S.withDefaults({ settings: { speechRate: 0.1 } }).settings.speechRate, 0.5);
+    T.eq(S.withDefaults({ settings: { speechRate: 9 } }).settings.speechRate, 1.5);
+    for (const bad of ['fast', null, NaN, {}]) T.eq(S.withDefaults({ settings: { speechRate: bad } }).settings.speechRate, 0.85);
+  });
 })();

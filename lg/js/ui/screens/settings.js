@@ -31,6 +31,19 @@
       h('p', { style: 'margin-top:8px' }, status));
   }
 
+  // Speaking speed: 0.5 to 1.5 times the voice's normal speed; releasing the slider says the sample at the new speed.
+  function speedRow(sample, lang) {
+    const app = LG.app;
+    const value = h('span', { class: 'muted small speed-value' });
+    const show = (v) => { value.textContent = Number(v).toFixed(2).replace(/0$/, '') + '\u00d7'; };
+    const slider = h('input', { type: 'range', min: '0.5', max: '1.5', step: '0.05', value: String(app.state.settings.speechRate),
+      'aria-label': 'Speaking speed', oninput: (e) => show(e.target.value),
+      onchange: (e) => { app.setSettings({ speechRate: Number(e.target.value) }); show(e.target.value); LG.speech.speak(sample, lang); } });
+    show(app.state.settings.speechRate);
+    return h('div', { class: 'row speed-row' }, h('span', { class: 'small' }, 'Speed'),
+      h('span', { class: 'muted small' }, 'Slow'), slider, h('span', { class: 'muted small' }, 'Fast'), value);
+  }
+
   // Voice for the language being learned: Automatic (best available) or one picked from this device's voices.
   function voiceCard() {
     const app = LG.app;
@@ -55,12 +68,13 @@
         } },
           h('option', { value: '', selected: !chosen || missing }, 'Automatic (best available)'),
           list.map((v) => h('option', { value: v.name, selected: v.name === chosen }, LG.voice.label(v))));
-        const sample = (app.ctx && app.ctx.items.length && app.ctx.items[0].target) || name;
+        const sample = app.ctx ? LG.voice.sampleText(app.ctx.items, app.ctx.kinds, name) : name;
         children.push(
           h('div', { class: 'row' }, select,
             h('button', { class: 'btn', type: 'button', onclick: () => LG.speech.speak(sample, lang) }, 'Test voice')),
           h('p', { class: 'muted small' }, missing ? 'Saved voice not found, using ' + LG.voice.label(best) + '.'
             : chosen ? 'Using ' + chosen + '.' : 'Automatic uses ' + LG.voice.label(best) + '.'),
+          speedRow(sample, lang),
           h('label', { class: 'choice' },
             h('input', { type: 'checkbox', checked: app.state.settings.speakMatch,
               onchange: (e) => app.setSettings({ speakMatch: e.target.checked }) }), 'Read ' + name + ' tiles aloud in Pair Match'),
