@@ -31,6 +31,50 @@
       h('p', { style: 'margin-top:8px' }, status));
   }
 
+  // Voice for the language being learned: Automatic (best available) or one picked from this device's voices.
+  function voiceCard() {
+    const app = LG.app;
+    const lang = app.state.settings.langTarget;
+    if (!lang || !LG.speech.available()) return null;
+    const card = h('div', { class: 'card stack' });
+    const name = (() => { try { return new Intl.DisplayNames(['en'], { type: 'language' }).of(lang) || lang; } catch (e) { return lang; } })();
+    const draw = () => {
+      const list = LG.voice.forLang(LG.speech.voices(), lang);
+      const chosen = app.state.settings.voices[lang] || '';
+      const children = [h('h2', null, 'Voice')];
+      if (!list.length) {
+        children.push(h('p', { class: 'muted small' }, 'No ' + name + ' voice found on this device.'));
+      } else {
+        const best = list[0];
+        const missing = chosen && !list.some((v) => v.name === chosen);
+        const select = h('select', { 'aria-label': 'Voice for ' + name, onchange: (e) => {
+          const next = Object.assign({}, app.state.settings.voices);
+          if (e.target.value) next[lang] = e.target.value; else delete next[lang];
+          app.setSettings({ voices: next });
+          draw();
+        } },
+          h('option', { value: '', selected: !chosen || missing }, 'Automatic (best available)'),
+          list.map((v) => h('option', { value: v.name, selected: v.name === chosen }, LG.voice.label(v))));
+        const sample = (app.ctx && app.ctx.items.length && app.ctx.items[0].target) || name;
+        children.push(
+          h('div', { class: 'row' }, select,
+            h('button', { class: 'btn', type: 'button', onclick: () => LG.speech.speak(sample, lang) }, 'Test voice')),
+          h('p', { class: 'muted small' }, missing ? 'Saved voice not found, using ' + LG.voice.label(best) + '.'
+            : chosen ? 'Using ' + chosen + '.' : 'Automatic uses ' + LG.voice.label(best) + '.'),
+          h('p', { class: 'muted small' }, 'Better voices: System Settings, Accessibility, Spoken Content, System Voice, Manage Voices. Restart the browser after downloading.'));
+      }
+      LG.dom.clear(card).append(...children);
+    };
+    let seen = false;
+    const off = LG.speech.onVoices(() => {
+      if (card.isConnected) seen = true;
+      else if (seen) { off(); return; }
+      draw();
+    });
+    draw();
+    return card;
+  }
+
   function progressCard() {
     const app = LG.app;
     const resetInput = h('input', { type: 'text', placeholder: 'Type RESET', 'aria-label': 'Type RESET to confirm' });
@@ -61,7 +105,7 @@
       root.append(
         h('div', { class: 'topbar' }, h('h1', null, 'Settings'),
           h('button', { class: 'btn', type: 'button', onclick: () => app.go('home') }, 'Back')),
-        themeCard(), languagesCard(), progressCard());
+        ...[themeCard(), languagesCard(), voiceCard(), progressCard()].filter(Boolean));
     },
   };
 })(globalThis.LG = globalThis.LG || {});

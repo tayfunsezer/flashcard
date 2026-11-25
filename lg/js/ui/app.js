@@ -294,6 +294,7 @@
   }
 
   async function boot() {
+    LG.speech.preload();
     const params = new URLSearchParams(location.search);
     const th = params.get('theme');
     themeOverride = th === 'light' || th === 'dark' ? th : null;
