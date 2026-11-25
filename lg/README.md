@@ -7,7 +7,7 @@ A small browser game for learning vocabulary from your own word list. It runs en
 1. Double-click `index.html` (Edge or Chrome; Firefox untested).
 2. Load your word list (`.xlsx`, `.csv`, `.tsv`, tab-separated `.txt` or a `.json` quiz file). The built-in sample data is Polish with English translations.
 3. Check which column is the language you are learning: column 1 by default, and you can switch to column 2 with the mapping control (a preview shows the result). Then choose the two languages. Your column choice is remembered for the next upload; the languages can be changed later in Settings.
-4. Play Cloze, Multiple Choice, Pair Match or Flashcards, the Daily Word, or browse the Category Map.
+4. Play Cloze, Multiple Choice, Pair Match, Flashcards or Aspect pairs, the Daily Word, or browse the Category Map.
 
 ### Flashcards and Leitner boxes
 
@@ -16,6 +16,8 @@ Flashcards show one side of a card; flip it (click, Space or Show answer) and sa
 Every game shares one Leitner schedule: a right answer moves a card to the next box, a wrong answer sends it back to Box 0. Boxes 0–5 are due again after 0, 1, 3, 7, 14 and 30 days. The Leitner boxes screen (button on Home) shows how many cards sit in each box and how many are due today, using the Home filters. Study due cards runs a Flashcards round of every due card; click a box to study it with any game.
 
 Rounds have no size limit: a Review round takes every word that matches your filters (due words first), a Revenge round the whole revenge pile, and a study set is walked in one go. Every round starts in a fresh random order, so you cannot learn the order by heart. Cloze and Pair Match work with every item, single words and sentences alike: a one-word item is blanked whole with the translation as the clue. Pair Match plays boards of up to six pairs, one after another, and needs only one item.
+
+Aspect pairs: rows written as `verb (impf.) & verb (pf.)` (optionally followed by shared extras such as `pas` or `kogoś`) become a game on Home. You see one verb with its English meaning, and type its partner; after each answer the whole pair is shown. Pick the direction when you start: impf. → pf., pf. → impf., or Random (half each way, and the card shows no aspect label, so you must tell which aspect it is). Missing accents count as Almost, typing the extras after the verb is fine, and a missed pair comes back later in the round. It is practice only: XP, combo and streak count, but the Leitner boxes do not move. ☆ marking works, Home filters apply, and the tile is greyed out when the file has no verb pairs; it is not available in Revenge pile or Study set mode. A Refresh during an Aspect round asks to end the round, like the Daily Word.
 
 Marking words: after an answer in Cloze, click words in the answer sentence to mark them; the item then blanks those words every time. The round summary offers to practise the words you missed plus the ones you marked in that round. The Marked words mode on Home plays every marked item (under your filters) in any game, and ☆/★ marks or unmarks an item. ✕ on the pin row clears its pinned words only.
 
