@@ -135,7 +135,7 @@
           const aspectLine = aspect ? h('p', { class: 'small ' + (aspect.ok ? 'muted' : 'fb-text-almost') },
             !aspect.picked ? 'Aspect: ' + c.shownKind + ' (the shown verb)'
               : aspect.ok ? 'Aspect: ' + c.shownKind + ' \u2713' : 'You picked ' + aspect.picked + ', it is ' + c.shownKind + '.') : null;
-          clear(controls).append(msg, aspectLine || '', typedLine || '', h('div', { class: 'pin-row small' }, star), h('div', { class: 'btn-row' }, next));
+          clear(controls).append(msg, aspectLine || '', typedLine || '', h('div', { class: 'pin-row small' }, star, LG.speech.button(() => c.impf + ', ' + c.pf + (c.extras ? ' ' + c.extras : ''))), h('div', { class: 'btn-row' }, next));
           screen.firstChild.replaceWith(header());
           next.focus();
           onEnter = () => prompt();

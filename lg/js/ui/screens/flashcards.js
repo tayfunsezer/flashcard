@@ -180,7 +180,7 @@
           const missed = h('button', { class: 'btn fc-grade fc-missed', type: 'button', 'aria-pressed': pressed('wrong'), onclick: () => grade('wrong') },
             h('span', { class: 'choice-key', 'aria-hidden': 'true' }, '1'), "Didn't know");
           clear(controls).append(h('div', { class: 'fc-grades', role: 'group', 'aria-label': 'Did you know it?' }, missed, knew),
-            starButton(id, (_, now) => { if (now) round.unmarked.add(id); }));
+            starButton(id, (_, now) => { if (now) round.unmarked.add(id); }), LG.speech.button(() => item.target));
           if (!revisit || v.grade === undefined) knew.focus();
           onGrade = grade;
         }

@@ -423,7 +423,7 @@
             MESSAGES[result], result === 'correct' ? null : h('strong', { lang }, expected),
             xp ? h('span', { class: 'muted' }, '  +' + xp + ' XP') : null);
           const typedLine = typed && result !== 'correct' ? h('p', { class: 'typed small muted' }, 'You typed: ', typedWords(typed)) : null;
-          clear(controls).append(msg, typedLine || '', h('div', { class: 'pin-row small' }, pinBox, star), h('div', { class: 'btn-row' }, next));
+          clear(controls).append(msg, typedLine || '', h('div', { class: 'pin-row small' }, pinBox, star, LG.speech.button(() => item.target)), h('div', { class: 'btn-row' }, next));
           screen.firstChild.replaceWith(gameHeader('Cloze', Object.assign({}, mode === 'study' ? label : progressLabel(), { combo: round.combo, xp: round.xp })));
           next.focus();
           onEnter = () => prompt();
