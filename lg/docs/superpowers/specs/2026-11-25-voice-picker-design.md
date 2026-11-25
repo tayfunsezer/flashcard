@@ -14,7 +14,7 @@ Why: lg has no audio. Hearing the words is a real gap (see the backlog memory), 
 2. **Automatic voice** by default: the best Polish voice available (Premium, then Enhanced, then standard on-device, then online voices such as Google polski). A choice saved by the learner overrides it while that voice still exists.
 3. **Settings → Voice** card: a dropdown (`Automatic (best available)` first, then every voice for the learning language, online ones marked) and a **Test voice** button. The choice is remembered per language.
 4. A **Listen** button (text label, no emoji) on the answer side of Cloze, Flashcards and Aspect pairs.
-5. **Pair Match**: tapping a tile in the learned language speaks it; a correct match also speaks the learned-language word (when the last tap was not that tile). Tiles in the translation language, wrong matches: silent.
+5. **Pair Match**: tapping a tile in the learned language speaks it. Tiles in the translation language are silent. (Revised while building: a match always involves tapping the learned-language tile, which already speaks it, so speaking again on a match would only repeat the word; it was dropped.)
 
 ## Non-goals / anti-goals
 
@@ -58,7 +58,7 @@ Pure; a "voice" is any object with `{ name, lang, localService }`.
 - **Cloze:** Listen in the feedback state, speaking the whole `item.target`.
 - **Flashcards:** Listen after the flip, speaking `item.target` (whichever side shows it).
 - **Aspect pairs:** Listen in the reveal, speaking the pair: `impf, pf extras` (the two verbs, then the extras, no labels).
-- **Pair Match:** the rules in Goal 5, speaking via `LG.speech.speak`; rapid taps cancel the previous utterance.
+- **Pair Match:** the rule in Goal 5, speaking via `LG.speech.speak`; rapid taps cancel the previous utterance.
 
 ### Tests (first)
 
