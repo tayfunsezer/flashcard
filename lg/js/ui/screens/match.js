@@ -131,7 +131,7 @@
           if (prev === id) { board.picked[side] = null; return; }
           board.picked[side] = id;
           setSelected(side, id, true);
-          if (langOf(side) === langT) LG.speech.speak(text(id, side), langT); // a tile in the learned language is read aloud
+          if (app.state.settings.speakMatch && langOf(side) === langT) LG.speech.speak(text(id, side), langT); // a tile in the learned language is read aloud
           if (board.picked[0] !== null && board.picked[1] !== null) resolve();
         }
 

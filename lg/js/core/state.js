@@ -5,7 +5,7 @@
   function defaultState() {
     return {
       version: VERSION,
-      settings: { theme: 'system', langSource: '', langTarget: '', direction: 's2t', learnColumn: 1, ask: 'word', voices: {} },
+      settings: { theme: 'system', langSource: '', langTarget: '', direction: 's2t', learnColumn: 1, ask: 'word', voices: {}, speakMatch: true },
       progress: {},
       xp: 0,
       streak: { current: 0, best: 0, lastDay: null },
@@ -68,6 +68,7 @@
         learnColumn: oneOf([1, 2], se.learnColumn, d.settings.learnColumn),
         ask: oneOf(['word', 'whole'], se.ask, d.settings.ask),
         voices: voiceMap(se.voices),
+        speakMatch: pick((v) => typeof v === 'boolean', se.speakMatch, d.settings.speakMatch),
       },
       progress,
       xp: pick(isNum, o.xp, d.xp),

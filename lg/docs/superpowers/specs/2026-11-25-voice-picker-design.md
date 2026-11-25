@@ -16,6 +16,8 @@ Why: lg has no audio. Hearing the words is a real gap (see the backlog memory), 
 4. A **Listen** button (text label, no emoji) on the answer side of Cloze, Flashcards and Aspect pairs.
 5. **Pair Match**: tapping a tile in the learned language speaks it. Tiles in the translation language are silent. (Revised while building: a match always involves tapping the learned-language tile, which already speaks it, so speaking again on a match would only repeat the word; it was dropped.)
 
+5b. (Added at the learner's request, after the first build.) A Settings checkbox **Read <language> tiles aloud in Pair Match** (`settings.speakMatch`, default on) turns the Pair Match speech off. Nothing else in the app speaks unless the learner presses Listen or Test voice.
+
 ## Non-goals / anti-goals
 
 - No `fc/` changes. No auto-speak on reveal (maybe later). No rate or pitch controls, no recording, no pre-recorded cloud audio, no network calls of our own.

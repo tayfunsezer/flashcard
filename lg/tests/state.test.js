@@ -101,4 +101,11 @@
     for (const bad of ['x', ['a'], 5, null]) T.eq(S.withDefaults({ settings: { voices: bad } }).settings.voices, {});
     T.eq(S.withDefaults({ settings: { voices: { pl: 5, de: 'Anna' } } }).settings.voices, { de: 'Anna' });
   });
+  T.test('settings.speakMatch: default on, kept when off, bad values reset', () => {
+    T.eq(S.defaultState().settings.speakMatch, true);
+    T.eq(S.withDefaults({}).settings.speakMatch, true);
+    T.eq(S.withDefaults({ settings: { theme: 'dark' } }).settings.speakMatch, true);
+    T.eq(S.withDefaults({ settings: { speakMatch: false } }).settings.speakMatch, false);
+    T.eq(S.withDefaults({ settings: { speakMatch: 'no' } }).settings.speakMatch, true);
+  });
 })();

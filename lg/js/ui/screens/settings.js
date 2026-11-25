@@ -61,6 +61,9 @@
             h('button', { class: 'btn', type: 'button', onclick: () => LG.speech.speak(sample, lang) }, 'Test voice')),
           h('p', { class: 'muted small' }, missing ? 'Saved voice not found, using ' + LG.voice.label(best) + '.'
             : chosen ? 'Using ' + chosen + '.' : 'Automatic uses ' + LG.voice.label(best) + '.'),
+          h('label', { class: 'choice' },
+            h('input', { type: 'checkbox', checked: app.state.settings.speakMatch,
+              onchange: (e) => app.setSettings({ speakMatch: e.target.checked }) }), 'Read ' + name + ' tiles aloud in Pair Match'),
           h('p', { class: 'muted small' }, 'Better voices: System Settings, Accessibility, Spoken Content, System Voice, Manage Voices. Restart the browser after downloading.'));
       }
       LG.dom.clear(card).append(...children);
