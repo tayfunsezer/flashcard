@@ -1,7 +1,7 @@
 (function (LG) {
   const { h, clear } = LG.dom;
   const GAMES = ['cloze', 'mc', 'match', 'flashcards'];
-  const TITLES = { cloze: 'Cloze', mc: 'Multiple Choice', match: 'Pair Match', flashcards: 'Flashcards', daily: 'Daily Word', map: 'Category Map', leitner: 'Leitner boxes' };
+  const TITLES = { cloze: 'Cloze', mc: 'Multiple Choice', match: 'Pair Match', flashcards: 'Flashcards', daily: 'Daily Word', map: 'Category Map', leitner: 'Leitner boxes', aspect: 'Aspect pairs' };
   let themeOverride = null;
 
   LG.screens = LG.screens || {};
@@ -30,7 +30,8 @@
     }
     const rarity = LG.words.buildRarity(items, langTarget);
     const mcIds = new Set(LG.play.mcEligibleIds(items, rarity, langTarget, app.state.settings.ask));
-    app.ctx = { items, langSource, langTarget, rarity, kinds, itemsById, mcIds };
+    const aspectIds = new Set(LG.aspect.pairIds(items));
+    app.ctx = { items, langSource, langTarget, rarity, kinds, itemsById, mcIds, aspectIds };
     pruneStudySet(itemsById);
     return app.ctx;
   }
@@ -115,7 +116,7 @@
     }
     const f = app.filters;
     const pool = LG.words.filterItems(app.ctx.items, { dateFrom: f.dateFrom || null, dateTo: f.dateTo || null, categories: f.categories });
-    const ids = LG.play.eligibleIds(pool, game, app.ctx.langTarget, app.ctx.mcIds);
+    const ids = LG.play.eligibleIds(pool, game, app.ctx.langTarget, app.ctx.mcIds, app.ctx.aspectIds);
     if (mode === 'marked') return LG.play.startRound(LG.play.markedIds(ids, app.state.progress));
     if (mode === 'revenge') return LG.play.startRound(LG.schedule.revengeIds(ids, app.state.progress));
     return LG.play.startRound(LG.schedule.buildReviewRound(ids, app.state.progress, Date.now(), Infinity));

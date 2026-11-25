@@ -4,7 +4,7 @@
   function playable(game, ids) {
     const ctx = LG.app.ctx;
     if (game === 'mc' && ctx.mcIds.size < LG.play.MC_OPTIONS) return false;
-    return LG.play.eligibleIds(ids.map((id) => ctx.itemsById.get(id)), game, ctx.langTarget, ctx.mcIds).length > 0;
+    return LG.play.eligibleIds(ids.map((id) => ctx.itemsById.get(id)), game, ctx.langTarget, ctx.mcIds, ctx.aspectIds).length > 0;
   }
 
   LG.screens.summary = {
@@ -23,15 +23,16 @@
       const practiceList = LG.play.practiceIds(missed, marked);
       const mainCls = practiceList.length ? 'btn' : 'btn btn-primary';
       const practiceGame = playable(p.game, practiceList) ? p.game : 'flashcards';
-      const practice = (game) => () => app.go(game, { ids: LG.play.startRound(practiceList), mode: 'review' });
+      const practice = (game) => () => app.go(game, Object.assign({ ids: LG.play.startRound(practiceList), mode: 'review' }, game === p.game ? p.extra : null));
       const eligibleMarked = () => {
         const f = app.filters;
         const pool = LG.words.filterItems(app.ctx.items, { dateFrom: f.dateFrom || null, dateTo: f.dateTo || null, categories: f.categories });
-        return LG.play.markedIds(LG.play.eligibleIds(pool, p.game, app.ctx.langTarget, app.ctx.mcIds), app.state.progress);
+        return LG.play.markedIds(LG.play.eligibleIds(pool, p.game, app.ctx.langTarget, app.ctx.mcIds, app.ctx.aspectIds), app.state.progress);
       };
       const markedBtn = h('button', { class: 'btn hidden', type: 'button', onclick: () => {
         const ids = app.roundIds(p.game, 'marked');
-        app.go(playable(p.game, ids) ? p.game : 'flashcards', { ids, mode: 'marked' });
+        const same = playable(p.game, ids);
+        app.go(same ? p.game : 'flashcards', Object.assign({ ids, mode: 'marked' }, same ? p.extra : null));
       } });
       const refreshMarked = () => {
         const n = eligibleMarked().length;
