@@ -66,4 +66,20 @@
     T.eq(A.reveal(A.card(pair, 'impf-pf', 'random')), 'zapinać (impf.) & zapiąć (pf.) pas');
     T.eq(A.reveal(A.card({ id: 'z', source: 's', target: 'robić (impf.) & zrobić (pf.)' }, 'impf-pf', 'random')), 'robić (impf.) & zrobić (pf.)');
   });
+  T.test('guess mode: card keeps the true aspect, hides the label, directions like random', () => {
+    const c = A.card(pair, 'impf-pf', 'random-guess');
+    T.eq([c.shownAspect, c.shownKind], [null, 'impf.']);
+    T.eq(A.card(pair, 'pf-impf', 'impf-pf').shownKind, 'pf.');
+    const ids = ['a', 'b', 'c', 'd'];
+    const vals = [...A.directions(ids, 'random-guess', LG.rng.seeded(1)).values()];
+    T.eq(vals.filter((v) => v === 'impf-pf').length, 2);
+  });
+  T.test('gradeGuess: a wrong aspect with the right partner is almost', () => {
+    const c = A.card(pair, 'impf-pf', 'random-guess'); // shown zapinać (impf.), answer zapiąć
+    T.eq(A.gradeGuess('zapiąć', 'impf.', c, 'pl'), { result: 'correct', aspectOk: true });
+    T.eq(A.gradeGuess('zapiąć', 'pf.', c, 'pl'), { result: 'almost', aspectOk: false });
+    T.eq(A.gradeGuess('zapiac', 'impf.', c, 'pl'), { result: 'almost', aspectOk: true });
+    T.eq(A.gradeGuess('xyz', 'impf.', c, 'pl'), { result: 'wrong', aspectOk: true });
+    T.eq(A.gradeGuess('xyz', 'pf.', c, 'pl'), { result: 'wrong', aspectOk: false });
+  });
 })();

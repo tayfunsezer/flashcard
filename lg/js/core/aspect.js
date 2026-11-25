@@ -20,7 +20,7 @@
   // id -> 'impf-pf' | 'pf-impf'. Random: half each way (the odd one out falls either way), shuffled.
   function directions(ids, mode, rand) {
     let dirs;
-    if (mode === 'random') {
+    if (mode === 'random' || mode === 'random-guess') {
       const n = ids.length;
       const first = Math.ceil(n / 2);
       dirs = LG.rng.shuffle(Array.from({ length: n }, (_, i) => (i < first ? 'impf-pf' : 'pf-impf')), rand);
@@ -37,7 +37,8 @@
     return {
       impf: p.impf, pf: p.pf, extras: p.extras, english: item.source, dir,
       shown: fromImpf ? p.impf : p.pf,
-      shownAspect: mode === 'random' ? null : SHORT[fromImpf ? 'impf' : 'pf'],
+      shownKind: SHORT[fromImpf ? 'impf' : 'pf'],
+      shownAspect: mode === 'random' || mode === 'random-guess' ? null : SHORT[fromImpf ? 'impf' : 'pf'],
       answer: fromImpf ? p.pf : p.impf,
       answerAspect: SHORT[fromImpf ? 'pf' : 'impf'],
     };
@@ -59,9 +60,17 @@
     return best;
   }
 
+  // Random + guess aspect: `picked` ('impf.' | 'pf.') is the learner's guess for the SHOWN verb. A right partner with a
+  // wrong aspect is only 'almost'; a wrong partner stays 'wrong'.
+  function gradeGuess(typed, picked, c, lang) {
+    const base = grade(typed, c, lang);
+    const aspectOk = picked === c.shownKind;
+    return { result: base !== 'wrong' && !aspectOk ? 'almost' : base, aspectOk };
+  }
+
   function reveal(c) {
     return c.impf + ' (impf.) & ' + c.pf + ' (pf.)' + (c.extras ? ' ' + c.extras : '');
   }
 
-  LG.aspect = { parse, pairIds, directions, card, answers, grade, reveal };
+  LG.aspect = { parse, pairIds, directions, card, answers, grade, gradeGuess, reveal };
 })(globalThis.LG = globalThis.LG || {});
