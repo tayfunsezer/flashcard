@@ -286,7 +286,7 @@
     function draw() {
       const f = app.filters;
       if (open === null) open = LG.words.activeFilters(f).length > 0;
-      const catOptions = LG.words.groupOptions(app.ctx.items).categories;
+      let picker = null; // the category list; follows the date range (see paint)
       const count = h('span', { class: 'muted small' });
       const chips = h('div', { class: 'filter-chips' });
       const reset = h('button', { class: 'btn btn-small reset-filters', type: 'button', onclick: () => {
@@ -301,6 +301,7 @@
         count.textContent = act.length ? '(' + act.length + ' active)' : '';
         reset.hidden = act.length === 0;
         chips.hidden = act.length === 0;
+        if (picker) picker.setOptions(LG.words.categoryOptions(app.ctx.items, app.filters));
         LG.dom.clear(chips).append(...act.map((e) => h('span', { class: 'chip' }, h('span', { class: 'chip-text' }, label(e)),
           h('button', { type: 'button', class: 'chip-x', 'aria-label': 'Remove ' + label(e), onclick: () => {
             Object.assign(app.filters, LG.words.withoutFilter(app.filters, e));
@@ -333,8 +334,8 @@
       const body = !open ? null : h('div', { class: 'stack filters-body' },
         h('div', { class: 'row' }, dateField('dateFrom', 'Date from'), dateField('dateTo', 'Date to')),
         h('fieldset', null, h('legend', { class: 'small' }, 'Categories'),
-          LG.catpicker.multi({ options: catOptions, selected: f.categories, lang: app.ctx.langTarget,
-            onchange: (sel) => { f.categories = sel; paint(); onchange(); } })));
+          (picker = LG.catpicker.multi({ options: LG.words.categoryOptions(app.ctx.items, f), selected: f.categories, lang: app.ctx.langTarget,
+            onchange: (sel) => { f.categories = sel; paint(); onchange(); } }))));
 
       paint();
       LG.dom.clear(wrap).append(h('div', { class: 'card' },

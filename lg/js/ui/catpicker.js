@@ -90,6 +90,8 @@
       }
     });
 
+    // Swap the option list in place (for example when the date range changes) keeping the search text and focus.
+    root.setOptions = (options) => { cfg.options = options; renderList(); };
     renderChips();
     renderList();
     return root;
