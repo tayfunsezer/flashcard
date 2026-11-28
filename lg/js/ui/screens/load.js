@@ -51,7 +51,6 @@
     return h('dl', { class: 'summary' }, entries.map(([k, v]) => [h('dt', null, k), h('dd', null, String(v))]));
   }
 
-  // The link row: paste a published table link, download it, continue like a picked file.
   // Download a published table and continue like a picked file. The button shows progress while it runs.
   async function downloadLink(root, url, btn) {
     const parsed = LG.remote.parseUrl(url);
@@ -67,6 +66,7 @@
     }
   }
 
+  // The link row: paste a published table link, download it, continue like a picked file.
   function linkRow(root) {
     const app = LG.app;
     const input = h('input', { type: 'url', class: 'link-input', inputmode: 'url', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false',
@@ -109,6 +109,15 @@
       }
     };
     btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      btn.disabled = true; // one load at a time: a double click must not start a second one
+      try {
+        await load();
+      } finally {
+        sync();
+      }
+    });
+    const load = async () => {
       if (!dir && !(await choose())) return;
       try {
         if (dir.requestPermission && await dir.requestPermission({ mode: 'read' }) !== 'granted') {
@@ -124,7 +133,7 @@
       } catch (e) {
         app.banner('Could not read the folder (' + msg(e) + '). Use Change folder.', 'error');
       }
-    });
+    };
     const change = canPick ? h('button', { class: 'btn btn-small', type: 'button', onclick: choose }, 'Change folder') : null;
     return h('div', { class: 'card stack repeat-card' },
       h('strong', null, 'Repeat words'),
