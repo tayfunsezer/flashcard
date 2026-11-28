@@ -142,4 +142,15 @@
     try { await LG.dayexport.findInRepo(fakeDir('NotAllowedError').handle, '2026-10-26', 'marked'); } catch (e) { err = e; }
     T.eq(err && err.name, 'NotAllowedError');
   });
+  T.test('monthFolderExists tells a missing month folder from a missing day', async () => {
+    const f = fakeDir();
+    seed(f, ['october-2026', 'marked-words', 'marked_words-26.json'], '[]');
+    T.eq(await LG.dayexport.monthFolderExists(f.handle, '2026-10-31'), true);
+    T.eq(await LG.dayexport.monthFolderExists(f.handle, '2026-11-01'), false);
+  });
+  T.test('monthFolderExists propagates other errors', async () => {
+    let err = null;
+    try { await LG.dayexport.monthFolderExists(fakeDir('NotAllowedError').handle, '2026-10-26'); } catch (e) { err = e; }
+    T.eq(err && err.name, 'NotAllowedError');
+  });
 })();

@@ -115,7 +115,11 @@
           return app.banner('Folder access was not allowed.', 'error');
         }
         const found = await LG.dayexport.findInRepo(dir, date.value, type.value);
-        if (!found) return app.banner('No file for ' + LG.dates.formatDate(date.value) + ' in ' + LG.dayexport.relPath(date.value)[0] + '.', 'error');
+        if (!found) {
+          const month = LG.dayexport.relPath(date.value)[0];
+          const hint = (await LG.dayexport.monthFolderExists(dir, date.value)) ? '' : ' There is no ' + month + ' folder in "' + dir.name + '": is that the right folder? Use Change folder.';
+          return app.banner('No file for ' + LG.dates.formatDate(date.value) + ' in ' + month + '.' + hint, 'error');
+        }
         await readAndShow(root, found.file, null);
       } catch (e) {
         app.banner('Could not read the folder (' + msg(e) + '). Use Change folder.', 'error');

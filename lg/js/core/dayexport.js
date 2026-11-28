@@ -77,5 +77,16 @@
     return null;
   }
 
-  LG.dayexport = { datesIn, relPath, dayQuiz, writeToRepo, repoCandidates, findInRepo };
+  // Does the month folder of this date exist under rootDir? False hints at a wrong or moved folder.
+  async function monthFolderExists(rootDir, date) {
+    try {
+      await rootDir.getDirectoryHandle(repoCandidates(date, 'marked')[0][0]);
+      return true;
+    } catch (e) {
+      if (e && e.name === 'NotFoundError') return false;
+      throw e;
+    }
+  }
+
+  LG.dayexport = { datesIn, relPath, dayQuiz, writeToRepo, repoCandidates, findInRepo, monthFolderExists };
 })(globalThis.LG = globalThis.LG || {});
