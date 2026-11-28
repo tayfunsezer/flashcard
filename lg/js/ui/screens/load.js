@@ -52,29 +52,44 @@
   }
 
   // The link row: paste a published table link, download it, continue like a picked file.
+  // Download a published table and continue like a picked file. The button shows progress while it runs.
+  async function downloadLink(root, url, btn) {
+    const parsed = LG.remote.parseUrl(url);
+    if (!parsed.ok) return renderPick(root, parsed.error, '');
+    btn.disabled = true;
+    btn.textContent = 'Downloading…';
+    try {
+      const file = await LG.remote.fetchFile(parsed.url);
+      LG.storage.saveLink(parsed.url);
+      await readAndShow(root, file, null, parsed.url);
+    } catch (e) {
+      renderPick(root, (e && e.message) || String(e), '');
+    }
+  }
+
   function linkRow(root) {
     const app = LG.app;
     const input = h('input', { type: 'url', class: 'link-input', inputmode: 'url', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false',
       autocomplete: 'off', placeholder: 'https://docs.google.com/spreadsheets/d/e/…/pub?output=tsv', value: LG.storage.loadLink() || (app.dataset && app.dataset.sourceUrl) || '' });
     const btn = h('button', { class: 'btn btn-primary', type: 'button' }, 'Download');
-    const go = async () => {
-      const parsed = LG.remote.parseUrl(input.value);
-      if (!parsed.ok) return renderPick(root, parsed.error, '');
-      btn.disabled = true;
-      btn.textContent = 'Downloading…';
-      try {
-        const file = await LG.remote.fetchFile(parsed.url);
-        LG.storage.saveLink(parsed.url);
-        await readAndShow(root, file, null, parsed.url);
-      } catch (e) {
-        renderPick(root, (e && e.message) || String(e), '');
-      }
-    };
+    const go = () => downloadLink(root, input.value, btn);
     btn.addEventListener('click', go);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
     return h('div', { class: 'card stack' },
       h('label', { class: 'field' }, h('span', null, 'Or paste a link to a published table (.tsv, .csv)'), h('div', { class: 'link-row' }, input, btn)),
-      h('p', { class: 'muted small' }, 'The host must allow downloads from a web page; a Google Sheets "Publish to the web" link does. Refresh (↻) downloads it again.'));
+      h('p', { class: 'muted small' }, 'The host must allow downloads from a web page; a Google Sheets "Publish to the web" link does. Refresh (↻) downloads it again. The link is saved in this browser only.'));
+  }
+
+  // The quick-load area above the dropzone: one click for the remembered sheet (when a link is saved).
+  function quickRow(root) {
+    const link = LG.storage.loadLink();
+    const cards = [];
+    if (link) {
+      const btn = h('button', { class: 'btn btn-primary load-sheet', type: 'button' }, 'Load my sheet');
+      btn.addEventListener('click', () => downloadLink(root, link, btn));
+      cards.push(h('div', { class: 'card stack' }, h('div', { class: 'btn-row' }, btn)));
+    }
+    return h('div', { class: 'stack quick-load' }, cards);
   }
 
   function renderPick(root, error, prefix = 'Could not read the file: ') {
@@ -110,7 +125,7 @@
       h('div', { class: 'topbar' }, h('h1', null, 'Load a word list'),
         app.dataset ? h('button', { class: 'btn', type: 'button', onclick: () => app.go('home') }, 'Back') : null),
       error ? h('div', { class: 'banner banner-error', role: 'alert' }, h('span', null, prefix + error)) : null,
-      zone, linkRow(root)));
+      quickRow(root), zone, linkRow(root)));
   }
 
   async function readAndShow(root, file, handle = null, sourceUrl = null) {

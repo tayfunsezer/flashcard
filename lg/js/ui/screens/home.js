@@ -357,10 +357,7 @@
         h('button', { class: 'btn export-day', type: 'button', disabled: LG.dayexport.datesIn(app.ctx.items).length === 0, onclick: () => app.go('exportday') }, 'Export a day'),
         h('button', { class: 'btn ask-claude', type: 'button', onclick: () => app.go('askclaude') }, 'Ask Claude'),
         h('button', { class: 'btn', type: 'button', onclick: () => app.go('settings') }, 'Settings'),
-        h('button', { class: 'btn', type: 'button', onclick: async () => {
-          if (!window.confirm('Load a new file? Your progress is kept for words that are in the new file.')) return;
-          app.go('load');
-        } }, 'Load new file')),
+        h('button', { class: 'btn', type: 'button', onclick: () => app.go('load') }, 'Load new file')),
       h('div', { class: 'btn-row' },
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => { app.exportNow(); app.refresh(); } }, 'Export progress'),
         h('button', { class: 'btn btn-small', type: 'button', onclick: async () => { if (await app.importFromFile()) app.refresh(); } }, 'Import progress'),
