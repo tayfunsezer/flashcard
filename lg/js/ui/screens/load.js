@@ -80,7 +80,55 @@
       h('p', { class: 'muted small' }, 'The host must allow downloads from a web page; a Google Sheets "Publish to the web" link does. Refresh (↻) downloads it again. The link is saved in this browser only.'));
   }
 
-  // The quick-load area above the dropzone: one click for the remembered sheet (when a link is saved).
+  // Pick a day and a type; the file is read from the local repeated-words folder (the one Export a day remembers).
+  function repeatCard(root) {
+    const app = LG.app;
+    const canPick = typeof globalThis.showDirectoryPicker === 'function';
+    const date = h('input', { type: 'date', class: 'repeat-date', 'aria-label': 'Day', value: LG.dates.todayISO() });
+    const type = h('select', { 'aria-label': 'File type' },
+      h('option', { value: 'marked' }, 'Marked words'), h('option', { value: 'special' }, 'Special attention'));
+    const btn = h('button', { class: 'btn btn-primary', type: 'button' }, 'Load');
+    const note = h('span', { class: 'muted small' }, canPick ? 'No folder chosen yet: you pick it on the first load.' : 'Needs Chrome or Edge.');
+    let dir = null;
+    const sync = () => { btn.disabled = !canPick || !date.value; };
+    date.addEventListener('input', sync);
+    sync();
+    const shown = (d) => { note.textContent = 'Folder: ' + d.name; };
+    LG.storage.loadDirHandle().then((d) => { if (d) { dir = d; shown(d); } }).catch(() => {});
+    const msg = (e) => (e && (e.message || e.name)) || String(e);
+
+    const choose = async () => {
+      try {
+        dir = await globalThis.showDirectoryPicker({ mode: 'read' });
+        try { await LG.storage.saveDirHandle(dir); } catch (e) { /* chosen again next time */ }
+        shown(dir);
+        return true;
+      } catch (e) {
+        if (!e || e.name !== 'AbortError') app.banner('The folder could not be opened: ' + msg(e), 'error');
+        return false;
+      }
+    };
+    btn.addEventListener('click', async () => {
+      if (!dir && !(await choose())) return;
+      try {
+        if (dir.requestPermission && await dir.requestPermission({ mode: 'read' }) !== 'granted') {
+          return app.banner('Folder access was not allowed.', 'error');
+        }
+        const found = await LG.dayexport.findInRepo(dir, date.value, type.value);
+        if (!found) return app.banner('No file for ' + LG.dates.formatDate(date.value) + ' in ' + LG.dayexport.relPath(date.value)[0] + '.', 'error');
+        await readAndShow(root, found.file, null);
+      } catch (e) {
+        app.banner('Could not read the folder (' + msg(e) + '). Use Change folder.', 'error');
+      }
+    });
+    const change = canPick ? h('button', { class: 'btn btn-small', type: 'button', onclick: choose }, 'Change folder') : null;
+    return h('div', { class: 'card stack repeat-card' },
+      h('strong', null, 'Repeat words'),
+      h('div', { class: 'link-row' }, date, type, btn),
+      h('div', { class: 'row' }, note, change));
+  }
+
+  // The quick-load area above the dropzone: the remembered sheet (when a link is saved) and the repeat-words day.
   function quickRow(root) {
     const link = LG.storage.loadLink();
     const cards = [];
@@ -89,6 +137,7 @@
       btn.addEventListener('click', () => downloadLink(root, link, btn));
       cards.push(h('div', { class: 'card stack' }, h('div', { class: 'btn-row' }, btn)));
     }
+    cards.push(repeatCard(root));
     return h('div', { class: 'stack quick-load' }, cards);
   }
 

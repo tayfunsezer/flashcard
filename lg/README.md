@@ -37,6 +37,13 @@ Export a day (Home) turns every word of one date in the loaded file into a quiz 
 
 After editing your word list, click ↻ Refresh file next to the file name on Home (or ↻ in a game header) to re-read it without going through the import again: your progress is kept and a banner shows how many items are new or gone. In Cloze, Multiple Choice, Flashcards and Pair Match the round keeps running where it was (the word on screen is redrawn only if you edited or deleted it; in Pair Match edited tiles change text in place, deleted pairs leave the board, and matches and the timer stay). A row you corrected, where either the translation or the learned text stayed the same, keeps its box and mark instead of counting as a new word; the Daily Word still ends the round. Edge and Chrome remember the file and only ask for permission to read it again; Safari and Firefox open the file picker, and you pick the same file. Picking a file with a different name starts a normal import.
 
+### Quick load
+
+**Load new file** (Home) goes straight to the Load screen with no confirmation; the current list is replaced and progress is kept for words that are also in the new file. At the top of that screen:
+
+- **Load my sheet** appears once you have downloaded a link before: one click downloads it again (the link is kept in this browser only; change it in the link box at the bottom).
+- **Repeat words**: pick a date, choose **Marked words** or **Special attention**, press **Load**. The game works out the file in your repeated-words folder, for example 30 October 2026 gives `october-2026/marked-words/marked_words-30.json` or `october-2026/special-attention/special-attention-30.json`. Hyphen or underscore is accepted in both folder and file names, and the first marked-words file of a month may have no number. If the computed file does not exist, an error says which day and month folder. The folder is the one Export a day remembers (choose it once; Chrome or Edge only). It reads your local copy, so `git pull` after you upload files on GitHub. `final-boss` files are not covered.
+
 ### Download from a link
 
 On the Load screen you can paste a link to a published table (a `.tsv` or `.csv`, for example a Google Sheets "Publish to the web" link with `output=tsv`) and press Download. It then continues like a picked file: choose the column and languages, check the summary, Start. The link is remembered in this browser (local storage, never in the code or in the progress backup) and shows up in the box next time, so ↻ Refresh downloads the list again with no file picker, which is the easy way to update on a phone.

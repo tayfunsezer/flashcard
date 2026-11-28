@@ -181,6 +181,8 @@ legend { padding: 0; margin-bottom: 6px; font-weight: 600; }
 .link-row { display: flex; gap: 8px; align-items: stretch; }
 input.link-input { flex: 1 1 auto; min-width: 0; width: 100%; box-sizing: border-box; min-height: 44px; }
 .link-row .btn { min-height: 44px; }
+.quick-load { margin-bottom: 12px; }
+.repeat-card input[type="date"], .repeat-card select { min-height: 44px; box-sizing: border-box; }
 @media (max-width: 480px) {
   .link-row { flex-direction: column; }
   .link-row .btn { width: 100%; }
