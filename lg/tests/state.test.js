@@ -89,6 +89,22 @@
     T.eq(LG.storage.saveLink('https://x.test/a', boom), false);
     T.eq(LG.storage.loadLink({ getItem: () => 42 }), '');
   });
+  T.test('the Repeat words date is remembered under its own key; empty when unset or not a date', () => {
+    const mem = { data: {}, getItem(k) { return k in this.data ? this.data[k] : null; }, setItem(k, v) { this.data[k] = String(v); }, removeItem(k) { delete this.data[k]; } };
+    T.eq(LG.storage.loadRepeatDate(mem), '');
+    T.eq(LG.storage.saveRepeatDate('2026-10-30', mem), true);
+    T.eq(LG.storage.loadRepeatDate(mem), '2026-10-30');
+    T.ok(!('lg.state' in mem.data));
+    mem.data[LG.storage.REPEAT_DATE_KEY] = 'yesterday';
+    T.eq(LG.storage.loadRepeatDate(mem), '');
+    T.eq(LG.storage.saveRepeatDate('', mem), true);
+    T.eq(LG.storage.loadRepeatDate(mem), '');
+  });
+  T.test('the Repeat words date survives a throwing localStorage', () => {
+    const boom = { getItem() { throw new Error('SecurityError'); }, setItem() { throw new Error('QuotaExceeded'); }, removeItem() { throw new Error('x'); } };
+    T.eq(LG.storage.loadRepeatDate(boom), '');
+    T.eq(LG.storage.saveRepeatDate('2026-10-30', boom), false);
+  });
   T.test('withDefaults keeps array pins, drops bad ones', () => {
     const s = LG.state.withDefaults({ progress: { a: { pin: ['boję', 'się'] }, b: { pin: [1] }, c: { pin: 'x' } } });
     T.eq([s.progress.a.pin, s.progress.b.pin, s.progress.c.pin], [['boję', 'się'], null, 'x']);

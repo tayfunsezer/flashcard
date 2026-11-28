@@ -84,14 +84,14 @@
   function repeatCard(root) {
     const app = LG.app;
     const canPick = typeof globalThis.showDirectoryPicker === 'function';
-    const date = h('input', { type: 'date', class: 'repeat-date', 'aria-label': 'Day', value: LG.dates.todayISO() });
+    const date = h('input', { type: 'date', class: 'repeat-date', 'aria-label': 'Day', value: LG.storage.loadRepeatDate() || LG.dates.todayISO() });
     const type = h('select', { 'aria-label': 'File type' },
       h('option', { value: 'marked' }, 'Marked words'), h('option', { value: 'special' }, 'Special attention'));
     const btn = h('button', { class: 'btn btn-primary', type: 'button' }, 'Load');
     const note = h('span', { class: 'muted small' }, canPick ? 'No folder chosen yet: you pick it on the first load.' : 'Needs Chrome or Edge.');
     let dir = null;
     const sync = () => { btn.disabled = !canPick || !date.value; };
-    date.addEventListener('input', sync);
+    date.addEventListener('input', () => { if (date.value) LG.storage.saveRepeatDate(date.value); sync(); });
     sync();
     const shown = (d) => { note.textContent = 'Folder: ' + d.name; };
     LG.storage.loadReadDirHandle().then((d) => { if (d) { dir = d; shown(d); } }).catch(() => {});

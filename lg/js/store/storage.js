@@ -2,6 +2,7 @@
   const STATE_KEY = 'lg.state';
   // The last table link, kept apart from lg.state so it never ends up in an exported progress file.
   const LINK_KEY = 'lg.sourceLink';
+  const REPEAT_DATE_KEY = 'lg.repeatDate';
   const RESET_WARNING = 'Saved progress could not be read and was reset. Import a backup in Settings if you have one.';
   const DB_NAME = 'lg';
   const STORE = 'dataset';
@@ -81,6 +82,27 @@
   async function saveDataset(ds) { await run('readwrite', (s) => s.put(ds, KEY)); }
   async function loadDataset() { const v = await run('readonly', (s) => s.get(KEY)); return v === undefined ? null : v; }
   async function clearDataset() { await run('readwrite', (s) => s.delete(KEY)); }
+  // The last day picked on the Load screen's Repeat words card ('YYYY-MM-DD'), or '' when unset or not a date.
+  function loadRepeatDate(store) {
+    try {
+      if (store === undefined) store = globalThis.localStorage;
+      const v = store.getItem(REPEAT_DATE_KEY);
+      return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function saveRepeatDate(date, store) {
+    try {
+      if (store === undefined) store = globalThis.localStorage;
+      if (date) store.setItem(REPEAT_DATE_KEY, date); else store.removeItem(REPEAT_DATE_KEY);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   // The loaded file's FileSystemFileHandle (browsers that have one), kept beside the dataset for Refresh file.
   async function saveHandle(handle) { await run('readwrite', (s) => (handle ? s.put(handle, HANDLE_KEY) : s.delete(HANDLE_KEY))); }
   async function loadHandle() { const v = await run('readonly', (s) => s.get(HANDLE_KEY)); return v || null; }
@@ -96,5 +118,5 @@
   async function saveNotes(notes) { await run('readwrite', (s) => s.put(notes, NOTES_KEY)); }
   async function loadNotes() { const v = await run('readonly', (s) => s.get(NOTES_KEY)); return v === undefined ? null : v; }
 
-  LG.storage = { saveNotes, loadNotes, STATE_KEY, LINK_KEY, loadState, saveState, loadLink, saveLink, saveDataset, loadDataset, clearDataset, saveHandle, loadHandle, saveDirHandle, loadDirHandle, saveReadDirHandle, loadReadDirHandle };
+  LG.storage = { saveNotes, loadNotes, STATE_KEY, LINK_KEY, REPEAT_DATE_KEY, loadRepeatDate, saveRepeatDate, loadState, saveState, loadLink, saveLink, saveDataset, loadDataset, clearDataset, saveHandle, loadHandle, saveDirHandle, loadDirHandle, saveReadDirHandle, loadReadDirHandle };
 })(globalThis.LG = globalThis.LG || {});
