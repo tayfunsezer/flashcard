@@ -80,7 +80,7 @@
       h('p', { class: 'muted small' }, 'The host must allow downloads from a web page; a Google Sheets "Publish to the web" link does. Refresh (↻) downloads it again. The link is saved in this browser only.'));
   }
 
-  // Pick a day and a type; the file is read from the local repeated-words folder (the one Export a day remembers).
+  // Pick a day and a type; the file is read from the local repeated-words folder (its own folder choice, separate from Export a day's).
   function repeatCard(root) {
     const app = LG.app;
     const canPick = typeof globalThis.showDirectoryPicker === 'function';
@@ -94,13 +94,13 @@
     date.addEventListener('input', sync);
     sync();
     const shown = (d) => { note.textContent = 'Folder: ' + d.name; };
-    LG.storage.loadDirHandle().then((d) => { if (d) { dir = d; shown(d); } }).catch(() => {});
+    LG.storage.loadReadDirHandle().then((d) => { if (d) { dir = d; shown(d); } }).catch(() => {});
     const msg = (e) => (e && (e.message || e.name)) || String(e);
 
     const choose = async () => {
       try {
         dir = await globalThis.showDirectoryPicker({ mode: 'read' });
-        try { await LG.storage.saveDirHandle(dir); } catch (e) { /* chosen again next time */ }
+        try { await LG.storage.saveReadDirHandle(dir); } catch (e) { /* chosen again next time */ }
         shown(dir);
         return true;
       } catch (e) {

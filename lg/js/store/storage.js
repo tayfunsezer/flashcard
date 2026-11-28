@@ -8,6 +8,7 @@
   const KEY = 'current';
   const HANDLE_KEY = 'handle';
   const DIR_KEY = 'repoDir';
+  const READ_DIR_KEY = 'repoReadDir';
   const NOTES_KEY = 'notes';
 
   function loadState(store) {
@@ -87,10 +88,13 @@
   // The repeated-words folder (a FileSystemDirectoryHandle) chosen on the Export a day screen.
   async function saveDirHandle(handle) { await run('readwrite', (s) => (handle ? s.put(handle, DIR_KEY) : s.delete(DIR_KEY))); }
   async function loadDirHandle() { const v = await run('readonly', (s) => s.get(DIR_KEY)); return v || null; }
+  // The folder the Load screen's Repeat words card reads from: its own choice, never Export a day's folder.
+  async function saveReadDirHandle(handle) { await run('readwrite', (s) => (handle ? s.put(handle, READ_DIR_KEY) : s.delete(READ_DIR_KEY))); }
+  async function loadReadDirHandle() { const v = await run('readonly', (s) => s.get(READ_DIR_KEY)); return v || null; }
 
   // Answers loaded from Claude (LG.claude notes), kept beside the dataset; never part of the progress export.
   async function saveNotes(notes) { await run('readwrite', (s) => s.put(notes, NOTES_KEY)); }
   async function loadNotes() { const v = await run('readonly', (s) => s.get(NOTES_KEY)); return v === undefined ? null : v; }
 
-  LG.storage = { saveNotes, loadNotes, STATE_KEY, LINK_KEY, loadState, saveState, loadLink, saveLink, saveDataset, loadDataset, clearDataset, saveHandle, loadHandle, saveDirHandle, loadDirHandle };
+  LG.storage = { saveNotes, loadNotes, STATE_KEY, LINK_KEY, loadState, saveState, loadLink, saveLink, saveDataset, loadDataset, clearDataset, saveHandle, loadHandle, saveDirHandle, loadDirHandle, saveReadDirHandle, loadReadDirHandle };
 })(globalThis.LG = globalThis.LG || {});
