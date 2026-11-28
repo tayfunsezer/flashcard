@@ -54,7 +54,10 @@
           if (!(opts && opts.create)) throw { name: 'NotFoundError' };
           d.files[name] = '';
         }
-        return { async createWritable() { return { async write(t) { d.files[name] = t; }, async close() {} }; } };
+        return {
+          async getFile() { return { name, async text() { return d.files[name]; } }; },
+          async createWritable() { return { async write(t) { d.files[name] = t; }, async close() {} }; },
+        };
       },
     });
     return { dir, handle: wrap(dir) };
@@ -90,6 +93,53 @@
     const f = fakeDir('NotAllowedError');
     let err = null;
     try { await LG.dayexport.writeToRepo(f.handle, PATH, 'X', false); } catch (e) { err = e; }
+    T.eq(err && err.name, 'NotAllowedError');
+  });
+
+  const seed = (f, parts, text) => {
+    let d = f.dir;
+    for (const name of parts.slice(0, -1)) d = d.dirs[name] || (d.dirs[name] = { dirs: {}, files: {} });
+    d.files[parts[parts.length - 1]] = text;
+  };
+  T.test('repoCandidates marked puts the usual spelling first and has both separators', () => {
+    const c = LG.dayexport.repoCandidates('2026-10-30', 'marked');
+    T.eq(c[0], ['october-2026', 'marked-words', 'marked_words-30.json']);
+    T.ok(c.some((p) => p.join('/') === 'october-2026/marked_words/marked-words-30.json'));
+    T.ok(c.every((p) => /-30\.json$/.test(p[2])));
+  });
+  T.test('repoCandidates special accepts hyphen and underscore', () => {
+    const c = LG.dayexport.repoCandidates('2026-09-05', 'special');
+    T.eq(c[0], ['september-2026', 'special-attention', 'special-attention-5.json']);
+    T.ok(c.some((p) => p.join('/') === 'september-2026/special_attention/special_attention-5.json'));
+  });
+  T.test('repoCandidates day 1: only marked words may be unsuffixed, and last', () => {
+    const m = LG.dayexport.repoCandidates('2026-09-01', 'marked').map((p) => p.join('/'));
+    T.ok(m.includes('september-2026/marked-words/marked_words.json'));
+    T.ok(m.indexOf('september-2026/marked-words/marked_words.json') > m.indexOf('september-2026/marked-words/marked_words-1.json'));
+    T.ok(LG.dayexport.repoCandidates('2026-09-01', 'special').every((p) => /-1\.json$/.test(p[2])));
+  });
+  T.test('findInRepo finds a file spelled with the other separator', async () => {
+    const f = fakeDir();
+    seed(f, ['october-2026', 'special_attention', 'special_attention-12.json'], '[]');
+    const found = await LG.dayexport.findInRepo(f.handle, '2026-10-12', 'special');
+    T.eq(found.parts, ['october-2026', 'special_attention', 'special_attention-12.json']);
+    T.eq(found.file.name, 'special_attention-12.json');
+  });
+  T.test('findInRepo finds the unsuffixed marked file on day 1', async () => {
+    const f = fakeDir();
+    seed(f, ['september-2026', 'marked-words', 'marked_words.json'], '[]');
+    const found = await LG.dayexport.findInRepo(f.handle, '2026-09-01', 'marked');
+    T.eq(found.file.name, 'marked_words.json');
+  });
+  T.test('findInRepo returns null for a missing day and a missing month folder', async () => {
+    const f = fakeDir();
+    seed(f, ['october-2026', 'marked-words', 'marked_words-26.json'], '[]');
+    T.eq(await LG.dayexport.findInRepo(f.handle, '2026-10-31', 'marked'), null);
+    T.eq(await LG.dayexport.findInRepo(f.handle, '2026-03-10', 'marked'), null);
+  });
+  T.test('findInRepo propagates other errors', async () => {
+    let err = null;
+    try { await LG.dayexport.findInRepo(fakeDir('NotAllowedError').handle, '2026-10-26', 'marked'); } catch (e) { err = e; }
     T.eq(err && err.name, 'NotAllowedError');
   });
 })();

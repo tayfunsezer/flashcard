@@ -43,5 +43,39 @@
     return 'written';
   }
 
-  LG.dayexport = { datesIn, relPath, dayQuiz, writeToRepo };
+  // Where a day's file may live in the repeated-words folder, best guess first. The learner's files mix '-' and '_'
+  // in folder and file names, so both spellings are tried; marked words of day 1 may have no day suffix.
+  const REPO_NAMES = {
+    marked: { folders: ['marked-words', 'marked_words'], stems: ['marked_words', 'marked-words'], bareDay1: true },
+    special: { folders: ['special-attention', 'special_attention'], stems: ['special-attention', 'special_attention'], bareDay1: false },
+  };
+
+  // 'YYYY-MM-DD', 'marked'|'special' -> [[monthFolder, typeFolder, fileName], ...]
+  function repoCandidates(date, type) {
+    const spec = REPO_NAMES[type];
+    const [y, m, d] = date.split('-');
+    const month = MONTHS[Number(m) - 1] + '-' + y;
+    const day = Number(d);
+    const out = [];
+    for (const folder of spec.folders) for (const stem of spec.stems) out.push([month, folder, stem + '-' + day + '.json']);
+    if (spec.bareDay1 && day === 1) for (const folder of spec.folders) for (const stem of spec.stems) out.push([month, folder, stem + '.json']);
+    return out;
+  }
+
+  // The first candidate that exists under rootDir: { file, parts }, or null. Only NotFoundError means "try the next".
+  async function findInRepo(rootDir, date, type) {
+    for (const parts of repoCandidates(date, type)) {
+      try {
+        let dir = rootDir;
+        for (const name of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(name);
+        const handle = await dir.getFileHandle(parts[parts.length - 1]);
+        return { file: await handle.getFile(), parts };
+      } catch (e) {
+        if (!e || e.name !== 'NotFoundError') throw e;
+      }
+    }
+    return null;
+  }
+
+  LG.dayexport = { datesIn, relPath, dayQuiz, writeToRepo, repoCandidates, findInRepo };
 })(globalThis.LG = globalThis.LG || {});
