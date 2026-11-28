@@ -93,7 +93,11 @@
         clear(screen).append(
           h('div', { class: 'topbar game-head' }, h('h1', null, 'Pair Match'),
             h('div', { class: 'btn-row' }, boardLabel ? h('span', { class: 'muted' }, boardLabel) : null, countEl, timeEl, LG.app.refreshButton(), quit)),
-          h('p', { class: 'muted small' }, 'Pick one tile from each column to make a pair.'),
+          h('div', { class: 'spread' },
+            h('p', { class: 'muted small' }, 'Pick one tile from each column to make a pair.'),
+            h('label', { class: 'choice small' },
+              h('input', { type: 'checkbox', class: 'speak-toggle', checked: app.state.settings.speakMatch,
+                onchange: (e) => app.setSettings({ speakMatch: e.target.checked }) }), 'Read tiles aloud')),
           h('div', { class: 'match-board' }, colEls));
 
         function stopTimer() {

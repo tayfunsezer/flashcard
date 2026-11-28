@@ -57,7 +57,7 @@ Item = { id: 'i…' /* cyrb53(normSource \u0001 normTarget) */, source, target, 
 // target = the language being learned (column chosen at import); source = its translation
 
 // State (localStorage 'lg.state', VERSION 2)
-{ version, settings: { theme: 'system'|'light'|'dark', langSource, langTarget, direction: 's2t'|'t2s', learnColumn: 1|2, ask: 'word'|'whole', voices: { [lang]: voiceName }, speakMatch: boolean /* default true: Pair Match reads learned-language tiles */, speechRate: 0.5..1.5 /* default 0.85, clamped in withDefaults */ },
+{ version, settings: { theme: 'system'|'light'|'dark', langSource, langTarget, direction: 's2t'|'t2s', learnColumn: 1|2, ask: 'word'|'whole', voices: { [lang]: voiceName }, speakMatch: boolean /* default true: Pair Match reads learned-language tiles; the checkbox is on the Pair Match screen, not in Settings */, speechRate: 0.5..1.5 /* default 0.85, clamped in withDefaults */ },
   progress: { [id]: { box 0-5, due ms, seen, revenge, pin: string[]|null, rot, star? } },
   xp, streak: { current, best, lastDay }, daily: { date, guesses, done, won }, studySet: { by, value, game, queue, done, total }|null, lastExport }
 ```
