@@ -66,6 +66,23 @@
       categories: [{ name: 'A', count: 2 }, { name: 'B', count: 1 }],
       dates: [{ date: '2025-12-13', count: 1 }, { date: '2025-12-01', count: 1 }] });
   });
+  T.test('categoryOptions: only categories with words in the date range, per-range counts, pipe items under both', () => {
+    const its = [
+      { id: 'a', date: '2026-10-01', categories: ['Food', 'Travel'] },
+      { id: 'b', date: '2026-10-01', categories: ['Food'] },
+      { id: 'c', date: '2026-10-02', categories: ['Work'] },
+      { id: 'd', date: null, categories: ['Home'] }];
+    T.eq(w.categoryOptions(its, {}), w.groupOptions(its).categories);
+    T.eq(w.categoryOptions(its, { dateFrom: '2026-10-01', dateTo: '2026-10-01' }), [{ name: 'Food', count: 2 }, { name: 'Travel', count: 1 }]);
+    T.eq(w.categoryOptions(its, { dateFrom: '2026-10-02' }), [{ name: 'Work', count: 1 }]);
+    T.eq(w.categoryOptions(its, { dateTo: '2026-10-01' }), [{ name: 'Food', count: 2 }, { name: 'Travel', count: 1 }]);
+  });
+  T.test('categoryOptions: a ticked category with no words in the range stays with count 0, in name order', () => {
+    const its = [{ id: 'a', date: '2026-10-01', categories: ['Food'] }, { id: 'b', date: '2026-10-02', categories: ['Work'] }];
+    T.eq(w.categoryOptions(its, { dateFrom: '2026-10-02', dateTo: '2026-10-02', categories: ['Food'] }),
+      [{ name: 'Food', count: 0 }, { name: 'Work', count: 1 }]);
+    T.eq(w.categoryOptions(its, { dateFrom: '2026-10-02', categories: ['Work'] }), [{ name: 'Work', count: 1 }]);
+  });
   T.test('searchCategories: empty query by count, prefix before contains, accent-insensitive, limit', () => {
     const o = [{ name: 'Zwierzęta', count: 3 }, { name: 'Żywność', count: 9 }, { name: 'Praca', count: 5 }, { name: 'Współpraca', count: 1 }];
     T.eq(LG.words.searchCategories(o, '', 'pl').map(c => c.name), ['Żywność', 'Praca', 'Zwierzęta', 'Współpraca']);

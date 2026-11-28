@@ -122,6 +122,15 @@
     });
   }
 
+  // The categories offered for a date range: only those with words in it (counts are per range). A category the learner
+  // already ticked stays even with no words there (count 0), so it can be unticked.
+  function categoryOptions(items, { dateFrom, dateTo, categories } = {}) {
+    const opts = groupOptions(filterItems(items, { dateFrom, dateTo })).categories;
+    const have = new Set(opts.map((o) => o.name));
+    const missing = (categories || []).filter((c) => !have.has(c)).map((name) => ({ name, count: 0 }));
+    return missing.length ? opts.concat(missing).sort((x, y) => x.name.localeCompare(y.name)) : opts;
+  }
+
   function groupOptions(items) {
     const cats = new Map();
     const dates = new Map();
@@ -173,5 +182,5 @@
     return Object.assign({}, f, { dateFrom: value, dateTo: value || f.dateTo });
   }
 
-  LG.words = { MIN_SENTENCE_TOKENS, kindOf, buildRarity, clozeCandidates, pickBlank, pickBlanks, pinWords, resolvePins, hintText, specialLetters, filterItems, groupOptions, itemsInCategory, searchCategories, activeFilters, withoutFilter, withDateFrom };
+  LG.words = { MIN_SENTENCE_TOKENS, kindOf, buildRarity, clozeCandidates, pickBlank, pickBlanks, pinWords, resolvePins, hintText, specialLetters, filterItems, groupOptions, categoryOptions, itemsInCategory, searchCategories, activeFilters, withoutFilter, withDateFrom };
 })(globalThis.LG = globalThis.LG || {});
