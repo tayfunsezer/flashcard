@@ -133,13 +133,20 @@
   }
 
   // The quick-load area above the dropzone: the remembered sheet (when a link is saved) and the repeat-words day.
-  function quickRow(root) {
+  // linkEl is the paste-link card: hidden while a link is saved (Change link reveals it), so there is one button per situation.
+  function quickRow(root, linkEl) {
     const link = LG.storage.loadLink();
     const cards = [];
     if (link) {
       const btn = h('button', { class: 'btn btn-primary load-sheet', type: 'button' }, 'Load my sheet');
       btn.addEventListener('click', () => downloadLink(root, link, btn));
-      cards.push(h('div', { class: 'card stack' }, h('div', { class: 'btn-row' }, btn)));
+      const change = h('button', { class: 'btn btn-small change-link', type: 'button', onclick: () => {
+        const hide = !linkEl.classList.contains('hidden');
+        linkEl.classList.toggle('hidden', hide);
+        change.textContent = hide ? 'Change link' : 'Hide link';
+      } }, 'Change link');
+      linkEl.classList.add('hidden');
+      cards.push(h('div', { class: 'card stack' }, h('div', { class: 'btn-row' }, btn, change)));
     }
     cards.push(repeatCard(root));
     return h('div', { class: 'stack quick-load' }, cards);
@@ -174,11 +181,12 @@
         ? item.getAsFileSystemHandle().catch(() => null) : Promise.resolve(null);
       LG.dom.withTimeout(handlePromise, 1500, null).then((handle) => readAndShow(root, f, handle && handle.kind === 'file' ? handle : null));
     });
+    const linkEl = linkRow(root);
     LG.dom.clear(root).append(h('div', { class: 'screen' },
       h('div', { class: 'topbar' }, h('h1', null, 'Load a word list'),
         app.dataset ? h('button', { class: 'btn', type: 'button', onclick: () => app.go('home') }, 'Back') : null),
       error ? h('div', { class: 'banner banner-error', role: 'alert' }, h('span', null, prefix + error)) : null,
-      quickRow(root), zone, linkRow(root)));
+      quickRow(root, linkEl), zone, linkEl));
   }
 
   async function readAndShow(root, file, handle = null, sourceUrl = null) {
